@@ -29,13 +29,13 @@
   <fieldset>
     <legend>Speed</legend
     >{#each speeds as value (value)}
-      <label><input type="radio" name="speed" {...{ value: value }} bind:group={speed} /> {value}</label>
+      <label><input type="radio" name="speed" {value} bind:group={speed} /> {value}</label>
     {/each}
   </fieldset
   ><fieldset>
     <legend>Extras</legend
     >{#each extras as extra (extra)}
-      <label><input type="checkbox" {...{ value: extra }} bind:group={chosen} /> {extra}</label>
+      <label><input type="checkbox" value={extra} bind:group={chosen} /> {extra}</label>
     {/each}
   </fieldset
   ><output>Speed: {speed}, extras: {chosen.join(", ") || "none"}</output>
