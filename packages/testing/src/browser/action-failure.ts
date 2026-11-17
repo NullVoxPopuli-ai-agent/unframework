@@ -1,4 +1,4 @@
-// An action that failed, told apart from a component that threw (L14, ADR-0078, ADR-0112). A
+// An action that failed, told apart from a component that threw (L14, ADR-0078). A
 // step's rejection can be the component's throw: React's `act` rethrows it through the action.
 // It can also be the action's own failure, like Playwright's `TimeoutError` when the element
 // never became actionable, and then the component never threw. `view.user`'s inputs mark their

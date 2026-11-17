@@ -1,5 +1,5 @@
 // The stack mapping of a project's tests (`ufMapStack`, ADR-0086): which served module a frame
-// stands for, and where a case throws; and which error L14 reads (ADR-0112).
+// stands for, and where a case throws; and which error L14 reads (ADR-0078).
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

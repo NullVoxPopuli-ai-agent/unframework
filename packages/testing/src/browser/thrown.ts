@@ -65,7 +65,7 @@ export async function expectThrown(host: ThrownStepHost, step: () => Promise<voi
   try {
     // A framework's scheduler may rethrow through the action (React's `act`). An action that
     // failed (an element that never became actionable) is no throw of the component's: its
-    // error never reaches the page, so its stack would map to the spec (ADR-0112).
+    // error never reaches the page, so its stack would map to the spec (ADR-0078).
     await step().catch((error: unknown) => {
       if (isFailedAction(error)) failedAction ??= error;
       else take(error);
