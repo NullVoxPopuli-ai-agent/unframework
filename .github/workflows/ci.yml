@@ -237,7 +237,8 @@ jobs:
   # job queue is what limits it (ADR-0093). The reporter names each shard's matrix apart, and the
   # parity job counts a project as run in full once shards 1 to n all reported
   # (harness/summary.unit.test.ts). The tests' step has a limit under the job's, so a slow runner
-  # fails the step and the job still uploads its results and names the runner (ADR-0112).
+  # fails the step instead of GitHub cancelling the job. A step stopped at its limit leaves no
+  # parity matrix to upload, since the reporter writes it when the run ends (ADR-0112).
   integration-browser:
     name: "Integration: browser (${{ matrix.target }}${{ matrix.shard && format(', {0}/2', matrix.shard) || '' }})"
     needs: changes
