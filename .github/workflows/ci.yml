@@ -249,11 +249,11 @@ jobs:
       matrix:
         target: [vue]
         workers: [8, 4, 2]
-        load: ["0", "3"]
+        load: ["5"]
         rep: [1, 2]
         include:
-          - { target: react, load: "3", rep: 1 }
-          - { target: react, load: "3", rep: 2 }
+          - { target: react, load: "5", rep: 1 }
+          - { target: react, load: "5", rep: 2 }
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
