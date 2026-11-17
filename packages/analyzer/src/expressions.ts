@@ -71,6 +71,7 @@ import {
   widened,
 } from "./code.ts";
 import type { Reporter } from "./context.ts";
+import { misplacedDirective } from "./directives.ts";
 import { readLiteral } from "./literals.ts";
 import {
   ancestorsOf,
@@ -111,6 +112,8 @@ import { isStatic } from "./props.ts";
 import type { EventParameter, PropBinding, RenderContext, SetupBinding } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import type { SharedValue } from "./shared.ts";
+import { teleportNotTag } from "./teleport.ts";
+import { transitionNotTag } from "./transition.ts";
 import {
   arrayOf,
   BOOLEAN,
@@ -1138,6 +1141,7 @@ class Walk {
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
       case "localConst":
+      case "awaited":
       case "usedConst":
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return binding.kinds;
@@ -1257,6 +1261,18 @@ class Walk {
     }
     const api = authoring.get(declaration);
     if (api === undefined) return UNKNOWN;
+    if (api === "Teleport") {
+      teleportNotTag(node, this.#context.reporter);
+      return UNKNOWN;
+    }
+    if (api === "Transition") {
+      transitionNotTag(node, this.#context.reporter);
+      return UNKNOWN;
+    }
+    if (api === "defineDirective") {
+      misplacedDirective(node, this.#context.reporter);
+      return UNKNOWN;
+    }
     if (api === "nextTick" && this.#mode === "client") {
       // Only a call reaches the targets (`#call` reads one, wrapped or not): each writes its
       // own call in place of `nextTick()`, which it cannot do for a function passed or stored.
@@ -1694,10 +1710,13 @@ class Walk {
       // (Solid's accessor callbacks, Angular's `@if`).
       const render = this.#mode === "render";
       const prop = path.names.length === 0 && this.#context.propsByDeclaration.has(path.root);
-      const scope = facts.find(
-        (fact) => fact.present && !(render && fact.child) && (fact.scope !== "closure" || prop),
-      )?.scope;
-      if (scope) return scope;
+      // A directive's value is read outside its element's branches on React and Qwik (ADR-0099).
+      const outside = render && this.#context.directiveValue === true;
+      const found = facts.find(
+        (fact) =>
+          fact.present && !(render && fact.child && !outside) && (fact.scope !== "closure" || prop),
+      );
+      if (found) return outside && found.child ? "template" : found.scope;
     }
     // A handler's read that relies on the template's conditional around it narrowing a union of
     // kinds (`{typeof value === "string" && <input onInput={() => use(value)} />}`), which a
@@ -2660,7 +2679,10 @@ class Walk {
         const api = context.setup.authoring.get(resolution.declaration);
         // A call the import reports, or a macro in the wrong place, whose arguments would say
         // nothing more.
-        if (api !== undefined) this.#misplaced(callee, api, true);
+        if (api === "Teleport") teleportNotTag(callee, context.reporter);
+        else if (api === "Transition") transitionNotTag(callee, context.reporter);
+        else if (api === "defineDirective") misplacedDirective(callee, context.reporter);
+        else if (api !== undefined) this.#misplaced(callee, api, true);
         this.#skip(node.arguments);
         return UNKNOWN;
       }
@@ -5522,6 +5544,7 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   derived: "a computed value",
   templateRef: "a template ref",
   localConst: "a constant the setup declares",
+  awaited: "a value the setup awaits",
   localFn: "a local function",
   localVar: "a setup `let`",
   emit: "the component's `emit`",

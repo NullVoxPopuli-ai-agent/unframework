@@ -170,7 +170,18 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `reactive-context` are unsupported (UF4001, warnings: `inject` gives its fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
 `scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
 `style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
-Every other capability is native.
+
+`directive` is unsupported (UF4001, info, ADR-0099): a static page runs no hook, so the element renders without its directive, and a `.uf.ts` module's directive has no file.
+
+`transition` is unsupported (UF4001, info, ADR-0100): a static page runs no transition, so the child prints in its place, settled, with no class.
+
+`async-setup` is native (ADR-0101): an await is a top-level `await` in the frontmatter, which the Container API waits for, and an await whose value no server code reads is a statement of its own.
+
+`teleport` is unsupported (UF4001, info, ADR-0098): a static page has no client to mount the content, so the output prints nothing for it.
+
+`keyed-identity` is unsupported (UF4001, for information): a list renders once on the server, and
+nothing reorders it. No list reports it, since no IR kind requires it (ADR-0096). Every other
+capability is native.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 

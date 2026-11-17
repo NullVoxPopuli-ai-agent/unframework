@@ -7,7 +7,7 @@
 // the events it declares (`emits`), as a compiled component's handlers and `defineEmits` would;
 // with `settle`, the adapter waits for the work they scheduled, as for a framework's render.
 import type { MountEvent } from "../../src/internal.ts";
-import { registerTarget } from "../../src/internal.ts";
+import { registerHydrateAdapter, registerTarget } from "../../src/internal.ts";
 
 type Props = Readonly<Record<string, unknown>>;
 type Messages = { level: "warn" | "error"; message: string }[];
@@ -31,6 +31,12 @@ export interface StubComponent {
   console?: Messages;
   /** Console messages each rerender's "server render" emitted. */
   rerenderConsole?: Messages;
+  /**
+   * The DOM its hydration leaves, for the hydrate parity project (L12): the server's HTML (from
+   * the stub render command) by default, or this, which a test makes differ from the server's or
+   * from the client render's on purpose.
+   */
+  hydrated?: string;
   /** Makes the adapter throw while mounting. */
   fail?: string;
   /** Makes the unmount throw. */
@@ -115,3 +121,27 @@ function renderText(container: HTMLElement, text: SplitText, props: Props, nodes
   });
   container.append(element);
 }
+
+/**
+ * The stub's hydrate adapter (L12, ADR-0095): it "hydrates" by putting `hydrated`, or the server's
+ * HTML, in the container, wires the stub's behaviour on it, and reports no mismatch of its own. A
+ * rerender is the client render's.
+ */
+registerHydrateAdapter("dom", async (component, container, html, options) => {
+  const stub = component as StubComponent;
+  container.innerHTML = stub.hydrated ?? html;
+  // Its behaviour is wired on the hydrated DOM, as a framework's hydration wires its listeners.
+  const wiring = new AbortController();
+  stub.setup?.(container, (name, ...args) => options.on?.[name]?.(...args), wiring.signal);
+  return {
+    settle: async () => {},
+    async rerender(props) {
+      container.innerHTML = typeof stub.html === "function" ? stub.html(props) : (stub.html ?? "");
+    },
+    unmount: async () => {
+      wiring.abort();
+      container.replaceChildren();
+    },
+    takeMismatches: () => [],
+  };
+});

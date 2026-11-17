@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
-import type { UfComponent, UfComposable, UfModule } from "@unframework.dev/ir";
+import type { UfComponent, UfComposable, UfDirective, UfModule } from "@unframework.dev/ir";
 
 /**
  * The features a target declares support for. Each name maps to IR features (node and
@@ -82,6 +82,11 @@ export type CapabilityName =
   | "style-binding"
   /** A spread of an object whose keys its type declares (`SpreadAttribute`). */
   | "attribute-spread"
+  /**
+   * `innerHTML={markup}` (`RawHtmlAttribute`, ADR-0097): the element's content is the markup a
+   * string holds, as the browser parses it, never escaped or sanitised.
+   */
+  | "raw-html"
   /** SVG: an `<svg>` element and the SVG inside it. */
   | "svg"
   /** A component element (`ComponentNode`): an imported or a local component (ADR-0053). */
@@ -127,6 +132,24 @@ export type CapabilityName =
   /** `<component is>` over a statically known set (`DynamicNode`). */
   | "dynamic-component"
   /**
+   * `<Teleport to>` (`TeleportNode`, ADR-0098): content that mounts into the element `to`
+   * selects once its component has mounted, last in source order, and that the server never
+   * renders.
+   */
+  | "teleport"
+  /**
+   * `<Transition name appear>` (`TransitionNode`, ADR-0100): Vue's CSS-class contract on one
+   * element as it enters or leaves, which stays in the DOM until its leave ends. The server
+   * renders the settled child.
+   */
+  | "transition"
+  /**
+   * `v-name={value}` on an element (`DirectiveAttribute`, ADR-0099): a directive's hooks run in
+   * the browser once the element is in the DOM, after a render that changes the value, and once
+   * it leaves, descendants' before their ancestors'. Refines `interactivity`.
+   */
+  | "directive"
+  /**
    * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
    * once and the target attaches its own way (ADR-0063).
    */
@@ -165,7 +188,26 @@ export type CapabilityName =
    * watchers, effects and hooks run in order with the caller's own (ADR-0069). Refines
    * `interactivity`.
    */
-  | "composable-effect-order";
+  | "composable-effect-order"
+  /**
+   * A server render that a client hydrates, or resumes, into the DOM the client renders, with
+   * the server's ids, and interactive after (L12, ADR-0095). No IR kind requires it: every case
+   * runs in the hydrate projects, which skip a target that leaves it unsupported.
+   */
+  | "hydration"
+  /**
+   * A keyed list's item keeps its element, and so its focus, its typed text and its state, while
+   * the list reorders and while the item is replaced by another object of the same key
+   * (ADR-0096). No IR kind requires it: every list's key asks for it, and the specs that reorder
+   * or replace a list while its rows hold the focus or typed text require it.
+   */
+  | "keyed-identity"
+  /**
+   * A setup that awaits (`AwaitItem`, ADR-0101): the server renders the resolved template, a
+   * client mount renders nothing until the setup resolves, and a hydrated component keeps the
+   * server's DOM while its setup runs again.
+   */
+  | "async-setup";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -191,6 +233,7 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "class-binding",
   "style-binding",
   "attribute-spread",
+  "raw-html",
   "svg",
   "component",
   "component-event",
@@ -210,6 +253,9 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "context",
   "reactive-context",
   "dynamic-component",
+  "teleport",
+  "transition",
+  "directive",
   "scoped-styles",
   "child-root-scope",
   "slotted-styles",
@@ -218,6 +264,9 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "generic-slot-props",
   "composables",
   "composable-effect-order",
+  "hydration",
+  "keyed-identity",
+  "async-setup",
 ];
 
 /**
@@ -243,6 +292,20 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "model-modifiers",
   "sheet-order",
   "composable-effect-order",
+  // A target that doesn't hydrate still renders the same markup on the server (ADR-0095).
+  "hydration",
+  // A list renders the same markup in order on a target whose rows follow the item's reference
+  // (ADR-0096): only a reorder in the browser shows what an element kept.
+  "keyed-identity",
+  // No target renders a teleport's content on the server, so a static render's markup is the
+  // same without it (ADR-0098): only a mounted component shows it, in `to`.
+  "teleport",
+  // The server renders a transition's child settled, with no class (ADR-0100): only the browser
+  // runs its classes.
+  "transition",
+  // A directive's hooks run in the browser only (ADR-0099), so the server's markup is the same
+  // without them.
+  "directive",
 ]);
 
 /**
@@ -266,6 +329,7 @@ export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, C
   "model-modifiers": "interactivity",
   "reactive-context": "context",
   "composable-effect-order": "interactivity",
+  directive: "interactivity",
 };
 
 /** How a target supports a capability (plan §5.7). */
@@ -334,6 +398,13 @@ export interface Target {
    * third-party target: `compile()` reports UF1002 for a composable of a target without it.
    */
   emitComposable?(composable: UfComposable, context: EmitContext): OutputFile[];
+  /**
+   * Emits one directive a `.uf.ts` module exports as its module, in the target's idiom
+   * (ADR-0099), or no file where the target runs no hook. Never throws: report problems instead.
+   * Every built-in target has it. It is optional for a third-party target: `compile()` reports
+   * UF1002 for a directive of a target without it.
+   */
+  emitDirective?(directive: UfDirective, context: EmitContext): OutputFile[];
 }
 
 /** Declares a target, checking its shape at compile time. */

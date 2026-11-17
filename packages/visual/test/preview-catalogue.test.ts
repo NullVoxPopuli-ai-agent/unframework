@@ -256,6 +256,12 @@ describe("parsePreviewArguments", () => {
     expect(parsePreviewArguments(["--port", "5173"])).toEqual({ targets: [], port: 5173 });
   });
 
+  it("parses unframework preview --target solid@2 to solid2, once beside solid2 (ADR-0102)", () => {
+    expect(parsePreviewArguments(["--target", "solid@2", "--target=solid2"])).toEqual({
+      targets: ["solid2"],
+    });
+  });
+
   it("reads build, its targets and --out", () => {
     expect(parsePreviewArguments(["build"])).toEqual({ build: true, targets: [] });
     expect(

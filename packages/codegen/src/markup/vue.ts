@@ -17,6 +17,7 @@ import {
 } from "./escape.ts";
 import {
   classArrayItems,
+  directiveAttributeName,
   isRoot,
   keepsWhitespace,
   staticClassValue,
@@ -125,11 +126,24 @@ function styleObject(parts: readonly StylePart[]): string {
     .join(", ")} }`;
 }
 
+/** Vue's own directives, which `vue/attributes-order` places in groups of their own. */
+const BUILT_IN_DIRECTIVES = new Set([
+  "v-show",
+  "v-cloak",
+  "v-once",
+  "v-pre",
+  "v-text",
+  "v-html",
+  "v-slot",
+  "v-bind",
+]);
+
 /**
  * The order `vue/attributes-order` (in `plugin:vue/recommended`) wants: `:is`, `v-for`, then the
  * conditionals, then `id`, then `key` and `ref` (its unique attributes, in any order between
- * them), then `v-model`, then the other attributes, then the listeners (`@click`), each group in
- * any order.
+ * them), then `v-model`, then a component's own directives (`v-text-caret`), then the other
+ * attributes, then the listeners (`@click`), then `v-html` (its content), each group in any
+ * order.
  */
 function vueRank({ name }: PrintedAttribute): number {
   if (name === ":is") return -1;
@@ -138,6 +152,11 @@ function vueRank({ name }: PrintedAttribute): number {
   if (name === "id") return 2;
   if (name === "key" || name === "ref") return 3;
   if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
+  // Content, which comes after the listeners.
+  if (name === "v-html") return 6;
+  if (/^v-[a-z]/.test(name) && !BUILT_IN_DIRECTIVES.has(name) && !name.startsWith("v-on:")) {
+    return 3.75;
+  }
   if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
   return 4;
 }
@@ -271,6 +290,12 @@ export const vueDialect: MarkupDialect = {
   // The name `useTemplateRef("…")` reads the element by, which the Vue target keys by the
   // binding's name.
   refAttribute: ({ name }) => [{ name: "ref", text: quotedAttribute("ref", name) }],
+  // A custom directive (ADR-0099), which `<script setup>` resolves by its `vFocusTrap` name.
+  directiveAttribute: ({ attribute, value }) => {
+    const name = `v-${directiveAttributeName(attribute.name)}`;
+    return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
+  },
+  rawHtmlAttribute: (code) => [{ name: "v-html", text: `v-html="${vueAttributeCode(code)}"` }],
   orderAttributes: (attributes) =>
     attributes
       .map((attribute, index) => ({ attribute, index }))

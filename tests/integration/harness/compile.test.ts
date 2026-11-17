@@ -184,6 +184,12 @@ describe("compile", () => {
             // Only a diagnostics case: a feature case without a spec stays a missing cell.
             for (const layer of NO_SPEC_LAYERS) checks[layer] = () => ({ skip: NO_SPEC_SKIP });
           }
+          // No hydrate project runs a diagnostics case, which has no spec: its L12 says so, with
+          // compile errors or without, as the targets that do not hydrate say why they skip
+          // every other case (ADR-0095).
+          if (!info.spec && info.id.startsWith("diagnostics/")) {
+            checks.L12 = () => ({ skip: NO_SPEC_SKIP });
+          }
           await checkLayers(
             task,
             { case: info.id, target, quarantine: harness.quarantine },
@@ -373,13 +379,17 @@ function checkSourceMaps(
   target: string,
 ): void {
   const modules = new Set(info.modules.map((module) => basename(module.source)));
-  const problems = compiles.flatMap(({ source, text, first }) =>
-    sourceMapProblems(
+  const problems = compiles.flatMap(({ source, text, first }) => {
+    const files = first.outputs[target] ?? [];
+    // A source a target writes no file for has no map to check or corrupt: a `.uf.ts` module's
+    // directives on Astro, which runs no hook (ADR-0099).
+    if (!files.length) return [];
+    return sourceMapProblems(
       target,
-      canaryMaps(harness.canary, first.outputs[target] ?? []),
+      canaryMaps(harness.canary, files),
       { filename: source.filename, text },
       modules,
-    ),
-  );
+    );
+  });
   if (problems.length) throw new Error(problems.join("\n"));
 }

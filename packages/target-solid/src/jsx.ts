@@ -28,6 +28,7 @@ import {
 import type { ImportSet, JsxContext, JsxDialect } from "@unframework.dev/codegen";
 import { walk } from "@unframework.dev/ir";
 import type {
+  BindingId,
   ClassAttribute,
   ElementNode,
   Expression,
@@ -72,6 +73,17 @@ export const SCOPE_HELPER = "scopeAttributes";
 /** The style helper's name, before the name scope makes it unique (ADR-0065). */
 export const STYLE_HELPER = "styleProperties";
 
+/**
+ * The keyed list's name, before the name scope makes it unique (`keyed-identity`, emulated;
+ * ADR-0096).
+ */
+export const KEYED_HELPER = "KeyedFor";
+/** The inline helper that mounts a `<Teleport>`'s element into `to` (ADR-0098). */
+export const TELEPORT_HELPER = "Teleport";
+
+/** The inline helper that runs a `<Transition>`'s classes (ADR-0100). */
+export const TRANSITION_HELPER = "Transition";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
@@ -106,7 +118,11 @@ export function solidJsx(
   let collections = false;
   let scopeHelper: string | undefined;
   let styleHelper: string | undefined;
+  let keyedHelper: string | undefined;
+  let teleportHelper: string | undefined;
+  let transitionHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
+  const keyedFor = () => (keyedHelper ??= imports.claim(KEYED_HELPER));
   /** `styleProperties(value)`: a style bound to a value, an object or a declaration list. */
   const styleValue = (value: AstExpression): AstExpression =>
     js.callExpression(js.identifier((styleHelper ??= imports.claim(STYLE_HELPER))), [value]);
@@ -140,7 +156,24 @@ export function solidJsx(
   const dialect: JsxDialect = {
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
-    list: (node, context) => list(node, context, imports, compose),
+    list: (node, context) => list(node, context, keyedFor, compose),
+    // `<Teleport to="body"><div …/></Teleport>`, Solid's `<Portal>` without its wrapper (ADR-0098).
+    teleport: (node, context) =>
+      js.jsxElement(
+        (teleportHelper ??= imports.claim(TELEPORT_HELPER)),
+        [js.jsxAttribute("to", jsxAttributeValue(node.to))],
+        jsxChildren(node.children, context),
+      ),
+    // `<Transition name="fade"><Show when={open()}><p …/></Show></Transition>` (ADR-0100).
+    transition: (node, context) =>
+      js.jsxElement(
+        (transitionHelper ??= imports.claim(TRANSITION_HELPER)),
+        [
+          js.jsxAttribute("name", jsxAttributeValue(node.name)),
+          ...(node.appear ? [js.jsxAttribute("appear")] : []),
+        ],
+        jsxChildren(node.children, context),
+      ),
     staticAttribute(attribute, element, context) {
       if (attribute.name === "class" && typeof attribute.value === "string") {
         const reads = spreadClassReads(element, context);
@@ -214,6 +247,8 @@ export function solidJsx(
     },
     eventAttribute: (attribute, element, context) =>
       listeners.eventAttribute(attribute, element, context),
+    directiveAttribute: (attribute, element, context) =>
+      listeners.directiveAttribute(attribute, element, context),
     refAttribute: (attribute, element, context) =>
       isComponentTag(element.tag)
         ? listeners.componentRef(attribute)
@@ -285,6 +320,9 @@ export function solidJsx(
       ...(helper ? [classHelperCode(helper, collections)] : []),
       ...(styleHelper ? [styleHelperCode(styleHelper)] : []),
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...(keyedHelper ? [keyedHelperCode(keyedHelper, imports)] : []),
+      ...(teleportHelper ? [teleportHelperCode(teleportHelper, imports)] : []),
+      ...(transitionHelper ? [transitionHelperCode(transitionHelper, imports)] : []),
       ...models.helpers(),
     ],
   };
@@ -613,26 +651,48 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
 }
 
 /**
- * A list as `<For each={source}>{(item, index) => <li>…</li>}</For>`. `<For>` keys its rows
- * by the items themselves, so the source's `key` is not printed (Solid's elements take no
- * `key`; ADR-0036 guarantees content and order only), and the index is an accessor, which
- * the rewrite rules call (`index()`). A parameter nothing reads is left out (L5), the item too
- * when the index is not read either.
+ * A list as `<KeyedFor each={source} by={(item, index) => key}>{(item) => <li>…</li>}</KeyedFor>`,
+ * an inline helper over `<For>` whose rows follow the source's `key`, as a keyed list's do on
+ * the other targets (`keyed-identity`, ADR-0096). `<For>` follows the items themselves, so an
+ * item replaced by a copy of the same key would get a new row, and lose its focus and typed text.
+ * The row is an object of getters named as the source's item, which the rewrite rules read
+ * (`item.value`, `item.index`): a row stays while its item changes, and reads the latest one. `by`
+ * takes the item and the index as values, as the source's key reads them. A parameter nothing
+ * reads is left out (L5): `by`'s index, and the row where neither its item nor its index is read.
  */
 function list(
   node: ForNode,
   context: JsxContext,
-  imports: ImportSet,
+  keyedFor: () => string,
   { composition, object }: SolidCompose,
 ): AstExpression {
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
-  const parameters = [];
-  if (index && context.referenced.has(index.id)) {
-    parameters.push(js.bindingIdentifier(item.name), js.bindingIdentifier(index.name));
-  } else if (context.referenced.has(item.id)) {
-    parameters.push(js.bindingIdentifier(item.name));
-  }
+  const parameters = (read: (id: BindingId) => boolean) => {
+    if (index && read(index.id)) {
+      return [js.bindingIdentifier(item.name), js.bindingIdentifier(index.name)];
+    }
+    return read(item.id) ? [js.bindingIdentifier(item.name)] : [];
+  };
+  // The row, named as the source's item, which its item and its index are read through.
+  const rowParameters =
+    context.referenced.has(item.id) || (index !== undefined && context.referenced.has(index.id))
+      ? [js.bindingIdentifier(item.name)]
+      : [];
+  // The key reads the row's item and index as the values `by` is called with.
+  const own = new Set([node.item, ...(node.index === undefined ? [] : [node.index])]);
+  const rules = context.rules!;
+  const keyContext: JsxContext = {
+    ...context,
+    rules: {
+      ...rules,
+      binding: (reference, binding, written, site) =>
+        own.has(binding.id) ? written : rules.binding(reference, binding, written, site),
+    },
+  };
+  const keyReads = new Set(
+    node.key.refs.flatMap((ref) => (ref.kind === "Binding" ? [ref.binding] : [])),
+  );
   // The slots each row tests and renders, resolved in the row: one content per row.
   const slots = composition.rowSlots(node.body);
   const row = composition.withinRow(slots, () =>
@@ -649,9 +709,20 @@ function list(
       ]
     : row;
   return js.jsxElement(
-    imports.add("solid-js", "For"),
-    [js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context)))],
-    [js.jsxExpressionContainer(js.arrowFunction(parameters, body))],
+    keyedFor(),
+    [
+      js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context))),
+      js.jsxAttribute(
+        "by",
+        js.jsxExpressionContainer(
+          js.arrowFunction(
+            parameters((id) => keyReads.has(id)),
+            jsxExpression(node.key, keyContext),
+          ),
+        ),
+      ),
+    ],
+    [js.jsxExpressionContainer(js.arrowFunction(rowParameters, body))],
   );
 }
 
@@ -688,11 +759,14 @@ function hasTypedProps(element: ElementNode): boolean {
         return !isUntyped(element.tag, attribute.name);
       case "Spread":
         return attribute.keys.some((key) => !isUntyped(element.tag, key.name));
-      // `class`, `style`, a listener and `ref` are props every element's type declares.
+      // `class`, `style`, a listener, `ref` and `innerHTML` are props every element's type
+      // declares, and a directive is a `ref` (ADR-0099).
       case "Class":
       case "Style":
       case "Event":
       case "Ref":
+      case "RawHtml":
+      case "Directive":
         return true;
       case "Model":
         return false;
@@ -989,6 +1063,191 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
   return properties;
+}`;
+}
+
+/**
+ * The keyed list (`keyed-identity`, ADR-0096): a memo maps each key to its latest item, and
+ * `<For>` renders the keys, which it follows by value, so a row stays while its key does. Each row
+ * reads its item through a memo of the map, which follows a copy of the same key and notifies the
+ * row only when its own item changes. A row receives an object of getters, `row.value` and
+ * `row.index`, as a component receives its props: TypeScript narrows a path through them as the
+ * source's TypeScript narrows the item, where it would narrow no call. `<For>` calls a row
+ * untracked, and so does the helper, as it says to `solid/reactivity`. The keys are unique at run
+ * time (ADR-0035): an item whose key an earlier item took still renders, under a key of its own
+ * that each change of the list makes again, so that row is made again too. A row never reads a key
+ * the map has dropped: Solid disposes of the row first, as `<For>` reruns before the computations
+ * its rows own.
+ */
+function keyedHelperCode(name: string, imports: ImportSet): string {
+  const For = imports.add("solid-js", "For");
+  const createMemo = imports.add("solid-js", "createMemo");
+  const untrack = imports.add("solid-js", "untrack");
+  const JSX = imports.add("solid-js", "JSX", { type: true });
+  return `/** A list whose rows follow their keys, so a row keeps its element while the list reorders and while its item is replaced. */
+function ${name}<T>(props: {
+  each: readonly T[];
+  by: (item: T, index: number) => unknown;
+  children: (row: { readonly value: T; readonly index: number }) => ${JSX}.Element;
+}): ${JSX}.Element {
+  const items = ${createMemo}(() => {
+    const rows = new Map<unknown, T>();
+    props.each.forEach((item, index) => {
+      const key = props.by(item, index);
+      rows.set(rows.has(key) ? {} : key, item);
+    });
+    return rows;
+  });
+  return (
+    <${For} each={[...items().keys()]}>
+      {(key, index) => {
+        const item = ${createMemo}(() => items().get(key) as T);
+        return ${untrack}(() =>
+          props.children({
+            get value() {
+              return item();
+            },
+            get index() {
+              return index();
+            },
+          }),
+        );
+      }}
+    </${For}>
+  );
+}`;
+}
+
+/**
+ * The inline teleport helper (emulated `teleport`, ADR-0098), printed after the component: the
+ * no-wrapper branch of Solid's `<Portal>`, which wraps its content in a `<div>` everywhere but in
+ * `<head>`. Once the component has mounted, so that the server and the hydrating client render
+ * none of it, it inserts the children into the element `to` selects, in a root its owner owns, so
+ * they read its context. On cleanup, a signal empties the insertion before the root is disposed,
+ * since disposing a root removes no node. It renders nothing in place.
+ */
+function teleportHelperCode(name: string, imports: ImportSet): string {
+  const createRoot = imports.add("solid-js", "createRoot");
+  const createSignal = imports.add("solid-js", "createSignal");
+  const getOwner = imports.add("solid-js", "getOwner");
+  const onCleanup = imports.add("solid-js", "onCleanup");
+  const onMount = imports.add("solid-js", "onMount");
+  const insert = imports.add("solid-js/web", "insert");
+  const JSX = imports.add("solid-js", "JSX", { type: true });
+  return `/** Mounts \`children\` into the element \`to\` selects once the component has mounted, and removes them with it. */
+function ${name}(props: { to: string; children: ${JSX}.Element }): ${JSX}.Element {
+  const owner = ${getOwner}();
+  ${onMount}(() => {
+    const target = document.querySelector(props.to);
+    if (!target) return;
+    const [removed, remove] = ${createSignal}(false);
+    ${createRoot}(
+      (dispose) => ${insert}(target, () => (removed() ? dispose() : props.children), null),
+      owner,
+    );
+    ${onCleanup}(() => remove(true));
+  });
+  return null;
+}`;
+}
+
+/**
+ * The inline transition helper (emulated `transition`, ADR-0100), printed after the component:
+ * Solid's own transitions are a package of their own, which no output imports (P7). It resolves
+ * its child, one element or none, and renders the elements it keeps: the shown one, and each one
+ * leaving, which stays until its leave ends, where `insert` keeps a node it already holds. Each
+ * phase adds its `-from` and `-active` classes, swaps `-from` for `-to` two frames later, as Vue
+ * does, and removes them at the end: the element's own `transitionend` or `animationend`, or its
+ * longest duration and delay, whichever comes first. The first element enters only with `appear`
+ * on a client mount, never while it hydrates, and the server renders the child as it is, which it
+ * resolves nowhere else. When its owner goes, it goes with it at once, as on Vue.
+ */
+function transitionHelperCode(name: string, imports: ImportSet): string {
+  const children = imports.add("solid-js", "children");
+  const createComputed = imports.add("solid-js", "createComputed");
+  const createSignal = imports.add("solid-js", "createSignal");
+  const onCleanup = imports.add("solid-js", "onCleanup");
+  const sharedConfig = imports.add("solid-js", "sharedConfig");
+  const untrack = imports.add("solid-js", "untrack");
+  const isServer = imports.add("solid-js/web", "isServer");
+  const JSX = imports.add("solid-js", "JSX", { type: true });
+  return `/** Runs Vue's transition classes of \`name\` on the element \`children\` renders as it enters and leaves. */
+function ${name}(props: { name: string; appear?: boolean; children: ${JSX}.Element }): ${JSX}.Element {
+  // The server renders the child as it is, and resolves it nowhere else, so it renders it once.
+  const resolved = ${children}(() => (${isServer} ? undefined : props.children));
+  const [kept, setKept] = ${createSignal}<Element[]>([]);
+  const stops = new Set<() => void>();
+  ${onCleanup}(() => {
+    for (const stop of stops) stop();
+  });
+  const run = (element: Element, phase: "enter" | "leave", done?: () => void) => {
+    const from = \`\${props.name}-\${phase}-from\`;
+    const active = \`\${props.name}-\${phase}-active\`;
+    const to = \`\${props.name}-\${phase}-to\`;
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      stops.delete(stop);
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+      element.removeEventListener("transitionend", end);
+      element.removeEventListener("animationend", end);
+      element.classList.remove(from, active, to);
+    };
+    const end = (event?: Event) => {
+      if (event && event.target !== element) return;
+      stop();
+      done?.();
+    };
+    stops.add(stop);
+    element.classList.add(from, active);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        element.classList.remove(from);
+        element.classList.add(to);
+        const style = getComputedStyle(element);
+        const longest = (delays: string, durations: string) => {
+          const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);
+          const delay = each(delays);
+          return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));
+        };
+        const time = Math.max(
+          longest(style.transitionDelay, style.transitionDuration),
+          longest(style.animationDelay, style.animationDuration),
+        );
+        if (!time) {
+          end();
+          return;
+        }
+        element.addEventListener("transitionend", end);
+        element.addEventListener("animationend", end);
+        timer = setTimeout(end, time + 1);
+      });
+    });
+  };
+  let current: Element | undefined;
+  let first = true;
+  const hydrating = Boolean(${sharedConfig}.context);
+  ${createComputed}(() => {
+    // The server resolves nothing here, and has no \`Element\`.
+    if (${isServer}) return;
+    const value = resolved();
+    const next = value instanceof Element ? value : undefined;
+    ${untrack}(() => {
+      const initial = first;
+      first = false;
+      if (next === current) return;
+      const previous = current;
+      current = next;
+      const entering = next !== undefined && (initial ? Boolean(props.appear) && !hydrating : true);
+      if (previous) {
+        run(previous, "leave", () => setKept((list) => list.filter((each) => each !== previous)));
+      }
+      setKept((list) => [...list.filter((each) => each !== next), ...(next ? [next] : [])]);
+      if (next && entering) run(next, "enter");
+    });
+  });
+  return <>{${isServer} ? props.children : kept()}</>;
 }`;
 }
 

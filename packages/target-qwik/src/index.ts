@@ -6,9 +6,11 @@ import {
   childImports,
   componentTypes,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
   exportsOf,
   expressionCode,
+  importedDirectives,
   ImportSet,
   js,
   jsxAttributeValue,
@@ -22,8 +24,10 @@ import {
   keyOwner,
   mapCall,
   moduleHelperName,
+  ownDirectives,
   printComponentModule,
   printProgram,
+  refJsxAttribute,
   rewriteExpression,
   scopeRoots,
   sourceNames,
@@ -86,6 +90,7 @@ import {
   withLocals,
   slotProp,
 } from "./composition.ts";
+import { DIRECTIVE_HELPER, emitDirective, hooksCode, QwikDirectives } from "./directive.ts";
 import { qwikEventProp } from "./events.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
@@ -94,16 +99,18 @@ import { moduleReads } from "./modules.ts";
 import { OutputNames, planSetup, selfReadingArguments, usedFunctionRenderCalls } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
+import { teleportHelper, teleportJsx, teleportNames, teleportSetup } from "./teleport.ts";
 import { qwikTitles } from "./title.ts";
+import { qwikTransitions } from "./transition.ts";
 import { isPrimitiveValue } from "./values.ts";
 
 /** The scope helper's name, before the name scope makes it unique. */
 const SCOPE_HELPER = "scopeAttributes";
 
-/** The Qwik 2 target (experimental while Qwik 2 is in beta). */
+/** The Qwik 2 target (experimental until Qwik 2.0.0 ships, ADR-0094). */
 export const qwik: Target = defineTarget({
   name: "qwik",
-  framework: { package: "@qwik.dev/core", range: ">=2.0.0-beta.47 <3" },
+  framework: { package: "@qwik.dev/core", range: ">=2.0.0-rc.5 <3" },
   capabilities: {
     element: { support: "native" },
     text: { support: "native" },
@@ -137,7 +144,7 @@ export const qwik: Target = defineTarget({
       helper: "nextTick",
       note: "Qwik has no public way to wait for a render: `nextTick()` resolves after a macrotask, by which time the render its writes scheduled (in a microtask) has run.",
     },
-    // Qwik 2.0.0-beta.47's props proxy subscribes a reader only to the keys the props hold
+    // Qwik 2.0.0-rc.5's props proxy subscribes a reader only to the keys the props hold
     // (core's `PropsProxyHandler.get`: `if (prop in this.owner.varProps)`), and a key a parent
     // adds later finds no subscriber, so only the component's own render runs again.
     "late-prop": {
@@ -160,6 +167,7 @@ export const qwik: Target = defineTarget({
       note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -227,6 +235,37 @@ export const qwik: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // L12 checks a hydrated page against a client render, and resumption is neither (ADR-0095).
+    hydration: {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "info",
+      reason:
+        "Qwik resumes a server render instead of hydrating it: it runs no render, keeps no state for a component without client code, and runs visible tasks once the loader sees them, so the resumed page can't be checked against a client render.",
+    },
+    "keyed-identity": { support: "native" },
+    // Qwik has no portal (ADR-0098).
+    // A list of elements and a visible task per directive, through an inline helper (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: DIRECTIVE_HELPER,
+      note: "Qwik has no directive, so an element's directive is a `ref` function that adds each element one use renders to a signal of them, and a document-ready visible task that tracks them and the value, and calls an inline helper, `runDirective`, for each (with each element's own value, which its `ref` passes through `collectValues` where it reads a list's row or a scoped fill's props), which runs `mounted` once a `MutationObserver` sees the element in the document, where a slot may put it after Qwik calls the ref, `updated` behind `Object.is`, and `unmounted` once the element leaves or the component unmounts, in Vue's order through an inline queue.",
+    },
+    // Qwik removes a node at once and has no transition primitive (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "transition",
+      note: "A `<Transition>`'s branches lag its conditional: a signal lists the branches it renders, and a document-ready visible task that tracks the branch shown runs the old one's leave, drops it at the leave's end and adds the new one, whose ref, `transition`, runs its enter as Qwik creates it. The signal starts at the condition's value, so the server renders the settled child and resumption changes nothing (ADR-0100).",
+    },
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: 'Qwik has no portal, so a `<Teleport>`\'s element renders once a visible task says the component has mounted, after the empty text of `{""}` in a fragment, and a ref, `teleport`, moves it into `to` once Qwik has inserted it and removes it once that text leaves the document. Qwik inserts a node before the first DOM node of the one after it, which is that text, never the moved element (ADR-0098).',
+    },
+    // Each await is an async `useComputed$` read in the body: reading its `.value` while pending
+    // throws the promise, and Qwik runs the body again once it settles (ADR-0101). A resumed
+    // component runs no setup again, which the `hydration` cell covers.
+    "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;
@@ -307,6 +346,11 @@ export const qwik: Target = defineTarget({
     const plan = planSetup(component, module, names);
     const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
+    // Each directive's list of elements and visible task (ADR-0099).
+    const directives = new QwikDirectives(component, plan, names);
+    for (const { specifier, imported, local } of importedDirectives(component, module)) {
+      imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
     // The dialect reads the namespaces of the tree it prints, which is the render tree with
     // Qwik's form of each `<title>`: they are filled in once that tree is built.
     const namespaces = new Map<ElementNode, Namespace>();
@@ -315,20 +359,35 @@ export const qwik: Target = defineTarget({
     // What the render reads before it returns: `<component is>`'s `const`, the values of the
     // form controls a `v-model` binds (./composition.ts).
     const locals = new RenderLocals(plan);
+    // A teleport mounts once the component has (ADR-0098).
+    const teleport = teleportNames(component, names);
+    // A transition's branches lag its conditional (ADR-0100).
+    const transitions = qwikTransitions(component, plan, names);
     const jsx = jsxContext({
       component,
       module,
-      dialect: qwikDialect(
-        component,
-        module,
-        namespaces,
-        options,
-        followed,
-        listeners,
-        plan,
-        locals,
-        scope,
-      ),
+      dialect: {
+        ...qwikDialect(
+          component,
+          module,
+          namespaces,
+          options,
+          followed,
+          listeners,
+          plan,
+          locals,
+          scope,
+        ),
+        ...(teleport ? { teleport: teleportJsx(teleport) } : {}),
+        ...(transitions ? { transition: transitions.jsx } : {}),
+        directiveAttribute: (attribute, _element, context) =>
+          directives.attribute(attribute, context),
+        // A template ref beside a directive is filled by the directive's own `ref` (ADR-0099).
+        refAttribute: (attribute, element, context) =>
+          directives.fillsTemplateRef(attribute)
+            ? []
+            : refJsxAttribute(attribute, element, context),
+      },
       rules: plan.rules(),
     });
     const render = qwikTitles(component.render, jsx, module);
@@ -359,6 +418,9 @@ export const qwik: Target = defineTarget({
     const body = [
       sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
       setup.body,
+      teleport ? teleportSetup(teleport, names) : "",
+      transitions ? transitions.setup() : "",
+      directives.setup(names),
       exposeStatement(plan),
       locals.statements.join("\n"),
     ]
@@ -407,11 +469,18 @@ export const qwik: Target = defineTarget({
     const constants = reads.constants.length
       ? [jsx.placeholders.statements(`${reads.constants.join("\n")}\n`)]
       : [];
+    // The module's own directives it applies, as their plain hooks (ADR-0099).
+    const ownHooks = ownDirectives(component, module).map((directive) =>
+      jsx.placeholders.statements(`${hooksCode(directive)}\n`),
+    );
     const keys = keyDeclarations(component, module, plan);
     const exported = exportsOf(component.name, module.exports);
     // A component that renders itself refers to its own `const` (ADR-0053).
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
+    if (teleport) helperCode.push(teleportHelper(teleport));
+    if (transitions) helperCode.push(transitions.helpers());
+    helperCode.push(...directives.helpers(names));
     // The sheet's import comes after the other imports, as on the other targets: an `?inline`
     // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
     // (`sheet-order`). Collected last: the types and the helpers import what they name.
@@ -447,6 +516,7 @@ export const qwik: Target = defineTarget({
             ],
             body: [
               ...constants,
+              ...ownHooks,
               ...(keys ? [jsx.placeholders.statements(`${keys}\n`)] : []),
               ...hoisted,
               ...declared,
@@ -460,6 +530,7 @@ export const qwik: Target = defineTarget({
     ];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default qwik;
@@ -1206,6 +1277,22 @@ function qwikDialect(
     },
     eventAttribute: (attribute, element, context) =>
       listeners.attributes(attribute, element, context),
+    // Qwik's raw HTML prop takes the string itself (ADR-0097). Its server renders an empty
+    // string as a `dangerouslysetinnerhtml=""` attribute, where it renders `undefined` as nothing
+    // and its client empties the element for both: markup that may be empty is passed as
+    // `markup || undefined`.
+    rawHtmlAttribute: (attribute, _element, context) => {
+      // A non-empty string literal is never empty.
+      const literal = /^(?:"(?:[^"\\\n]|\\.)+"|'(?:[^'\\\n]|\\.)+')$/.test(attribute.value.code);
+      const value = literal
+        ? jsxExpression(attribute.value, context)
+        : js.logicalExpression(
+            "||",
+            jsxExpression(attribute.value, context, "operand"),
+            js.identifier("undefined"),
+          );
+      return [js.jsxAttribute("dangerouslySetInnerHTML", js.jsxExpressionContainer(value))];
+    },
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),
     staticAttribute(attribute, element, context) {
       // A static `class` beside a spread that carries one merges with it.
@@ -1290,7 +1377,7 @@ function qwikDialect(
 
 /**
  * A `<component is>` with listeners, as one element per candidate tag: `Tag === "a" ? <a …> :
- * <button …>`. Qwik 2.0.0-beta.47's runtime makes a `$` prop an element's listener only where
+ * <button …>`. Qwik 2.0.0-rc.5's runtime makes a `$` prop an element's listener only where
  * the optimizer splits the props, which it does not for `<Tag>`, so `onClick$` on it would be an
  * attribute. Listeners are on tags only: a component candidate's are its props (ADR-0054).
  */
@@ -1367,10 +1454,13 @@ function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | Mo
 }
 
 /**
- * The conditionals and `<component is>` nodes that a sibling follows. Qwik 2.0.0-beta.47's diff
- * inserts a node that replaces another before it, then moves each unkeyed sibling after it back
- * in place (core's `retrieveChildWithKey`), and a focused sibling loses its focus. In a fragment
+ * The conditionals and `<component is>` nodes that a sibling follows. Qwik's 2.0 betas' diff
+ * inserted a node that replaces another before it, then moved each unkeyed sibling after it back
+ * in place (core's `retrieveChildWithKey`), and a focused sibling lost its focus. In a fragment
  * of its own, the replacement happens among the fragment's children, and no sibling moves.
+ * 2.0.0-rc.4 changed that diff ("no longer re-inserts the siblings that stay in place"), and the
+ * corpus passes on rc.5 without the fragment, but no case is known to catch the lost focus, so
+ * the fragment stays (ADR-0094).
  */
 function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNode> {
   const found = new Set<RenderNode>();

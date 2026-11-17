@@ -25,6 +25,8 @@ import type {
   ModelAttribute,
   ModelBindingAttribute,
   PropAttribute,
+  RawHtmlAttribute,
+  DirectiveAttribute,
   RefAttribute,
   RenderNode,
   SlotFill,
@@ -33,6 +35,8 @@ import type {
   SpreadKey,
   StaticAttribute,
   StyleAttribute,
+  TeleportNode,
+  TransitionNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -112,6 +116,27 @@ export interface JsxDialect {
     element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
+  /**
+   * `innerHTML={markup}` (ADR-0097): the element's content is the markup, parsed, not escaped.
+   * By default `innerHTML={markup}`, Solid's spelling: React writes
+   * `dangerouslySetInnerHTML={{ __html: markup }}`, and Qwik `dangerouslySetInnerHTML={markup}`.
+   */
+  rawHtmlAttribute?(
+    attribute: RawHtmlAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * A directive (ADR-0099): its hooks run in the browser once the element is in the DOM, after a
+   * render that changes the value, and once it leaves. Each JSX target composes it with the
+   * element's ref its own way (Solid's `ref={vFocusTrap(() => open())}`, React's helper's ref
+   * callback, Qwik's signal ref).
+   */
+  directiveAttribute?(
+    attribute: DirectiveAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
   /** A template ref: by default `ref={input}`, the binding by its name. */
   refAttribute?(
     attribute: RefAttribute,
@@ -181,6 +206,18 @@ export interface JsxDialect {
    * gives it.
    */
   dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
+  /**
+   * `<Teleport to>` (ADR-0098): its one element, mounted into `to` once the component has
+   * mounted. No default: React portals it, Solid and Qwik move it with inline helpers.
+   * {@link jsxElement} prints the element.
+   */
+  teleport?(node: TeleportNode, context: JsxContext): AST.Expression;
+  /**
+   * `<Transition name appear>` (ADR-0100): its child, one element or one conditional of
+   * elements, with Vue's classes as it enters or leaves. No default: React, Solid and Qwik run
+   * them with inline helpers.
+   */
+  transition?(node: TransitionNode, context: JsxContext): AST.Expression;
   /**
    * What an element, a component's tag or a `<component is>` carries after its scope attributes:
    * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
@@ -306,6 +343,10 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return hook(context, "slotOutlet")(node, context);
     case "Dynamic":
       return hook(context, "dynamic")(node, context);
+    case "Teleport":
+      return hook(context, "teleport")(node, context);
+    case "Transition":
+      return hook(context, "transition")(node, context);
     default:
       return unreachable(node);
   }
@@ -328,7 +369,9 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
       case "If":
       case "For":
       case "SlotOutlet":
-      case "Dynamic": {
+      case "Dynamic":
+      case "Teleport":
+      case "Transition": {
         const expression = jsxNode(node, context);
         return expression.type === "JSXElement" || expression.type === "JSXFragment"
           ? expression
@@ -605,10 +648,17 @@ export function jsxSlotProps(
 }
 
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
-function hook<K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic">(
-  context: JsxContext,
-  name: K,
-): NonNullable<JsxDialect[K]> {
+function hook<
+  K extends
+    | "slotValue"
+    | "slotOutlet"
+    | "modelAttribute"
+    | "modelBinding"
+    | "dynamic"
+    | "teleport"
+    | "transition"
+    | "directiveAttribute",
+>(context: JsxContext, name: K): NonNullable<JsxDialect[K]> {
   const found = context.dialect[name];
   if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
   return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
@@ -652,6 +702,17 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
           : refJsxAttribute(attribute, node, context);
       case "Model":
         return hook(context, "modelAttribute")(attribute, node, context);
+      case "RawHtml":
+        return dialect.rawHtmlAttribute
+          ? dialect.rawHtmlAttribute(attribute, node, context)
+          : [
+              js.jsxAttribute(
+                "innerHTML",
+                js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+              ),
+            ];
+      case "Directive":
+        return hook(context, "directiveAttribute")(attribute, node, context);
       default:
         return unreachable(attribute);
     }

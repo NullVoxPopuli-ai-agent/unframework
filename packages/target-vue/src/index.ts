@@ -1,9 +1,16 @@
-import { defineTarget, printMarkup, vueDialect } from "@unframework.dev/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
+import { childIsAsync, defineTarget, printMarkup, vueDialect } from "@unframework.dev/codegen";
+import type {
+  EmitContext,
+  MarkupPiece,
+  OutputFile,
+  PrintedAttribute,
+  Target,
+} from "@unframework.dev/codegen";
 import type { UfComponent } from "@unframework.dev/ir";
 
 import { emitComposable } from "./composable.ts";
-import { scriptSetup } from "./script.ts";
+import { emitDirective } from "./directive.ts";
+import { asyncRootChild, scriptSetup } from "./script.ts";
 
 /**
  * The Vue 3.5 target, the reference (D10): single-file components. A component is its
@@ -52,6 +59,7 @@ export const vue: Target = defineTarget({
     "class-binding": { support: "native" },
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -80,11 +88,95 @@ export const vue: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
+    // Vue's own `<Teleport>`, behind a ref set once mounted, so the server renders none of it
+    // (ADR-0098).
+    teleport: { support: "native" },
+    // Vue's own `<Transition>` (ADR-0100), whose contract the other targets emulate.
+    transition: { support: "native" },
+    // Vue's own custom directive, whose `updated` returns early on the same value (ADR-0099).
+    directive: { support: "native" },
+    // Top-level `await` in `<script setup>`, under a `<Suspense>` the parent prints (ADR-0101).
+    "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);
+    const { block, rewrite, listeners, components, keys, textCaret, mounted } = scriptSetup(
+      component,
+      context.module,
+    );
+    const root = asyncRootChild(component, context.module);
+    /** Each piece of an async child, inside a `<Suspense>` that takes the piece's directives. */
+    const suspended = (pieces: readonly MarkupPiece[]): MarkupPiece[] =>
+      pieces.map((piece) => {
+        if (
+          piece.kind !== "component" ||
+          !childIsAsync(context.module, piece.component.component)
+        ) {
+          return piece;
+        }
+        const attrs: PrintedAttribute[] =
+          piece.component === root ? [{ name: "v-bind", text: 'v-bind="$attrs"' }] : [];
+        return {
+          kind: "tag",
+          tag: "Suspense",
+          attributes: piece.directives,
+          content: [{ kind: "component", component: piece.component, directives: attrs }],
+        };
+      });
+    const dialect: typeof vueDialect = {
+      ...vueDialect,
+      // A bound `<textarea>` takes the directive that puts its caret after its text (ADR-0095).
+      ...(textCaret === undefined
+        ? {}
+        : {
+            modelAttribute: (model, context) => [
+              ...vueDialect.modelAttribute!(model, context),
+              ...(model.attribute.control === "textarea" ? [directiveAttribute(textCaret)] : []),
+            ],
+          }),
+      // A teleport mounts its content once the component has mounted (ADR-0098).
+      ...(mounted === undefined
+        ? {}
+        : {
+            teleport: ({ node }) => [
+              {
+                kind: "tag",
+                tag: "Teleport",
+                attributes: [
+                  { name: "v-if", text: `v-if="${mounted}"` },
+                  { name: "to", text: vueDialect.attribute("to", node.to, "") },
+                ],
+                content: [{ kind: "nodes", nodes: node.children, container: node }],
+              },
+            ],
+          }),
+      // Vue's own `<Transition>` (ADR-0100). `appear` is bound as an object: the server compiler
+      // wraps the child in `<template>` when it finds `appear` as an attribute or a `:appear`
+      // binding (compiler-ssr's `ssrTransformTransition`), which would leave the server HTML
+      // unsettled, but it reads no object binding.
+      // An async child renders under a `<Suspense>` of its own, which Vue requires (ADR-0101);
+      // as the root, it takes the `$attrs` that `<Suspense>` would drop. A list's row and a
+      // branch put their `v-for`, `:key` and `v-if` on the `<Suspense>`.
+      component: (node) => suspended([{ kind: "component", component: node, directives: [] }]),
+      conditional: (branches) => suspended(vueDialect.conditional(branches)),
+      list: (parts) => suspended(vueDialect.list(parts)),
+      transition: ({ node, container }) => [
+        {
+          kind: "tag",
+          tag: "Transition",
+          attributes: [
+            ...(node.name === "v"
+              ? []
+              : [{ name: "name", text: vueDialect.attribute("name", node.name, "") }]),
+            ...(node.appear ? [{ name: "v-bind", text: 'v-bind="{ appear: true }"' }] : []),
+          ],
+          content: [{ kind: "nodes", nodes: node.children, container }],
+        },
+      ],
+    };
     // The component resolves the names of loop variables.
-    const template = printMarkup(component.render, vueDialect, {
+    const template = printMarkup(component.render, dialect, {
       level: 1,
       component,
       module: context.module,
@@ -108,6 +200,16 @@ export const vue: Target = defineTarget({
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default vue;
+
+/** A local directive's attribute, `v-text-caret` for `vTextCaret`. */
+function directiveAttribute(name: string): { name: string; text: string } {
+  const attribute = `v-${name
+    .slice(1)
+    .replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)
+    .replace(/^-/, "")}`;
+  return { name: attribute, text: attribute };
+}

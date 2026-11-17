@@ -25,6 +25,14 @@ import type {
 
 import { selectorOf } from "./composition.ts";
 import type { Composition } from "./composition.ts";
+import {
+  TELEPORT_ATTRIBUTE,
+  TELEPORT_HOST_INPUT,
+  TRANSITION_APPEAR_INPUT,
+  TRANSITION_ATTRIBUTE,
+  TRANSITION_BRANCH_INPUT,
+  TRANSITION_REGION_ATTRIBUTE,
+} from "./directives.ts";
 import type { Listeners } from "./listeners.ts";
 import type { Models } from "./models.ts";
 import { outputName } from "./outputs.ts";
@@ -78,9 +86,13 @@ export function template(
   models: Models,
   fallthrough: boolean,
   scope?: { roots: ReadonlySet<string>; host: string },
+  teleportHost?: string,
+  transition?: { ref: string },
 ): string {
   const { component } = plan;
-  const pad = INDENT.repeat(LEVEL);
+  // A setup that awaits renders its template, `@let`s included, once it resolves (ADR-0101).
+  const level = plan.resolved === undefined ? LEVEL : LEVEL + 1;
+  const pad = INDENT.repeat(level);
   const lets: string[] = [];
   const declare = (id: BindingId | undefined) => {
     if (id === undefined || !reads.read.has(id)) return;
@@ -97,6 +109,80 @@ export function template(
   }
   const dialect: MarkupDialect = {
     ...angularDialect,
+    // `<ng-template ufTeleport="body">`, whose directive mounts it into `to` (ADR-0098).
+    teleport: ({ node }) => [
+      {
+        kind: "wrapper",
+        tag: "ng-template",
+        attributes: [
+          {
+            name: TELEPORT_ATTRIBUTE,
+            text: angularDialect.attribute(TELEPORT_ATTRIBUTE, node.to, ""),
+          },
+          // The root teleport, by its span: the tree printed is a copy (`models.render`).
+          ...(teleportHost !== undefined &&
+          component.render.kind === "Fragment" &&
+          component.render.children[0]?.span.start === node.span.start
+            ? [
+                {
+                  name: TELEPORT_HOST_INPUT,
+                  text: `[${TELEPORT_HOST_INPUT}]="this.${teleportHost}"`,
+                },
+              ]
+            : []),
+        ],
+        content: { kind: "nodes", nodes: node.children, container: node },
+      },
+    ],
+    // `<ng-container [ufTransitionRegion]="(open) ? 0 : -1">` around the conditional, created
+    // with each `<Transition>`, and on each element `<p [ufTransition]="'fade'"
+    // [ufTransitionBranch]="0" #transition="ufTransition" (animate.leave)="transition.leave($event)">`.
+    // The region tells the directive whether the transition has rendered before, so an element
+    // that a condition around it shows again enters only with `appear`, and which branch is shown
+    // as Angular removes the element. Its binding is outside the conditional, where Angular's
+    // template check narrows no condition (ADR-0100).
+    ...(transition && {
+      transition: ({ node, container, branch }) => {
+        const nodes = { kind: "nodes", nodes: node.children, container } as const;
+        if (node.children[0]?.kind !== "If") return [nodes];
+        return [
+          {
+            kind: "wrapper",
+            tag: "ng-container",
+            attributes: [
+              {
+                name: TRANSITION_REGION_ATTRIBUTE,
+                text: `[${TRANSITION_REGION_ATTRIBUTE}]="${branch}"`,
+              },
+            ],
+            content: nodes,
+          },
+        ];
+      },
+      transitionAttributes: ({ node, branch }) => [
+        // Bound, so the element carries no attribute of the directive's.
+        {
+          name: TRANSITION_ATTRIBUTE,
+          text: `[${TRANSITION_ATTRIBUTE}]="${angularString(node.name)}"`,
+        },
+        ...(node.appear
+          ? [{ name: TRANSITION_APPEAR_INPUT, text: `[${TRANSITION_APPEAR_INPUT}]="true"` }]
+          : []),
+        ...(branch === undefined
+          ? []
+          : [
+              { name: TRANSITION_BRANCH_INPUT, text: `[${TRANSITION_BRANCH_INPUT}]="${branch}"` },
+              {
+                name: `#${transition.ref}`,
+                text: `#${transition.ref}="${TRANSITION_ATTRIBUTE}"`,
+              },
+              {
+                name: "(animate.leave)",
+                text: `(animate.leave)="${transition.ref}.leave($event)"`,
+              },
+            ]),
+      ],
+    }),
     componentTag: (name) => composition.tags.get(name) ?? selectorOf(name),
     // A child's output's listener runs the statement ./listeners.ts plans for it.
     componentEvent: ({ attribute }) => {
@@ -143,7 +229,7 @@ export function template(
   const render = fallthrough ? withFallthrough(models.render) : models.render;
   const markup = printMarkup(render, dialect, {
     indent: INDENT,
-    level: LEVEL,
+    level,
     component,
     module: plan.module,
     rewrite: templateRules(plan, reads.signals),
@@ -159,10 +245,17 @@ export function template(
   });
   // A slot's templates are projected here, so none counts as the default slot's content
   // (ADR-0056); an `<ng-template>` renders nothing where it is projected.
+  const outer = INDENT.repeat(LEVEL);
   const selects = composition.slots.map(
-    ({ attribute }) => `${pad}<ng-content select="[${attribute}]" />`,
+    ({ attribute }) => `${outer}<ng-content select="[${attribute}]" />`,
   );
-  return [...lets, markup, ...selects].join("\n");
+  const content = [...lets, markup].join("\n");
+  return [
+    plan.resolved === undefined
+      ? content
+      : `${outer}@if (${plan.resolved}()) {\n${content}\n${outer}}`,
+    ...selects,
+  ].join("\n");
 }
 
 /**
@@ -290,4 +383,10 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
     }
   }
   return { read, keyed, globals: [...globals].toSorted(), slots, signals };
+}
+
+/** A string literal in a bound attribute's expression: single-quoted, its quotes escaped. */
+function angularString(value: string): string {
+  const quoted = value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  return `'${quoted.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}'`;
 }

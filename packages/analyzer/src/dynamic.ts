@@ -25,6 +25,7 @@ import type { AST } from "@unframework.dev/parser";
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
+import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, span } from "./expressions.ts";
 import { hasContent, lowerChildren } from "./lower.ts";
@@ -110,6 +111,17 @@ export function lowerDynamic(
       {
         help: `Render \`${leaf.info.name}\` by its own tag, which infers its type arguments from its props.`,
       },
+    );
+  }
+  // Vue renders an async candidate only under `<Suspense :timeout="0">`, which a later part
+  // brings (ADR-0101).
+  for (const leaf of leaves) {
+    if (leaf.kind !== "Component" || !leaf.info.api.async) continue;
+    generic = true;
+    reporter.unsupported(
+      leaf.node,
+      `\`${leaf.info.name}\`'s setup awaits, and an async component as a candidate of \`<component is>\` is not supported yet.`,
+      { help: `Render \`${leaf.info.name}\` by its own tag.` },
     );
   }
   if (generic) return undefined;
@@ -325,10 +337,42 @@ function lowerTags(
       { help: "Write the control itself, as `<input v-model={text.value} />`." },
     );
   }
+  // Vue writes a `<component is>` as a component, which `v-html` may not be on, and Angular
+  // writes each tag in an `@case` of its own (ADR-0097).
+  const rawHtml = node.openingElement.attributes.find(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" &&
+      item.name.type === "JSXIdentifier" &&
+      item.name.name.toLowerCase() === "innerhtml",
+  );
+  if (rawHtml) {
+    render.reporter.unsupported(
+      rawHtml.name,
+      "`innerHTML` on `<component is>` is not supported: Vue writes it on a component, whose content is its own.",
+      {
+        help: "Write each tag in a conditional, `nested ? <h3 innerHTML={title} /> : <h2 innerHTML={title} />`.",
+      },
+    );
+  }
+  // Vue writes a `<component is>` as a component, which moves a directive to its root, and
+  // Angular writes each tag in an `@case` of its own (ADR-0099).
+  const directives = node.openingElement.attributes.filter(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" &&
+      item.name.type === "JSXIdentifier" &&
+      isDirectiveAttribute(item.name.name),
+  );
+  for (const directive of directives) {
+    directiveOnNonElement(directive.name as AST.JSXIdentifier, "`<component is>`", render.reporter);
+  }
   const opening = {
     ...node.openingElement,
     attributes: node.openingElement.attributes.filter(
-      (item) => item !== isAttribute && item !== model,
+      (item) =>
+        item !== isAttribute &&
+        item !== model &&
+        item !== rawHtml &&
+        !directives.includes(item as AST.JSXAttribute),
     ),
   };
   const content = hasContent(node.children);

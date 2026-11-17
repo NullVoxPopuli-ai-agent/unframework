@@ -43,6 +43,8 @@ const NODE_CAPABILITIES: Readonly<
   Fragment: "fragment",
   Component: "component",
   Dynamic: "dynamic-component",
+  Teleport: "teleport",
+  Transition: "transition",
 };
 const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>> = {
   Static: "static-attribute",
@@ -55,6 +57,8 @@ const ATTRIBUTE_CAPABILITIES: Readonly<Record<Attribute["kind"], CapabilityName>
   Event: "interactivity",
   Ref: "interactivity",
   Model: "two-way-binding",
+  RawHtml: "raw-html",
+  Directive: "directive",
 };
 /**
  * What each kind of a component's attribute needs (ADR-0055): a prop only the component, a
@@ -79,6 +83,7 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
   "ModelBinding",
   "Listener",
   "Ref",
+  "Directive",
 ]);
 /**
  * What each kind of setup item needs (ADR-0047): watchers, effects and hooks run only in the
@@ -87,6 +92,7 @@ const INTERACTIVE_ATTRIBUTES: ReadonlySet<(Attribute | ComponentAttribute)["kind
  * effect or a hook.
  */
 const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly CapabilityName[]>> = {
+  Await: ["async-setup"],
   State: [],
   Derived: [],
   TemplateRef: [],
@@ -440,6 +446,8 @@ function componentAttribute(
     case "Static":
     case "Bound":
     case "Spread":
+    case "RawHtml":
+    case "Directive":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
     case "Event":
@@ -515,6 +523,7 @@ function trackedCode(item: SetupItem): Code[] {
       return [item.effect.body];
     // A composable's getter argument is the composable's to track (ADR-0069): its lane decides.
     case "Use":
+    case "Await":
     case "State":
     case "Variable":
     case "Const":
@@ -555,6 +564,7 @@ function itemCode(item: SetupItem): Code[] {
     case "State":
     case "Variable":
       return item.initial ? [item.initial] : [];
+    case "Await":
     case "Const":
       return [item.value];
     case "Derived":

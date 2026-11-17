@@ -9,11 +9,21 @@
 // clears a template ref on the same element. The callback is declared once for the instance's
 // life (`useState`), so React never adds the listeners again as it renders: a listener added
 // again while an event is dispatched would miss it. Only one whose listener reads a list's row,
-// or a value its branch narrows, is written in place.
-import { handlerText, js, parameterText, parseStatementsSource } from "@unframework.dev/codegen";
+// or a value its branch narrows, is written in place, and so is one beside a directive whose value
+// reads the row or a scoped fill's props: that directive's callback is made as the row renders,
+// `withTrace(item.label)`, and joins the element's others through the inline `mergeRefs`
+// (ADR-0108).
+import {
+  expressionCode,
+  handlerText,
+  js,
+  parameterText,
+  parseStatementsSource,
+} from "@unframework.dev/codegen";
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
+  DirectiveAttribute,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -43,6 +53,8 @@ interface ElementListeners {
   callback?: string;
   /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
   caret?: boolean;
+  /** The directives it applies, in attribute order (ADR-0099), each by its ref callback. */
+  directives: { attribute: DirectiveAttribute; ref: string }[];
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -96,7 +108,7 @@ export class ReactListeners {
     const listened = element.attributes.find((attribute) => attribute.kind === "Event");
     const planned = listened && this.#plan.listeners.get(listened)!.element;
     const native = planned && this.#plan.nativeElements.get(planned);
-    found = { props: new Map(), native: native?.groups ?? [] };
+    found = { props: new Map(), native: native?.groups ?? [], directives: [] };
     if (native?.callback) found.callback = native.callback;
     for (const attribute of element.attributes) {
       if (attribute.kind === "Ref") {
@@ -122,8 +134,38 @@ export class ReactListeners {
       const { callback } = this.#plan.carets.get(model)!;
       if (callback) found.callback ??= callback;
     }
+    // Each directive's ref callback, which the element's own callback calls where it has one.
+    for (const attribute of element.attributes) {
+      if (attribute.kind !== "Directive") continue;
+      found.directives.push({ attribute, ref: this.#plan.directiveRefs.get(attribute)! });
+      found.refAt ??= attribute;
+    }
     this.#elements.set(element, found);
     return found;
+  }
+
+  /**
+   * A directive's attribute (ADR-0099): `ref={focusTrapRef}`, the ref callback its call returns,
+   * or the element's own callback, which calls each directive's, where it has one.
+   */
+  directive(
+    attribute: DirectiveAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): JsxAttributeItem[] {
+    const listeners = this.#of(element);
+    if (listeners.refAt !== attribute) return [];
+    const [only, ...others] = listeners.directives;
+    if (
+      !listeners.native.length &&
+      !listeners.caret &&
+      !listeners.ref &&
+      !others.length &&
+      !this.#plan.elementDirectives.has(only!.attribute)
+    ) {
+      return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(only!.ref)))];
+    }
+    return [this.#refAttribute(listeners, context)];
   }
 
   /**
@@ -178,7 +220,7 @@ export class ReactListeners {
   ref(attribute: RefAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) return [];
-    if (listeners.native.length === 0 && !listeners.caret) {
+    if (listeners.native.length === 0 && !listeners.caret && !listeners.directives.length) {
       const { name } = this.#plan.bindings.get(attribute.binding)!;
       const own = this.#plan.refInterfaces.get(attribute);
       if (own === templateRefType(this.#plan, attribute.binding)) {
@@ -208,10 +250,39 @@ export class ReactListeners {
 
   /** The `ref` of an element with native listeners: its declared callback, or one in place. */
   #refAttribute(listeners: ElementListeners, context: JsxContext): JsxAttributeItem {
+    if (listeners.directives.some(({ attribute }) => this.#plan.elementDirectives.has(attribute))) {
+      return js.jsxAttribute(
+        "ref",
+        js.jsxExpressionContainer(
+          context.placeholders.expression(this.#joined(listeners, context)),
+        ),
+      );
+    }
     const value = listeners.callback
       ? js.identifier(listeners.callback)
       : context.placeholders.expression(this.#callback(listeners));
     return js.jsxAttribute("ref", js.jsxExpressionContainer(value));
+  }
+
+  /**
+   * The `ref` of an element one of whose directives reads the row or a scoped fill's props
+   * (ADR-0108): that directive's callback, made as the row renders with the value, where the
+   * branches around the element still narrow it, `withTrace(item.label)`. The element's other
+   * directives' callbacks, and the callback written in place for its native listeners and its
+   * template ref, join it through `mergeRefs`, in attribute order.
+   */
+  #joined(listeners: ElementListeners, context: JsxContext): string {
+    const parts = listeners.directives.map(({ attribute, ref }) =>
+      this.#plan.elementDirectives.has(attribute)
+        ? `${ref}(${expressionCode(attribute.value, context)})`
+        : ref,
+    );
+    if (listeners.native.length || listeners.ref) {
+      parts.push(this.#callback({ ...listeners, directives: [] }));
+    }
+    if (parts.length === 1) return parts[0]!;
+    const merge = (this.#plan.helpers.mergeRefs ??= this.#plan.names.claim("mergeRefs"));
+    return `${merge}(${parts.join(", ")})`;
   }
 
   /**
@@ -336,7 +407,7 @@ export class ReactListeners {
     const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
     const local = locals(
       [...handlers, listen, ref ?? ""],
-      ["element", "stop", "cleanups", "cleanup", "text"],
+      ["element", "stop", "cleanups", "cleanup", "text", "detaches", "detach"],
     );
     const calls = listeners.native.map(([first], index) => {
       const options = first!.capture
@@ -347,7 +418,9 @@ export class ReactListeners {
       return `${listen}(${local.element}, "${first!.event}", ${handlers[index]!}${options})`;
     });
     const parameter = type ? `(${local.element}: ${type})` : `(${local.element})`;
-    if (!ref && !listeners.caret && calls.length === 1) return `${parameter} => ${calls[0]!}`;
+    if (!ref && !listeners.caret && !listeners.directives.length && calls.length === 1) {
+      return `${parameter} => ${calls[0]!}`;
+    }
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
     if (listeners.caret) {
       // Set as Vue's `vModelText` sets it, on a field that holds no text: the caret ends after the
@@ -357,7 +430,25 @@ export class ReactListeners {
         `if (${element}) {\nconst ${text} = ${element}.value;\n${element}.value = "";\n${element}.value = ${text};\n}`,
       );
     }
-    const stops = [ref ? `${ref}.current = null;` : undefined];
+    // Each directive's callback records the element, and forgets that element once the
+    // element's own callback is cleaned up, through the cleanup it returns (ADR-0099).
+    const [onlyDirective, ...otherDirectives] = listeners.directives;
+    if (onlyDirective !== undefined && !otherDirectives.length) {
+      lines.push(`const ${local.detach} = ${onlyDirective.ref}(${local.element});`);
+    } else if (onlyDirective !== undefined) {
+      const calls = listeners.directives.map(
+        ({ ref: directive }) => `${directive}(${local.element})`,
+      );
+      lines.push(`const ${local.detaches} = [${calls.join(", ")}];`);
+    }
+    const stops = [
+      ref ? `${ref}.current = null;` : undefined,
+      onlyDirective === undefined
+        ? undefined
+        : otherDirectives.length
+          ? `for (const ${local.detach} of ${local.detaches}) ${local.detach}();`
+          : `${local.detach}();`,
+    ];
     if (calls.length === 1) {
       lines.push(`const ${local.stop} = ${calls[0]!};`);
       stops.push(`${local.stop}();`);

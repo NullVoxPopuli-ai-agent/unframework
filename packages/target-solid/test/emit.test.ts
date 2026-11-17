@@ -41,6 +41,7 @@ const SCOPE_ATTRIBUTES = [
 describe("solid target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "async-setup",
       "attribute-spread",
       "bound-attribute",
       "child-root-scope",
@@ -55,6 +56,7 @@ describe("solid target", () => {
       "contextual-root",
       "default-slot",
       "default-slot-presence",
+      "directive",
       "dynamic-component",
       "element",
       "event-capture",
@@ -66,8 +68,10 @@ describe("solid target", () => {
       "fragment",
       "generic-components",
       "generic-slot-props",
+      "hydration",
       "interactivity",
       "interpolation",
+      "keyed-identity",
       "late-prop",
       "list",
       "listbox",
@@ -77,6 +81,7 @@ describe("solid target", () => {
       "named-slot",
       "next-tick",
       "props",
+      "raw-html",
       "reactive-context",
       "scoped-slot",
       "scoped-styles",
@@ -87,13 +92,15 @@ describe("solid target", () => {
       "static-attribute",
       "style-binding",
       "svg",
+      "teleport",
       "text",
+      "transition",
       "two-way-binding",
       "use-id",
     ]);
   });
 
-  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, declares a composable's effect order, the rest natively", () => {
+  it("emulates watchers, nextTick, class and style bindings, the child-root rule, keyed lists, directives, transitions and teleports with the helpers it prints, declares a composable's effect order, the rest natively", () => {
     // Only a composable's effect order is unsupported: the watchers' scheduler coalesces every
     // shape of a synchronous run of client code in one module (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -110,6 +117,14 @@ describe("solid target", () => {
       ["child-root-scope", expect.objectContaining({ helper: "scopeAttributes" })],
       // A composable's watchers keep its own module's queue (ADR-0069).
       ["composable-effect-order", expect.objectContaining({ code: "UF4005", severity: "info" })],
+      // `<For>` follows the items themselves (ADR-0096).
+      ["keyed-identity", expect.objectContaining({ helper: "KeyedFor" })],
+      // A ref factory, whose hooks run through a queue in Vue's order (ADR-0099).
+      ["directive", expect.objectContaining({ helper: "queueHook" })],
+      // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+      // A transition runs through an inline component (ADR-0100).
+      ["transition", expect.objectContaining({ helper: "Transition" })],
+      ["teleport", expect.objectContaining({ helper: "Teleport" })],
     ]);
   });
 
@@ -450,10 +465,10 @@ describe("solid props", () => {
         "interface For {\n  id: string;\n}\n\n",
       ),
     );
-    expect(output).toContain('import { For as For_1, type JSX, Show } from "solid-js";');
-    expect(component(output)).toContain(
-      "<Show when={props.on}>\n        <For_1 each={props.items}>{(item) => <li>{item.id}</li>}</For_1>",
+    expect(output).toContain(
+      'import { For as For_1, type JSX, Show, createMemo, untrack } from "solid-js";',
     );
+    expect(output).toContain("<For_1 each={[...items().keys()]}>");
   });
 });
 
@@ -520,13 +535,16 @@ describe("solid control flow", () => {
       probe(
         "items: string[];\n  on: boolean;",
         "{ items, on }",
-        '<ul>{items.map((item) => <li key={item}>{on ? item : "-"}{on ? undefined : item}</li>)}</ul>',
+        '<ul>{items.map((item) => <li key={item}>{on ? greeting : "-"}{on ? undefined : greeting}{on ? item : "-"}</li>)}</ul>',
+        'const greeting = "Hello";\n\n',
       ),
     );
     expect(component(output)).toContain(
-      '<Show when={props.on} fallback={"-"}>\n              {item}\n            </Show>',
+      '<Show when={props.on} fallback={"-"}>\n              {greeting}\n            </Show>',
     );
-    expect(component(output)).toContain("<Show when={!props.on}>{item}</Show>");
+    expect(component(output)).toContain("<Show when={!props.on}>{greeting}</Show>");
+    // A list's item reads through its row, `item.value`, which the rule leaves alone (ADR-0096).
+    expect(component(output)).toContain('{props.on ? item.value : "-"}');
   });
 
   it("keeps an interpolated conditional of values as it is", async () => {
@@ -538,7 +556,7 @@ describe("solid control flow", () => {
     );
   });
 
-  it("lists with <For>, without the key, calling the index accessor", async () => {
+  it("lists through the keyed helper, keyed by the source's key, reading the item and the index through the row", async () => {
     const output = await emitSource(
       probe(
         "steps: string[];",
@@ -546,14 +564,14 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index} data-step={index + 1}>{step}</li>)}</ol>",
       ),
     );
-    expect(output).toContain('import { For, type JSX } from "solid-js";');
+    expect(output).toContain('import { For, type JSX, createMemo, untrack } from "solid-js";');
     expect(component(output)).toContain(
-      "<For each={props.steps}>{(step, index) => <li data-step={index() + 1}>{step}</li>}</For>",
+      "<KeyedFor each={props.steps} by={(step, index) => index}>\n        {(step) => <li data-step={step.index + 1}>{step.value}</li>}\n      </KeyedFor>",
     );
     expect(output).not.toContain("key=");
   });
 
-  it("leaves out an index read only by the key, and an item read by nothing", async () => {
+  it("leaves out of each callback a parameter it does not read: the index the key alone reads, and an item nothing reads", async () => {
     const keyed = await emitSource(
       probe(
         "steps: string[];",
@@ -561,7 +579,9 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index}>{step}</li>)}</ol>",
       ),
     );
-    expect(keyed).toContain("{(step) => <li>{step}</li>}");
+    expect(keyed).toContain(
+      "by={(step, index) => index}>\n        {(step) => <li>{step.value}</li>}",
+    );
     const unread = await emitSource(
       probe(
         "steps: string[];",
@@ -569,7 +589,7 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index}>Step</li>)}</ol>",
       ),
     );
-    expect(unread).toContain("{() => <li>Step</li>}");
+    expect(unread).toContain("by={(step, index) => index}>\n        {() => <li>Step</li>}");
   });
 
   it("returns a fragment of several roots", async () => {
@@ -636,7 +656,9 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         "        when={props.tags.length === 0}",
         "        fallback={",
         "          <ul>",
-        "            <For each={props.tags}>{(tag) => <li>{tag}</li>}</For>",
+        "            <KeyedFor each={props.tags} by={(tag) => tag}>",
+        "              {(tag) => <li>{tag.value}</li>}",
+        "            </KeyedFor>",
         "          </ul>",
         "        }",
         "      >",
@@ -787,7 +809,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       "{(narrowed) => <i>{narrowed().age.toFixed()}</i>}",
       // A list's variable taken whole keeps its own name where no client code reads it: every
       // render read of it is the accessor's.
-      "<Show when={row}>{(row) => <>{row().name}</>}</Show>",
+      "<Show when={row.value}>{(row_1) => <>{row_1().name}</>}</Show>",
     ]) {
       expect(component(output), form).toContain(form);
     }
@@ -834,13 +856,13 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         "      <Show when={props.user}>",
         "        {(user) => (",
         "          <ul>",
-        "            <For each={props.items}>",
+        "            <KeyedFor each={props.items} by={(i) => i}>",
         "              {(i) => (",
         "                <li>",
-        "                  {user().name}: {i}",
+        "                  {user().name}: {i.value}",
         "                </li>",
         "              )}",
-        "            </For>",
+        "            </KeyedFor>",
         "          </ul>",
         "        )}",
         "      </Show>",
@@ -881,7 +903,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     for (const form of [
       "<Show when={props.limit || undefined}>",
       "<Show when={props.limit || undefined} fallback={<i>none</i>}>",
-      "<Show when={row || undefined}>",
+      "<Show when={row.value || undefined}>",
       "<Show when={props.user || undefined}>",
     ]) {
       expect(component(output), form).toContain(form);
@@ -958,7 +980,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         '<div><ul>{items.map((a) => <li key={a}>{a === "x" && user && user.a && <i title={a}>{String(user.a.n)}</i>}</li>)}</ul>{attrs.class && <b class={attrs.class}>x</b>}</div>',
       ),
     );
-    expect(component(list)).toContain("? { a, a_1: props.user.a } : undefined");
+    expect(component(list)).toContain("? { a: a.value, a_1: props.user.a }");
     expect(component(list)).toContain(
       "{(narrowed) => <i title={narrowed().a}>{String(narrowed().a_1.n)}</i>}",
     );
@@ -1336,5 +1358,169 @@ describe("solid attributes", () => {
     expect(start).toBeGreaterThan(output.indexOf("function shout(text: string): string {"));
     expect(output.indexOf("function label(item: T): string {")).toBeGreaterThan(start);
     expect(output.indexOf("const none: T[] = [];")).toBeGreaterThan(start);
+  });
+});
+
+describe("solid async setup (ADR-0101)", () => {
+  it("runs the awaits in one resource, and the rest of the setup and the template in a <Show> callback inside <Suspense>", async () => {
+    const output = await emitSource(
+      [
+        'import { ref } from "@uxfront/unframework";',
+        "",
+        "const loadUser = async (id: string) => ({ name: id, visits: id.length });",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const user = await loadUser(id);",
+        "  const visits = ref(user.visits);",
+        "  return <button onClick={() => visits.value++}>{user.name} {visits.value}</button>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(component(output)).toBe(
+      [
+        "export default function Probe(",
+        "  props: { id: string } & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
+        "  const [awaited] = createResource(async () => {",
+        "    const user = await loadUser(props.id);",
+        "    return { user };",
+        "  });",
+        "",
+        "  return (",
+        "    <Suspense>",
+        "      <Show when={awaited()}>",
+        "        {(resolved) => {",
+        "          const { user } = resolved();",
+        "          const [visits, setVisits] = createSignal(user.visits);",
+        "",
+        "          return (",
+        "            <button",
+        "              onClick={() => setVisits(visits() + 1)}",
+        "              class={props.class}",
+        "              style={props.style}",
+        "              {...scopeAttributes(props)}",
+        "            >",
+        "              {user.name} {visits()}",
+        "            </button>",
+        "          );",
+        "        }}",
+        "      </Show>",
+        "    </Suspense>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain(
+      'import { type JSX, Show, Suspense, createResource, createSignal } from "solid-js";',
+    );
+  });
+
+  it("chains typed awaits in the fetcher, creates ids above it, and keeps hooks, expose and constants that read an awaited value in the callback", async () => {
+    const output = await emitSource(
+      [
+        'import { computed, defineExpose, onMounted, ref, useId } from "@uxfront/unframework";',
+        "",
+        "interface User {",
+        "  name: string;",
+        "  teamId: string;",
+        "}",
+        "",
+        'const loadUser = async (id: string): Promise<User> => ({ name: id, teamId: "t" });',
+        "const loadTeam = async (id: string) => ({ name: id });",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const user: User = await loadUser(id);",
+        "  const team = await loadTeam(user.teamId);",
+        "  const label = useId();",
+        "  const greeting = `Hello, ${user.name}`;",
+        '  const unit = "visits";',
+        "  const count = ref(0);",
+        "  const summary = computed(() => `${user.name} is in ${team.name}`);",
+        "",
+        "  onMounted(() => {",
+        "    count.value = 1;",
+        "  });",
+        "",
+        "  function reset() {",
+        "    count.value = 0;",
+        "  }",
+        "",
+        "  defineExpose({ reset });",
+        "",
+        "  return (",
+        "    <p id={label}>",
+        "      {greeting} {summary.value} {count.value} {unit}",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const body = component(output);
+    expect(body).toContain(
+      [
+        "  const label = `uf-id-${createUniqueId()}`;",
+        "  const [awaited] = createResource(async () => {",
+        "    const user: User = await loadUser(props.id);",
+        "    const team = await loadTeam(user.teamId);",
+        "    return { user, team };",
+        "  });",
+        "",
+        "  return (",
+        "    <Suspense>",
+        "      <Show when={awaited()}>",
+        "        {(resolved) => {",
+        "          const { user, team } = resolved();",
+        "          const greeting = `Hello, ${user.name}`;",
+        "          const [count, setCount] = createSignal(0);",
+        "          const summary = createMemo(() => `${user.name} is in ${team.name}`);",
+        "",
+        "          onMount(() => {",
+        "            setCount(1);",
+        "          });",
+        "",
+        "          function reset() {",
+        "            setCount(0);",
+        "          }",
+        "",
+        "          untrack(() => props.ref?.({ reset }));",
+        "",
+        "          return (",
+      ].join("\n"),
+    );
+    // A constant that captures nothing stays at module scope (ADR-0045).
+    expect(output).toContain('const unit = "visits";');
+    expect(body).not.toContain("unit =");
+  });
+
+  it("names the resource and the callback's parameter past the source's own names", async () => {
+    const output = await emitSource(
+      [
+        "const load = async (id: string) => id;",
+        "",
+        "export default async function Probe({ id }: { id: string }) {",
+        "  const awaited = await load(id);",
+        "  const resolved = await load(awaited);",
+        "  return <p>{resolved}</p>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(output).toContain("const [awaited_1] = createResource(async () => {");
+    expect(output).toContain("    return { awaited, resolved };");
+    expect(output).toContain("<Show when={awaited_1()}>");
+    expect(output).toContain("{(resolved_1) => {");
+    expect(output).toContain("const { awaited, resolved } = resolved_1();");
+  });
+
+  it("lowers an async component with no await as a plain one", async () => {
+    const output = await emitSource(
+      "export default async function Probe({ id }: { id: string }) {\n  return <p>{id}</p>;\n}\n",
+    );
+    expect(output).not.toContain("createResource");
+    expect(output).not.toContain("Suspense");
+    expect(component(output)).toContain("  return (\n    <p");
   });
 });

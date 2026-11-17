@@ -77,8 +77,13 @@ function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[
         return child.branches.some((branch) => hasSelectableOption(parent, branch.children));
       case "For":
         return hasSelectableOption(parent, [child.body]);
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
+        return hasSelectableOption(parent, child.children);
       case "Text":
       case "Interpolation":
+      // A teleport's content mounts into another element, never into the list box (ADR-0098).
+      case "Teleport":
         return false;
       // What a component or a slot renders is the run time's: taken to be an option.
       case "Component":

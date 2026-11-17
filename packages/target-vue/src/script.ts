@@ -10,6 +10,7 @@ import {
   addTypeImports,
   bindingOf,
   childImports,
+  childIsAsync,
   keyImports,
   keyOwner,
   componentTypes,
@@ -17,6 +18,7 @@ import {
   ImportSet,
   isPrimitiveState,
   js,
+  ownDirectives,
   printProgram,
   referencedBindings,
   rewriteCode,
@@ -28,6 +30,7 @@ import type {
   Binding,
   BindingId,
   Code,
+  ComponentNode,
   FunctionCode,
   Prop,
   PropsParameter,
@@ -49,6 +52,7 @@ import {
   moduleBindings,
 } from "./composable.ts";
 import type { ModuleReads } from "./composable.ts";
+import { addDirectiveImports, directiveCode } from "./directive.ts";
 import { planListeners } from "./listeners.ts";
 import type { Listeners } from "./listeners.ts";
 import { moduleReach, unreachable, VUE_RESERVED, VueNames } from "./names.ts";
@@ -68,6 +72,17 @@ export interface ScriptSetup {
    * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
    */
   keys?: string;
+  /**
+   * The local directive that puts a bound `<textarea>`'s caret after its text (`vTextCaret`),
+   * when the template binds one: the template writes it beside the field's `v-model`.
+   */
+  textCaret?: string;
+  /**
+   * The ref that turns true once the component has mounted, when its template holds a
+   * `<Teleport>` (ADR-0098): each teleport is `v-if` on it, so neither the server nor the
+   * hydrating client renders its content.
+   */
+  mounted?: string;
 }
 
 /**
@@ -154,6 +169,8 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // Each composable it calls, from the composable's own output, `./useToggle` beside
   // `useToggle.uf.ts` (ADR-0069).
   addComposableImports(component, module, imports);
+  // Each directive it applies from a `.uf.ts` module, from the directive's own output (ADR-0099).
+  addDirectiveImports(component, module, imports);
   // What it reads of its module: values from its `.ts` modules, and its constants (ADR-0070).
   const reads = moduleBindings(component, module, imports, names);
   const constants = reads.constants;
@@ -211,30 +228,68 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   const options = [
     ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
-    ...(component.inheritAttrs === false ? ["inheritAttrs: false"] : []),
+    // A teleport root takes no attribute, which Vue would warn about (ADR-0098).
+    ...(component.inheritAttrs === false ||
+    teleportRoot(component) ||
+    asyncRootChild(component, module)
+      ? ["inheritAttrs: false"]
+      : []),
   ];
   if (options.length) {
     statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
   }
+  const exposed = component.exposes?.functions.map((id) => {
+    const binding = bindingOf(component, id);
+    const local = names.local(binding);
+    return local === binding.name ? local : `${binding.name}: ${local}`;
+  });
+  const expose = exposed && `defineExpose({ ${exposed.join(", ")} });`;
+  // An async setup exposes before its first await, or the parent's ref keeps the bare proxy
+  // (ADR-0101): the functions it names are then declarations, which hoist.
+  const awaits = component.setup.some((item) => item.kind === "Await");
+  if (expose && awaits) statements.push({ code: expose, layout: "block" });
+  const hoisted = new Set(awaits ? component.exposes?.functions : []);
   for (const item of component.setup) {
-    const code = itemCode(item, component, module, names, imports, script);
+    const code =
+      item.kind === "Function" && hoisted.has(item.binding)
+        ? functionText(item.function, component, script, "client", {
+            name: names.local(bindingOf(component, item.binding)),
+          })
+        : itemCode(item, component, module, names, imports, script);
     statements.push({ code: names.ownQueries(code), layout: itemLayout(item, code) });
   }
   for (const code of listeners.functions) {
     statements.push({ code: names.ownQueries(code), layout: "block" });
   }
   // Last, once every function it names is declared (ADR-0054).
-  if (component.exposes) {
-    const exposed = component.exposes.functions.map((id) => {
-      const binding = bindingOf(component, id);
-      const local = names.local(binding);
-      return local === binding.name ? local : `${binding.name}: ${local}`;
+  if (expose && !awaits) statements.push({ code: expose, layout: "block" });
+  // A bound `<textarea>` holds its text as the server wrote it once hydrated, with the caret
+  // before it, where a client render's `vModelText` sets the text of an empty field and leaves the
+  // caret after it: a local directive sets the text again, as ADR-0060 has React do (ADR-0095).
+  const textCaret = bindsTextarea(component) ? names.scope.claim("vTextCaret") : undefined;
+  if (textCaret !== undefined) {
+    statements.push({ code: textCaretDirective(textCaret), layout: "block" });
+  }
+  // A plain `<Teleport>` renders its content on the server, into a buffer no server render here
+  // reads, and Vue then mismatches as it hydrates (`runtime-core`'s `hydrateTeleport`): each
+  // teleport waits for a ref the component sets once mounted (ADR-0098).
+  const mounted = holdsTeleport(component) ? names.scope.claim("mounted") : undefined;
+  if (mounted !== undefined) {
+    const ref = imports.add("vue", "ref");
+    const onMounted = imports.add("vue", "onMounted");
+    statements.push({ code: `const ${mounted} = ${ref}(false);`, layout: "line" });
+    statements.push({
+      code: `${onMounted}(() => {\n  ${mounted}.value = true;\n});`,
+      layout: "block",
     });
-    statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
   }
   // The module's type exports, which consumers import by name (ADR-0068), exported from
   // `<script setup>` as its own exported types are.
   const types = keys ? [] : moduleTypes(component, module, reads, names);
+  // The module's own directives it applies, which `<script setup>` resolves by name (ADR-0099).
+  const own = ownDirectives(component, module);
+  const directiveType = own.length ? imports.add("vue", "ObjectDirective", { type: true }) : "";
+  const directives = own.map((directive) => directiveCode(directive, directiveType));
   if (
     statements.length === 0 &&
     imports.size === 0 &&
@@ -248,6 +303,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     ...(head ? [head] : []),
     ...types,
     ...(constants.length ? [constants.join("\n")] : []),
+    ...directives,
     ...(statements.length ? [laidOut(statements)] : []),
   ].join("\n\n");
   return {
@@ -256,7 +312,76 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     listeners,
     components,
     ...(keys ? { keys } : {}),
+    ...(textCaret === undefined ? {} : { textCaret }),
+    ...(mounted === undefined ? {} : { mounted }),
   };
+}
+
+/** Whether the component's whole render is a `<Teleport>` (ADR-0098). */
+function teleportRoot(component: UfComponent): boolean {
+  const { render } = component;
+  return (
+    render.kind === "Fragment" &&
+    render.children.length === 1 &&
+    render.children[0]!.kind === "Teleport"
+  );
+}
+
+/**
+ * The async child that is the component's whole render (ADR-0101): `<Suspense>` around it drops
+ * fallthrough, so the component turns `inheritAttrs` off and binds `$attrs` on the child.
+ */
+export function asyncRootChild(
+  component: UfComponent,
+  module: UfModule,
+): ComponentNode | undefined {
+  const { render } = component;
+  if (component.inheritAttrs === false || render.kind !== "Fragment") return undefined;
+  const [child] = render.children;
+  return render.children.length === 1 &&
+    child?.kind === "Component" &&
+    childIsAsync(module, child.component)
+    ? child
+    : undefined;
+}
+
+/** Whether the template holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") found = true;
+    },
+  });
+  return found;
+}
+
+/** Whether the template binds a `<textarea>` with `v-model`. */
+function bindsTextarea(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element" || node.tag !== "textarea") return;
+      if (node.attributes.some((attribute) => attribute.kind === "Model")) found = true;
+    },
+  });
+  return found;
+}
+
+/**
+ * The directive that puts a field's caret after its text once it is mounted: it empties the
+ * field and sets its text again, which fires no event (`setSelectionRange` would fire `select`).
+ */
+function textCaretDirective(name: string): string {
+  return [
+    `const ${name} = {`,
+    "  mounted(element: HTMLTextAreaElement) {",
+    "    const text = element.value;",
+    '    element.value = "";',
+    "    element.value = text;",
+    "  },",
+    "};",
+  ].join("\n");
 }
 
 /** The authoring types of a ref a key may hold, which are Vue's own (ADR-0054). */
@@ -538,6 +663,7 @@ export function itemLayout(item: SetupItem, code: string): Statement["layout"] {
 /** Whether a setup item declares a binding, rather than registering an effect or a hook. */
 function declares(item: SetupItem): boolean {
   switch (item.kind) {
+    case "Await":
     case "State":
     case "Derived":
     case "TemplateRef":
@@ -607,6 +733,9 @@ export function itemCode(
     }
     case "Const":
       return `const ${local(item.binding)}${annotation(item.type)} = ${code(item.value, "pure")};`;
+    // Top-level `await` in `<script setup>` (ADR-0101): Vue restores the instance after it.
+    case "Await":
+      return `const ${local(item.binding)}${annotation(item.type)} = await ${code(item.value, "pure")};`;
     case "Variable": {
       const initial = item.initial ? ` = ${code(item.initial, "pure")}` : "";
       return `let ${local(item.binding)}${annotation(item.type)}${initial};`;

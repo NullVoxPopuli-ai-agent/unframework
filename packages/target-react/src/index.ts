@@ -3,9 +3,14 @@ import {
   bindingOf,
   componentTypes,
   defineTarget,
+  assertedValue,
+  directiveSpecifier,
   exportDeclaration,
+  hookQueueCode,
   exportsOf,
   expressionCode,
+  importedDirectives,
+  ownDirectives,
   js,
   jsxContext,
   jsxNode,
@@ -19,6 +24,8 @@ import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.d
 import type {
   Attribute,
   ClassAttribute,
+  Code,
+  DirectiveAttribute,
   ComponentAttribute,
   ComponentNode,
   DynamicNode,
@@ -37,6 +44,14 @@ import type {
   UfModule,
 } from "@unframework.dev/ir";
 
+import {
+  outerComponent,
+  resolvedPropsType,
+  setupFunction,
+  setupPendingHelper,
+  useSetup,
+  withoutAwaits,
+} from "./async.ts";
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
@@ -45,6 +60,7 @@ import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
+import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from "./directive.ts";
 import {
   modelTextHelper,
   nextTickHelper,
@@ -59,7 +75,9 @@ import { planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
 import { printSetup, resolveUses, withEventTypes } from "./setup.ts";
+import { teleportCall, teleportHelpers } from "./teleport.ts";
 import { titleChildren } from "./title.ts";
+import { transitionCall, transitionHelpers } from "./transition.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 type BindingProperty = ReturnType<typeof js.bindingProperty>;
@@ -118,6 +136,7 @@ export const react: Target = defineTarget({
       note: "React's style takes an object, so a style bound to a value goes through an inline helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -171,9 +190,39 @@ export const react: Target = defineTarget({
       reason:
         "A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",
     },
+    hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
+    // React 19's server render cannot portal, so the element is portalled once the component
+    // has mounted (ADR-0098).
+    // An inline hook per element, whose ref callback and layout effect run the hooks (ADR-0099),
+    // with each element's own value where it reads a row or a fill's props (ADR-0108).
+    directive: {
+      support: "emulated",
+      helper: "useDirective",
+      note: "React has no directive, so an element's directive goes through an inline hook, `useDirective`, whose stable ref callback records each element one use renders and whose layout effect runs, on each apart, `mounted`, `updated` behind `Object.is`, and `unmounted`. A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective`, whose function makes each element's ref callback from its value as the row renders, joined with the element's other callbacks through an inline `mergeRefs`. The hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
+    // React has no transition primitive (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key: a change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, sets state only in frame and event callbacks or as its child changes, and keeps the child's own ref. The server and the hydrating client render no class (ADR-0100).",
+    },
+    // React has no async component: the setup runs in a function of its own, which the
+    // exported component starts once and the resolved one reads with `use` (ADR-0101).
+    "async-setup": {
+      support: "emulated",
+      helper: "SetupPending",
+      note: "React has no async component, so a module-level function runs the awaits, the exported component starts it once and renders, inside a <Suspense>, the component as written, which reads what they resolved to with `use`. An inline fallback, `SetupPending`, renders nothing and shows the content once the setup settles, rather than after React's fallback throttle. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported.",
+    },
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: "A `<Teleport>` is `createPortal` from react-dom through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted: Fizz throws on a portal, so neither the server nor the hydrating client renders it (ADR-0098).",
+    },
   },
   // A custom hook (ADR-0069).
   emitComposable,
+  emitDirective,
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
@@ -192,15 +241,34 @@ export const react: Target = defineTarget({
     const composer = new ReactComposer(plan, code);
     composer.connect(listeners);
     listeners.connect(composer);
+    // A setup that awaits splits the component in three (ADR-0101, ./async.ts): what the
+    // resolved component prints is the setup without its awaits, which their own function runs.
+    const outer = plan.helpers.async;
     const jsx = jsxContext({
-      component,
+      component: outer ? withoutAwaits(component) : component,
       module,
-      dialect: reactDialect(names, listeners, composer),
+      dialect: {
+        ...reactDialect(names, listeners, composer),
+        teleport: teleportCall(plan),
+        transition: transitionCall(plan),
+      },
       rules: code.rules,
     });
     importChildren(plan);
     const setup = printSetup(plan, code);
     const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
+    // Each directive's call, after the setup whose values it reads (ADR-0099).
+    // A setup function is passed as client code passes one, its stable variant where it has one,
+    // so its identity changes no more than on Vue. Any other value is read in a getter outside
+    // the branches around its element, so what they narrow is asserted.
+    // A value that reads a list's row or a fill's props is passed by each element (ADR-0108).
+    const directives = [...plan.directiveRefs].map(([attribute, ref]) => ({
+      text: plan.elementDirectives.has(attribute)
+        ? `const ${ref} = ${plan.helpers.directive!.each!}(${attribute.name});`
+        : `const ${ref} = ${plan.helpers.directive!.hook!}(${attribute.name}, () => ${isFunctionValue(attribute, plan) ? code.code(attribute.value as Code, "client") : expressionCode(assertedValue(attribute.value), jsx)});`,
+      group: -150,
+      compact: true,
+    }));
     // The ref callbacks declared once, after the guards their listeners call.
     const callbacks = listeners
       .declarations()
@@ -221,8 +289,10 @@ export const react: Target = defineTarget({
     ].map((text, index) => ({ text, group: -100 - index, compact: true }));
     const handle = exposeHandle(plan);
     const body = [
+      ...(outer ? [{ text: useSetup(plan, jsx), group: -300, compact: false }] : []),
       ...setup.body,
       ...hooks,
+      ...directives,
       ...callbacks,
       ...rendered,
       ...(handle ? [{ text: handle, group: -200, compact: false }] : []),
@@ -240,7 +310,7 @@ export const react: Target = defineTarget({
       const apart = !next || (next.group !== group && !(compact && next.compact));
       return jsx.placeholders.statements(apart ? `${text}\n` : text);
     });
-    const fn = js.functionDeclaration(component.name, parameters, [
+    const fn = js.functionDeclaration(outer?.resolved ?? component.name, parameters, [
       ...(optOut ? [jsx.placeholders.statements(`${optOut}\n`)] : []),
       ...statements,
       js.returnStatement(tree),
@@ -249,9 +319,22 @@ export const react: Target = defineTarget({
     // The module's values it reads, as the source declares and imports them (ADR-0070).
     const reads = moduleReads(component, module, plan.names);
     const constants = reads.constants.length ? [reads.constants.join("\n")] : [];
-    const hoisted = [...constants, ...keyDeclarations(plan), ...setup.module].map((statement) =>
-      jsx.placeholders.statements(`${statement}\n`),
-    );
+    // The module's own directives it applies, as their plain hooks (ADR-0099).
+    const ownHooks = ownDirectives(component, module).map((directive) => hooksCode(directive));
+    for (const { specifier, imported, local } of importedDirectives(component, module)) {
+      plan.names.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
+    const hoisted = [
+      ...constants,
+      ...ownHooks,
+      ...keyDeclarations(plan),
+      ...setup.module,
+      ...(outer ? [setupFunction(plan, code, jsx)] : []),
+    ].map((statement) => jsx.placeholders.statements(`${statement}\n`));
+    // The exported component starts the setup and renders the resolved one, which is today's
+    // whole component, after it (ADR-0101).
+    const exported = outer ? outerComponent(plan, jsx, propsType(plan)) : fn;
+    if (outer) exported.typeParameters = typeParameters(component, jsx);
     // The types it imports, by name, from where the source imports them, a child's from its
     // output (`./Field`), and the module's type exports (ADR-0067, ADR-0068).
     addTypeImports(component, module, plan.names, (name) => name);
@@ -263,6 +346,7 @@ export const react: Target = defineTarget({
       ...compositionInterfaces(plan),
     ];
     const helpers = [
+      ...(outer ? [fn] : []),
       ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
       ...(names.styleObject
         ? [
@@ -277,6 +361,18 @@ export const react: Target = defineTarget({
         ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
         : []),
       ...compositionHelpers(plan),
+      ...(plan.helpers.teleport ? teleportHelpers(plan.helpers.teleport, plan.names) : []),
+      ...(plan.helpers.transition
+        ? transitionHelpers(plan.helpers.transition, plan.names, !plan.helpers.teleport)
+        : []),
+      ...(plan.helpers.directive
+        ? [
+            useDirectiveHelper(plan.helpers.directive, plan.names),
+            hookQueueCode(plan.helpers.directive.queue),
+          ]
+        : []),
+      ...(plan.helpers.mergeRefs ? [mergeRefsHelper(plan.helpers.mergeRefs)] : []),
+      ...(outer ? [setupPendingHelper(outer, plan)] : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
@@ -298,7 +394,11 @@ export const react: Target = defineTarget({
             types,
             body: [
               ...hoisted,
-              ...exportDeclaration(component.name, fn, exportsOf(component.name, module.exports)),
+              ...exportDeclaration(
+                component.name,
+                exported,
+                exportsOf(component.name, module.exports),
+              ),
             ],
             helpers,
             placeholders: jsx.placeholders,
@@ -309,6 +409,18 @@ export const react: Target = defineTarget({
     ];
   },
 });
+
+/** Whether a directive's value is a setup function by its name alone (ADR-0099). */
+function isFunctionValue(attribute: DirectiveAttribute, plan: ReactPlan): boolean {
+  const [ref, other] = attribute.value.refs;
+  return (
+    ref?.kind === "Binding" &&
+    other === undefined &&
+    plan.bindings.get(ref.binding)?.kind === "localFn" &&
+    ref.span.start === attribute.value.span.start &&
+    ref.span.end === attribute.value.span.end
+  );
+}
 
 /**
  * The types the output declares before the component, in source order: those its props reach,
@@ -614,7 +726,17 @@ function compositionHelpers(plan: ReactPlan): string[] {
 
 /** The hooks the listeners call, after the setup's: one guard per listener that runs once. */
 function hookCalls(plan: ReactPlan): string[] {
-  return [...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`);
+  const { teleport } = plan.helpers;
+  return [
+    ...[...plan.onceGuards.values()].map((guard) => `const ${guard} = ${plan.helpers.once!}();`),
+    // False on the server and while the client hydrates, true after (ADR-0098): Fizz cannot
+    // render a portal, and an effect that sets state fails L5 (`react(set-state-in-effect)`).
+    ...(teleport
+      ? [
+          `const ${teleport.mounted} = ${plan.names.add("react", "useSyncExternalStore")}(${teleport.subscribe}, () => true, () => false);`,
+        ]
+      : []),
+  ];
 }
 
 /**
@@ -748,22 +870,19 @@ function propsParameters(
 ): Parameter[] {
   const parameter = component.propsParameter;
   const { names, composition } = plan;
-  const { slots, models, attributes } = composition.interfaces;
-  const generic = interfaceParameters(plan);
-  const typeCode = [
-    parameter?.type.code,
-    plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
-    models && `${models}${generic.models?.passed ?? ""}`,
-    slots && `${slots}${generic.slots?.passed ?? ""}`,
-    attributes && `${attributes}${generic.expose?.passed ?? ""}`,
-  ]
-    .filter((part) => part !== undefined)
-    .join(" & ");
+  const own = propsType(plan);
   const { scope } = composition;
   // A component without props still takes the scope attributes of the styled parents that
   // render it, as an object (ADR-0063).
-  if (!typeCode && !scope) return [];
-  const type = context.placeholders.type(typeCode || "object");
+  const outer = plan.helpers.async;
+  if (own === undefined && !outer) return [];
+  // The resolved component of a setup that awaits takes its setup's promise too (ADR-0101).
+  const typeCode = outer
+    ? [own === "object" ? undefined : own, resolvedPropsType(plan)]
+        .filter((part) => part !== undefined)
+        .join(" & ")
+    : own!;
+  const type = context.placeholders.type(typeCode);
   const read = (parameter ? component.props : []).filter(
     (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
   );
@@ -785,10 +904,10 @@ function propsParameters(
   const rest = scope && parameter?.form !== "object" ? scope.props : undefined;
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
-    // reports a bare `_`).
+    // reports a bare `_`). The resolved component of an async setup reads its promise off it.
     const emitted = [...plan.events.values()].some((event) => event.emitted);
     const name =
-      read.length || emitted || composed.length || scope || /^_./.test(parameter.name!)
+      read.length || emitted || composed.length || scope || outer || /^_./.test(parameter.name!)
         ? parameter.name!
         : names.claim(`_${parameter.name!}`);
     return [js.bindingIdentifier(name, type)];
@@ -810,8 +929,35 @@ function propsParameters(
       renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
     );
   }
+  // The setup's promise, and the flag that only re-renders the boundary, kept out of the rest
+  // the scope attributes are picked from (ADR-0101).
+  if (outer) {
+    properties.push(js.bindingProperty(outer.promise));
+    if (rest) properties.push(renamedProperty(outer.settled, names.claim(`_${outer.settled}`)));
+  }
   if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
   return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
+}
+
+/**
+ * The type of the props the component declares, with the interfaces of what its events, models,
+ * slots and root add (ADR-0047, ADR-0054): `object` where it takes only the scope attributes of
+ * the styled parents that render it (ADR-0063), and none where it takes nothing.
+ */
+function propsType(plan: ReactPlan): string | undefined {
+  const parameter = plan.owner.propsParameter;
+  const { slots, models, attributes } = plan.composition.interfaces;
+  const generic = interfaceParameters(plan);
+  const typeCode = [
+    parameter?.type.code,
+    plan.eventsInterface && `${plan.eventsInterface}${generic.events?.passed ?? ""}`,
+    models && `${models}${generic.models?.passed ?? ""}`,
+    slots && `${slots}${generic.slots?.passed ?? ""}`,
+    attributes && `${attributes}${generic.expose?.passed ?? ""}`,
+  ]
+    .filter((part) => part !== undefined)
+    .join(" & ");
+  return typeCode || (plan.composition.scope ? "object" : undefined);
 }
 
 /**
@@ -842,20 +988,26 @@ function rootForReact(
   if (root.kind === "Element") return forReact(root, context, plan);
   return {
     ...root,
-    children: placed(root.children.map((child) => childForReact(child, context, plan))),
+    children: placed(
+      root.children.map((child) => childForReact(child, context, plan)),
+      context,
+    ),
   };
 }
 
 /** Children as their parent prints them, their keyed conditionals placed (`placeConditionals`). */
-function placed(children: RenderNode[]): RenderNode[] {
-  placeConditionals(children);
+function placed(children: RenderNode[], context: JsxContext): RenderNode[] {
+  placeConditionals(children, context.module);
   return children;
 }
 
 /** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
 function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): RenderNode {
   const children = (nodes: readonly RenderNode[]) =>
-    placed(nodes.map((child) => childForReact(child, context, plan)));
+    placed(
+      nodes.map((child) => childForReact(child, context, plan)),
+      context,
+    );
   switch (node.kind) {
     case "Element":
       return forReact(node, context, plan);
@@ -887,6 +1039,9 @@ function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): 
           ? { fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)) }
           : {}),
       };
+    case "Teleport":
+    case "Transition":
+      return { ...node, children: children(node.children) };
     case "Text":
     case "Interpolation":
       return node;
@@ -902,7 +1057,10 @@ function componentForReact(
   plan: ReactPlan,
 ): ComponentNode {
   const children = (nodes: readonly RenderNode[]) =>
-    placed(nodes.map((child) => childForReact(child, context, plan)));
+    placed(
+      nodes.map((child) => childForReact(child, context, plan)),
+      context,
+    );
   return {
     ...node,
     fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)),
@@ -963,7 +1121,10 @@ function forReact(node: ElementNode, context: JsxContext, plan: ReactPlan): Elem
   if (node.tag !== "textarea" || node.children.length === 0) {
     return {
       ...node,
-      children: placed(node.children.map((child) => childForReact(child, context, plan))),
+      children: placed(
+        node.children.map((child) => childForReact(child, context, plan)),
+        context,
+      ),
     };
   }
   const texts = node.children.filter((child): child is TextNode => child.kind === "Text");

@@ -1,9 +1,10 @@
 import { defineTarget, printMarkup, svelteDialect } from "@unframework.dev/codegen";
 import type { MarkupDialect } from "@unframework.dev/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework.dev/codegen";
-import type { UfComponent, UfComposable } from "@unframework.dev/ir";
+import type { ElementNode, UfComponent, UfComposable } from "@unframework.dev/ir";
 
-import { composableModule, instanceScript } from "./script.ts";
+import { emitDirective } from "./directive.ts";
+import { composableModule, instanceScript, lateProvides } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -41,6 +42,7 @@ export const svelte: Target = defineTarget({
       note: "Svelte's `style` takes a declaration list, so a style bound to an object goes through an inline helper, `styleText`, that writes its declarations (ADR-0065); declarations print as `style:` directives.",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -87,6 +89,22 @@ export const svelte: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
+    // Svelte has no portal (ADR-0098).
+    teleport: {
+      support: "emulated",
+      helper: "teleport",
+      note: "Svelte has no portal, so a `<Teleport>`'s element renders once the component has mounted, in an `{#if}` of its own, and an attachment, `teleport`, moves it into `to` and removes it on teardown (ADR-0098).",
+    },
+    // Svelte's `transition:` runs its own CSS, never Vue's classes (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "enter",
+      note: "Svelte's transitions run their own CSS or ticks, never Vue's classes, so each element of a `<Transition>`'s conditional takes `in:enter` and `out:leave`, local, whose functions run the classes and return the transition's time as their `duration`. With `appear`, `in:` is global, so the enter runs as the element first mounts too (ADR-0100).",
+    },
+    // An attachment, `{@attach vFocusTrap(() => open)}` (ADR-0099).
+    directive: { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -108,30 +126,98 @@ export const svelte: Target = defineTarget({
     "next-tick": { support: "native" },
     // `$props()` is reactive whatever keys a parent passes.
     "late-prop": { support: "native" },
+    // Top-level `await` in the instance script, under Svelte's `experimental.async` compiler
+    // option, which the host sets (ADR-0101).
+    "async-setup": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // `setContext` after an await throws `set_context_after_init`, and a `provide` that reads what
+    // the awaits or a later item set cannot move above them (ADR-0101).
+    const late = lateProvides(component);
+    for (const item of late) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message:
+          "The svelte target does not provide a value that reads an awaited value or a later setup item yet: Svelte sets a context only before a component's first await. Provide a value that reads only props and module values, or provide it from a component that does not await.",
+        span: item.span,
+      });
+    }
+    if (late.length) return [];
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const { styleText } = script;
-    // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
-    const dialect: MarkupDialect = styleText
-      ? {
-          ...svelteDialect,
-          styleAttribute: (parts, attributeContext) =>
-            parts[0]?.property === ""
-              ? [{ name: "style", text: `style={${styleText}(${parts[0].value})}` }]
-              : svelteDialect.styleAttribute(parts, attributeContext),
-        }
-      : svelteDialect;
+    const { styleText, teleport, transition } = script;
+    const dialect: MarkupDialect = {
+      ...svelteDialect,
+      // A style bound to one value is the declaration list `styleText` writes (ADR-0065).
+      ...(styleText
+        ? {
+            styleAttribute: (parts, attributeContext) =>
+              parts[0]?.property === ""
+                ? [{ name: "style", text: `style={${styleText}(${parts[0].value})}` }]
+                : svelteDialect.styleAttribute(parts, attributeContext),
+          }
+        : {}),
+      // `{#if mounted}<div {@attach teleport("body")}>…</div>{/if}` (ADR-0098).
+      ...(teleport
+        ? {
+            teleport: ({ node }) => [
+              {
+                kind: "block",
+                segments: [
+                  {
+                    open: `{#if ${teleport.mounted}}`,
+                    content: {
+                      kind: "element",
+                      element: node.children[0] as ElementNode,
+                      directives: [
+                        {
+                          name: "@attach",
+                          text: `{@attach ${teleport.helper}(${JSON.stringify(node.to)})}`,
+                        },
+                      ],
+                    },
+                  },
+                ],
+                close: "{/if}",
+              },
+            ],
+          }
+        : {}),
+    };
+    // `<p in:enter={"fade"} out:leave={"fade"}>` on each element of the conditional, and
+    // `in:enter|global` for `appear` (ADR-0100).
+    if (transition) {
+      dialect.transitionAttributes = ({ node }) => {
+        const name = `{${JSON.stringify(node.name)}}`;
+        const conditional = node.children[0]?.kind === "If";
+        return [
+          ...((conditional || node.appear) && transition.enter !== undefined
+            ? [
+                {
+                  name: "in:",
+                  text: `in:${transition.enter}${node.appear ? "|global" : ""}=${name}`,
+                },
+              ]
+            : []),
+          ...(conditional && transition.leave !== undefined
+            ? [{ name: "out:", text: `out:${transition.leave}=${name}` }]
+            : []),
+        ];
+      };
+    }
     const markup = printMarkup(render, dialect, {
       component: script.component,
       module: context.module,
+      // An attachment reads its value through a getter, a closure (ADR-0099).
+      closureDirectiveValues: true,
       ...options,
     });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },
+  emitDirective,
   // A composable is a `.svelte.ts` module, whose runes vite-plugin-svelte compiles (ADR-0069).
   emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
     return [

@@ -1522,6 +1522,7 @@ function htmlTarget() {
     "class-binding": { support: "native" },
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     "event-capture": { support: "native" },
     "event-once": { support: "native" },
@@ -1557,6 +1558,12 @@ function htmlTarget() {
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    hydration: { support: "native" },
+    "keyed-identity": { support: "native" },
+    teleport: { support: "native" },
+    transition: { support: "native" },
+    directive: { support: "native" },
+    "async-setup": { support: "native" },
   };
   return defineTarget({
     name: "html",

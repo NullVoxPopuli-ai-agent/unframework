@@ -129,6 +129,16 @@ unsupported (UF4005, info): a composable is a custom hook, whose effects keep Re
 than the caller's (ADR-0069); `generic-components`, `generic-slot-props` and `composables` are
 native.
 
+`directive` is emulated (ADR-0099): an element's directive goes through an inline hook, `useDirective`, called once per use at the component's top level, in a post-order of the elements, whose ref callback records each element it receives, and its cleanup forgets that one, and whose layout effect runs `mounted`, `updated` when the value changes and `unmounted` on each element apart, queued through an inline `queueHook` that runs them in Vue's order. Its ref callback joins the element's own where it has one.
+
+A directive whose value reads a list's row or a scoped fill's props calls `useElementDirective` instead (ADR-0108), whose function makes the element's ref callback from its value as the row renders, `ref={withTrace(item.label)}`, where the branches around the element still narrow it. An inline `mergeRefs` joins it with the element's other callbacks, and the callback of the element's native listeners is then written in place, so they're added again at each render. A `.uf.ts` module's directive is the plain hooks, `vFocusTrap.ts`.
+
+`transition` is emulated (ADR-0100): a `<Transition>` is an inline component, `Transition`, around its child, whose branches each take a key. A change of key keeps the old element, as it last rendered, beside the new one until its leave ends. It owns the classes in state, keeps the child's own ref through an inline `TransitionItem`, and renders no class on the server or while the client hydrates, through `useSyncExternalStore`.
+
+`teleport` is emulated (ADR-0098): a `<Teleport>` is `createPortal` from react-dom, through an inline helper, `teleport`, once `useSyncExternalStore` says the component has mounted, so neither the server nor the hydrating client renders it. The output imports `react-dom`, React's renderer, and a React package peers on it.
+
+`async-setup` is emulated (ADR-0101): React has no async component, so the output holds three functions (`src/async.ts`). A module-level `async function profileSetup({ id }: ProfileProps)` runs the awaits in order and returns what the component reads, `{ user }`; it takes the props the awaits read, with their defaults, and an await nothing reads has no name. The exported `Profile` starts it once, `const [setup] = useState(() => profileSetup(props))`, and renders `<Suspense fallback={<SetupPending setup={setup} onSettled={setSettled} />}><ProfileResolved {...props} setup={setup} settled={settled} /></Suspense>`, so every prop, `className`, `style`, the slots, models, events, scope attributes and the `ref` a handle goes to, reaches `ProfileResolved`. That is the component as it is without awaits, its first statement `const { user } = use(setup);` (`use(props.setup)` in the object form); its `settled: _settled` keeps the flag out of the scope attributes' rest, and a `"use no memo"` opt-out applies to it alone. `SetupPending`, an inline component, renders nothing, and its effect sets `settled` once the setup settles: the boundary renders again at once, rather than after React's fallback throttle. Only a fallback React commits runs it, so neither the server nor the hydrating client does: the server's render waits for the setup, and a hydrating boundary keeps the server's DOM until the setup resolves there. A props update that reaches the component while it hydrates and its setup is pending makes React render it on the client: the server's DOM goes, and it shows nothing until the setup resolves, with no mismatch reported (the cell's note).
+
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
 The target reports nothing: what React cannot render as the other targets do is the analyser's
@@ -272,6 +282,10 @@ The tests and tooling build, check and run React output through three entries:
   `act`, rerenders with new props through `root.render`, passes the test's listeners as event
   props (`onChange` for `change`), and runs a user's action inside `act`, with
   `IS_REACT_ACT_ENVIRONMENT` set only during its own `act` calls.
+- `@unframework.dev/target-react/toolchain/hydrate` (browser, L12, ADR-0095): hydrates with
+  `hydrateRoot` inside `act`, and reports a mismatch from `onRecoverableError` and from React's
+  console line for an attribute. `renderForHydration` renders the component as the root of the
+  server's tree, with no `<html>` shell, so `useId` makes the ids `hydrateRoot` does.
 - `@unframework.dev/target-react/toolchain/server` (Node): renders with `prerender` and returns
   the component's HTML only.
 

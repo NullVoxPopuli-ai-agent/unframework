@@ -1,6 +1,6 @@
 # Unframework compiler: plan
 
-**Status:** proposal, 2026-10-01. M0 to M7 are built, and M8 is next (§9). **Supersedes:** the
+**Status:** proposal, 2026-10-01. M0 to M8 are built, and M9 is next (§9). **Supersedes:** the
 Inkline compiler (`packages/compiler-v1`, reference only and gitignored; also at
 `~/Workspace/inkline/core/compiler`).
 
@@ -40,7 +40,8 @@ milestone in §9 ends with what it settled and what changed from this plan.
   - **APIs:** `ref`, `computed`, `watch` and the `defineEmits` / `defineModel` / `defineSlots` /
     `defineExpose` macros, all imported from `@uxfront/unframework` and erased at build time.
   - **JSX:** the returned JSX is the template. Control flow is plain JS (ternaries, `&&`, `.map`), and
-    `v-model` is the one directive.
+    `v-model` is the one built-in directive. Authors define their own with `defineDirective`
+    (ADR-0099).
   - **Styles:** a sibling CSS file that the component imports and the compiler scopes.
 
   It is ordinary TSX, so tsgo type-checks it, any TypeScript editor understands it, and models write it
@@ -291,7 +292,8 @@ The JSX a component returns is its template.
 
 - **Lists:** `items.value.map((item, index) => <li key={item.id}>…</li>)` over any array expression,
   with `key` on the callback's root. The compiler lowers it to `v-for`, `@for`, `{#each}` and so on.
-- **Two-way binding:** `v-model={text.value}` is the only directive.
+- **Two-way binding:** `v-model={text.value}` is the only built-in directive. Authors define their
+  own directives with `defineDirective`, applied as `v-name={value}` (ADR-0099).
   - It works on `input`, `textarea` and `select`, on boolean and array checkboxes, and on radios.
   - Modifiers use Vue JSX's form: `v-model_trim`, `v-model_lazy`, `v-model_number`.
   - On components it is `v-model:open={x.value}`.
@@ -311,8 +313,12 @@ The JSX a component returns is its template.
   - `<component is={href ? "a" : "button"}>` over a statically known set of tags or components
 - **Whitespace** follows JSX rules, which are the source of truth. The compiler emits explicit text
   for every template target.
-- **Later (M8):** `<Transition>` and `<Teleport>` (imported from `@uxfront/unframework`), `innerHTML` (with a
-  warning), and portable directives.
+- **Advanced (M8):**
+  - `<Transition name="fade">` and `<Teleport to="body">`, imported from `@uxfront/unframework`
+    (ADR-0100, ADR-0098)
+  - `innerHTML={markup}` on an HTML element, with a warning (UF3051, ADR-0097)
+  - portable directives, which authors define with `defineDirective` in a `.uf.ts` module or the
+    component's own file, and apply as `v-name={value}` (ADR-0099)
 
 ### 4.4 Styles
 
@@ -925,7 +931,7 @@ The counts below are targets for each milestone's exit. Every case runs on all s
 | M3        | **Components:** props, events, three-level nesting, recursion.<br>**Slots:** default (children), named and scoped (slot objects), fallback, presence, inside `.map`, forwarding.<br>**Models:** every native input kind, modifiers, component `v-model`, unbound local state, multiple models.<br>**Fallthrough:** root, class and style merge, `inheritAttrs: false`.<br>**Other:** expose (focus); context (static, reactive, default, nested); `<component is>` over `a` / `button`.                                                 | 45    |
 | M4        | Scoped basics, child root, `:deep`, `:slotted`, `:global`, custom properties from JSX, layers, media queries, hover and focus-visible states, Styleframe recipes, tokens and a dark theme, Open Components data-attribute variants.                                                                                                                                                                                                                                                                                                     | 25    |
 | M5        | Imported interfaces, `extends` chains, utility types, package types, generic components, consumer typing probes (stock tsgo and the content mapper), composables (`useToggle`, `useControllableState`, `useMediaQuery`), shared modules, type-change invalidation.                                                                                                                                                                                                                                                                      | 25    |
-| M8        | Transitions, teleport, async setup, `innerHTML`, portable directives (click-outside, focus-trap), hydration, keyed reorder keeping focus.                                                                                                                                                                                                                                                                                                                                                                                               | 30    |
+| M8        | Transitions, teleport, async setup, `innerHTML`, portable directives (click-outside, focus-trap), hydration, keyed reorder keeping focus.                                                                                                                                                                                                                                                                                                                                                                                               | 51    |
 | M10       | Design-system acceptance:<br>• the Open Components Button, with its spec's test suite ported<br>• Inkline's 8 families: badge, button, checkbox, field-group, hamburger-menu, input, radio, switch<br>• tabs, dialog, accordion and menu/listbox                                                                                                                                                                                                                                                                                        | 40    |
 
 ### 7.9 CI
@@ -1093,8 +1099,8 @@ layer. Sizes are relative effort: S is about a week, M two to three weeks, L fou
 | M5        | Cross-file: types, consumer typing, composables | L    | ~163                        | Done    |
 | M6        | Build integration and distribution              | L    | ~163, plus e2e apps         | Done    |
 | M7        | Public testing and visual tooling               | M    | (the corpus on public APIs) | Done    |
-| M8        | Advanced features and versioned targets         | L    | ~193                        | Next    |
-| M9        | Agent tooling                                   | M    | -                           | Planned |
+| M8        | Advanced features and versioned targets         | L    | ~193                        | Done    |
+| M9        | Agent tooling                                   | M    | -                           | Next    |
 | M10       | Design-system acceptance and 1.0                | L    | ~233                        | Planned |
 
 `AGENTS.md` ("Where the project is") summarises what each built milestone delivered. The case
@@ -1391,22 +1397,22 @@ Then `1.0.0` ships.
 
 ## 10. Risks
 
-| ID  | Risk                                                                                                                                            | Mitigation                                                                                                                                                    |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | React re-runs the body on every render, which diverges from setup-once Vue semantics: snapshots, stale closures, batching, effects after paint. | Snapshots, shadows and mirror refs driven by escape analysis, with dedicated `semantics/*` cases. Correctness beats idiom, and idiom wins whenever both hold. |
-| R2  | Consumers cannot type macro-declared events, models and slots under plain TypeScript (v1's ADR-010 problem).                                    | The four layers in §5.6. Probe tests pin what each layer catches, and output type tests are the backstop.                                                     |
-| R3  | A content mapper may not be able to claim `.uf.tsx`, or 7.1 may slip.                                                                           | M0 spike 6. A distinct extension is the fallback. Layers 1, 2 and 4 work without the mapper.                                                                  |
-| R4  | JSX is more expressive than template languages: JSX in variables, helpers returning JSX, arbitrary JS in the tree.                              | The subset rules in §4.3 and §4.6, with diagnostics and fixes. Vue's output uses templates, never JSX.                                                        |
-| R5  | Angular: input timing, host elements, no attribute spread, projection through templates.                                                        | Spikes in M0 and M1, helper directives declared as "emulated", and D6.                                                                                        |
-| R6  | Qwik 2 is still in beta (47 betas, no date), and its QRL capture rules are strict.                                                              | The target is marked experimental and pinned exactly. The corpus runs the real optimizer. D7 is reviewed in M8.                                               |
-| R7  | Solid 2.0 is a release candidate with different APIs.                                                                                           | Versioned targets: `solid@1` now, `solid@2` as an additive variant.                                                                                           |
-| R8  | The Vue, Svelte, Astro and Angular checkers need TypeScript 6.                                                                                  | Confined to `tests/toolchains/*`. Each one moves when its content mapper or ngp ships.                                                                        |
-| R9  | Browser tests get slow or flaky at about 250 cases × 7 targets.                                                                                 | One checker run per target, sharding, settle hooks, no retries on parity failures, and trace views for failures.                                              |
-| R10 | Visual drift from fonts or the OS.                                                                                                              | Bundled fonts, Linux baselines in CI, and the live cross-target mode locally.                                                                                 |
-| R11 | Styleframe builds require a licence.                                                                                                            | A CI licence or a deterministic stub, decided in M4.                                                                                                          |
-| R12 | Interplay between the bundler plugin and framework plugins: ordering, virtual ids, HMR.                                                         | M0 spike 4, and M6's e2e app for each framework.                                                                                                              |
-| R13 | Scope creep: 7 targets × every feature.                                                                                                         | A feature can ship as "unsupported on X" with a diagnostic. Each milestone defines its matrix cells.                                                          |
-| R14 | oxfmt's support for the SFC formats.                                                                                                            | Markup is never formatted: the printer's whitespace-safe layout is the output, and oxfmt formats code only (ADR-0026). L2 checks formatting idempotence.      |
+| ID  | Risk                                                                                                                                            | Mitigation                                                                                                                                                     |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | React re-runs the body on every render, which diverges from setup-once Vue semantics: snapshots, stale closures, batching, effects after paint. | Snapshots, shadows and mirror refs driven by escape analysis, with dedicated `semantics/*` cases. Correctness beats idiom, and idiom wins whenever both hold.  |
+| R2  | Consumers cannot type macro-declared events, models and slots under plain TypeScript (v1's ADR-010 problem).                                    | The four layers in §5.6. Probe tests pin what each layer catches, and output type tests are the backstop.                                                      |
+| R3  | A content mapper may not be able to claim `.uf.tsx`, or 7.1 may slip.                                                                           | M0 spike 6. A distinct extension is the fallback. Layers 1, 2 and 4 work without the mapper.                                                                   |
+| R4  | JSX is more expressive than template languages: JSX in variables, helpers returning JSX, arbitrary JS in the tree.                              | The subset rules in §4.3 and §4.6, with diagnostics and fixes. Vue's output uses templates, never JSX.                                                         |
+| R5  | Angular: input timing, host elements, no attribute spread, projection through templates.                                                        | Spikes in M0 and M1, helper directives declared as "emulated", and D6.                                                                                         |
+| R6  | Qwik 2 is still in beta (47 betas, no date), and its QRL capture rules are strict.                                                              | The target is marked experimental and pinned exactly. The corpus runs the real optimizer. M8 reviewed D7 and moved it to the 2.0 release candidate (ADR-0094). |
+| R7  | Solid 2.0 is a release candidate with different APIs.                                                                                           | Versioned targets: `solid` and `solid@1` select Solid 1.9, and `solid@2` is an additive, opt-in target on Solid 2.0.0 (ADR-0102).                              |
+| R8  | The Vue, Svelte, Astro and Angular checkers need TypeScript 6.                                                                                  | Confined to `tests/toolchains/*`. Each one moves when its content mapper or ngp ships.                                                                         |
+| R9  | Browser tests get slow or flaky at about 250 cases × 7 targets.                                                                                 | One checker run per target, sharding, settle hooks, no retries on parity failures, and trace views for failures.                                               |
+| R10 | Visual drift from fonts or the OS.                                                                                                              | Bundled fonts, Linux baselines in CI, and the live cross-target mode locally.                                                                                  |
+| R11 | Styleframe builds require a licence.                                                                                                            | A CI licence or a deterministic stub, decided in M4.                                                                                                           |
+| R12 | Interplay between the bundler plugin and framework plugins: ordering, virtual ids, HMR.                                                         | M0 spike 4, and M6's e2e app for each framework.                                                                                                               |
+| R13 | Scope creep: 7 targets × every feature.                                                                                                         | A feature can ship as "unsupported on X" with a diagnostic. Each milestone defines its matrix cells.                                                           |
+| R14 | oxfmt's support for the SFC formats.                                                                                                            | Markup is never formatted: the printer's whitespace-safe layout is the output, and oxfmt formats code only (ADR-0026). L2 checks formatting idempotence.       |
 
 ---
 
@@ -1417,7 +1423,7 @@ Then `1.0.0` ships.
 | ID  | Decision                                                                                                                                             | Record             |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | C1  | **Component shape:** a setup-once function in JSX. Props are in the signature, the body is the setup, and the last statement returns the JSX.        | ADR-0001, Accepted |
-| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only directive.                                                          | ADR-0002, Accepted |
+| C2  | **Control flow:** plain JS (ternaries, `&&`, `.map`), with `v-model` as the only built-in directive (ADR-0099).                                      | ADR-0002, Accepted |
 | C3  | **Public API:** Vue macros in the body (`defineEmits`, `defineModel`, `defineSlots`, `defineExpose`). Consumer typing comes from the layers in §5.6. | ADR-0003, Accepted |
 | C4  | **Styles:** a sibling CSS file, imported by the component and scoped by the compiler.                                                                | ADR-0004, Accepted |
 
@@ -1426,21 +1432,21 @@ Then `1.0.0` ships.
 Each of these has its record in `docs/adrs/`. D5, D6, D9 and D12 are Accepted. The others stay Proposed,
 and the plan proceeds on the recommendation unless told otherwise.
 
-| ID  | Decision                          | Record                                  | Recommendation                                                                                                                      | Alternatives                                                                                    |
-| --- | --------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| D1  | Source extension                  | ADR-0005, Proposed                      | `.uf.tsx` for components and `.uf.ts` for composables                                                                               | plain `.tsx` with include globs; `.uf` with the TSX grammar                                     |
-| D2  | Authoring import and JSX runtime  | ADR-0006, Proposed, amended by ADR-0090 | `@uxfront/unframework`, with `jsxImportSource: "@uxfront/unframework"`                                                              | macros as globals, with no import                                                               |
-| D3  | Canonical forms                   | ADR-0007, Proposed                      | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern | accept every Vue JSX form (`v-slots`, `withModifiers`)                                          |
-| D4  | State updates                     | ADR-0008, Proposed                      | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                              | `reactive()` and deep mutation (immer-style lowering)                                           |
-| D5  | CSS scoping algorithm             | ADR-0009, Accepted                      | Vue's attribute algorithm, applied by the compiler on every target                                                                  | CSS Modules-style class hashing                                                                 |
-| D6  | Angular host element              | ADR-0010, Accepted                      | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                  | attribute selectors by default                                                                  |
-| D7  | Target versions                   | ADR-0011, Proposed                      | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 then 2, Angular 22, Qwik 2 (experimental), Astro 7 (static)                 | Qwik 1.x; Solid 2 only                                                                          |
-| D8  | Output event and model names      | ADR-0012, Proposed                      | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                    | camelCase everywhere, including Svelte                                                          |
-| D9  | Visual baselines                  | ADR-0013, Accepted                      | Linux baselines in CI, plus a live cross-target mode                                                                                | live mode only, as in v1                                                                        |
-| D10 | Reference target for expectations | ADR-0014, Proposed                      | Vue                                                                                                                                 | hand-written expectations only                                                                  |
-| D11 | Runtime                           | ADR-0015, Proposed                      | None. Inline helpers only where a framework lacks a primitive.                                                                      | a tiny `@unframework.dev/runtime-<target>`                                                      |
-| D12 | Package naming                    | ADR-0090, Accepted                      | `@uxfront/unframework` (the umbrella and the authoring API) plus `@unframework.dev/*`                                               | the unscoped `unframework` and the `@unframework` scope (ADR-0016), both owned by others on npm |
-| D13 | JSX attribute and event names     | ADR-0017, Proposed                      | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                      | React names (`className`, `htmlFor`, `onKeyDown`)                                               |
+| ID  | Decision                          | Record                                  | Recommendation                                                                                                                           | Alternatives                                                                                    |
+| --- | --------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| D1  | Source extension                  | ADR-0005, Proposed                      | `.uf.tsx` for components and `.uf.ts` for composables                                                                                    | plain `.tsx` with include globs; `.uf` with the TSX grammar                                     |
+| D2  | Authoring import and JSX runtime  | ADR-0006, Proposed, amended by ADR-0090 | `@uxfront/unframework`, with `jsxImportSource: "@uxfront/unframework"`                                                                   | macros as globals, with no import                                                               |
+| D3  | Canonical forms                   | ADR-0007, Proposed                      | Destructured signature props, named models, children for the default slot and a slot object for the others, one channel per concern      | accept every Vue JSX form (`v-slots`, `withModifiers`)                                          |
+| D4  | State updates                     | ADR-0008, Proposed                      | Values are replaced whole. Mutating a ref's contents in place is an error, with a fix.                                                   | `reactive()` and deep mutation (immer-style lowering)                                           |
+| D5  | CSS scoping algorithm             | ADR-0009, Accepted                      | Vue's attribute algorithm, applied by the compiler on every target                                                                       | CSS Modules-style class hashing                                                                 |
+| D6  | Angular host element              | ADR-0010, Accepted                      | An element selector with a `display: contents` host, unwrapped in normalisation. Attribute selectors as an option.                       | attribute selectors by default                                                                  |
+| D7  | Target versions                   | ADR-0011, Proposed, amended by ADR-0094 | React 19, Vue 3.5 (3.6-compatible), Svelte 5, Solid 1.9 and 2 (`solid@2`, ADR-0102), Angular 22, Qwik 2 (experimental), Astro 7 (static) | Qwik 1.x; Solid 2 only                                                                          |
+| D8  | Output event and model names      | ADR-0012, Proposed                      | React and Solid `onChange` / `onOpenChange`; Svelte `onchange`; Qwik `onChange$`; Angular `output()` / `model()`                         | camelCase everywhere, including Svelte                                                          |
+| D9  | Visual baselines                  | ADR-0013, Accepted                      | Linux baselines in CI, plus a live cross-target mode                                                                                     | live mode only, as in v1                                                                        |
+| D10 | Reference target for expectations | ADR-0014, Proposed                      | Vue                                                                                                                                      | hand-written expectations only                                                                  |
+| D11 | Runtime                           | ADR-0015, Proposed                      | None. Inline helpers only where a framework lacks a primitive.                                                                           | a tiny `@unframework.dev/runtime-<target>`                                                      |
+| D12 | Package naming                    | ADR-0090, Accepted                      | `@uxfront/unframework` (the umbrella and the authoring API) plus `@unframework.dev/*`                                                    | the unscoped `unframework` and the `@unframework` scope (ADR-0016), both owned by others on npm |
+| D13 | JSX attribute and event names     | ADR-0017, Proposed                      | HTML and Vue names (`class`, `for`, `onKeydown`), vendored from `@vue/runtime-dom`'s JSX types                                           | React names (`className`, `htmlFor`, `onKeyDown`)                                               |
 
 ---
 
@@ -1718,36 +1724,41 @@ Both v1 and Unframework are TSX, so moving from one to the other is a mechanical
 These are npm `latest` versions on 2026-10-01. Each target pins its tested range in
 `framework.range`.
 
-| Package                                   | Version           | Notes                                                                      |
-| ----------------------------------------- | ----------------- | -------------------------------------------------------------------------- |
-| typescript                                | 7.1.0-beta        | 7.1 stable planned for Nov 24, 2026, with the API and content mappers      |
-| @typescript/typescript6                   | 6.0.2             | for vue-tsc, svelte-check, `astro check` and Angular until they move       |
-| react / react-dom                         | 19.3.0            | React Compiler 1.0                                                         |
-| vue / @vue/runtime-dom                    | 3.5.43            | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom         |
-| svelte                                    | 5.57.1            | async is still experimental, so output never uses it                       |
-| solid-js                                  | 1.9.15            | 2.0.0-rc.13 (`@solidjs/web`)                                               |
-| @angular/core                             | 22.2.1            | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1` |
-| @qwik.dev/core                            | 2.0.0-beta.47     | `@builder.io/qwik` 1.20.1 is the v1 line                                   |
-| astro                                     | 7.3.5             | a Rust compiler; the Container API serves SSR tests                        |
-| vite / rolldown                           | 8.3.1 / 1.2.12    |                                                                            |
-| vitest / @vitest/browser-playwright       | 5.0.3             | Browser Mode is stable; `toMatchScreenshot`                                |
-| playwright                                | 1.63.0            |                                                                            |
-| unplugin                                  | 3.4.0             | ten bundler factories                                                      |
-| oxc-parser / oxc-transform / oxc-codegen  | 0.152.0           | TS-ESTree; isolated declarations; printing                                 |
-| oxc-resolver                              | 11.24.2           |                                                                            |
-| lightningcss                              | 1.33.0            | CSS parsing and selector scoping                                           |
-| @typescript-eslint/scope-manager          | 8.71.0            | the analyzer's scope analysis (ADR-0035); exact, because it shapes the IR  |
-| oxfmt                                     | 0.71.0            | programmatic `format()`                                                    |
-| magic-string                              | 1.4.2             |                                                                            |
-| tsdown                                    | 0.23.0            |                                                                            |
-| axe-core                                  | 4.13.0            |                                                                            |
-| oxlint / oxlint-tsgolint                  | 1.86.0 / 7.0.2003 | the repo's linter, and L5's baseline on every target (ADR-0042)            |
-| eslint                                    | 10.11.0           | L5 for Vue, Svelte, Astro, Angular and Qwik's typed rules, on TypeScript 6 |
-| typescript-eslint                         | 8.71.0            | peers TypeScript `<6.1`, so only the TypeScript 6 toolchains load it       |
-| eslint-plugin-vue / vue-eslint-parser     | 10.11.1 / 10.4.1  | L5 for Vue                                                                 |
-| eslint-plugin-svelte                      | 3.23.0            | L5 for Svelte                                                              |
-| eslint-plugin-astro / astro-eslint-parser | 3.2.1 / 3.2.0     | L5 for Astro                                                               |
-| @angular-eslint/eslint-plugin             | 22.5.0            | with `eslint-plugin-template` and `template-parser`: L5 for Angular        |
-| eslint-plugin-solid                       | 0.18.0            | L5 for Solid, as an oxlint JS plugin                                       |
-| eslint-plugin-qwik                        | 2.0.0-beta.47     | the `beta` tag (`latest` is Qwik 1's); typed rules in ESLint (ADR-0045)    |
-| vue-jsx-vapor                             | 3.2.25            | prior art: Vue directives and macros in JSX                                |
+| Package                                   | Version           | Notes                                                                            |
+| ----------------------------------------- | ----------------- | -------------------------------------------------------------------------------- |
+| typescript                                | 7.1.0-beta        | 7.1 stable planned for Nov 24, 2026, with the API and content mappers            |
+| @typescript/typescript6                   | 6.0.2             | for vue-tsc, svelte-check, `astro check` and Angular until they move             |
+| react / react-dom                         | 19.3.0            | React Compiler 1.0                                                               |
+| vue / @vue/runtime-dom                    | 3.5.43            | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom               |
+| svelte                                    | 5.57.1            | async is still experimental, so output never uses it                             |
+| solid-js                                  | 1.9.15            | Solid 1, the `solid` target, from the flat `catalog:`                            |
+| solid-js (`catalog:solid2`)               | 2.0.0             | Solid 2, the `solid2` target (`solid@2`, ADR-0102), in `tests/toolchains/solid2` |
+| @solidjs/web (`catalog:solid2`)           | 2.0.0             | Solid 2's DOM renderer and JSX types                                             |
+| @solidjs/compiler (`catalog:solid2`)      | 2.0.0             | Solid 2's native JSX compiler, which `@solidjs/vite-plugin` runs (L3)            |
+| @solidjs/vite-plugin (`catalog:solid2`)   | 3.0.0             | Solid 2's Vite plugin                                                            |
+| @angular/core                             | 22.2.1            | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1`       |
+| @qwik.dev/core                            | 2.0.0-rc.5        | with `@qwik.dev/optimizer` 2.1.0-rc.11, experimental (ADR-0094)                  |
+| astro                                     | 7.3.5             | a Rust compiler; the Container API serves SSR tests                              |
+| vite / rolldown                           | 8.3.1 / 1.2.12    |                                                                                  |
+| vitest / @vitest/browser-playwright       | 5.0.3             | Browser Mode is stable; `toMatchScreenshot`                                      |
+| playwright                                | 1.63.0            |                                                                                  |
+| unplugin                                  | 3.4.0             | ten bundler factories                                                            |
+| oxc-parser / oxc-transform / oxc-codegen  | 0.152.0           | TS-ESTree; isolated declarations; printing                                       |
+| oxc-resolver                              | 11.24.2           |                                                                                  |
+| lightningcss                              | 1.33.0            | CSS parsing and selector scoping                                                 |
+| @typescript-eslint/scope-manager          | 8.71.0            | the analyzer's scope analysis (ADR-0035); exact, because it shapes the IR        |
+| oxfmt                                     | 0.71.0            | programmatic `format()`                                                          |
+| magic-string                              | 1.4.2             |                                                                                  |
+| tsdown                                    | 0.23.0            |                                                                                  |
+| axe-core                                  | 4.13.0            |                                                                                  |
+| oxlint / oxlint-tsgolint                  | 1.86.0 / 7.0.2003 | the repo's linter, and L5's baseline on every target (ADR-0042)                  |
+| eslint                                    | 10.11.0           | L5 for Vue, Svelte, Astro, Angular and Qwik's typed rules, on TypeScript 6       |
+| typescript-eslint                         | 8.71.0            | peers TypeScript `<6.1`, so only the TypeScript 6 toolchains load it             |
+| eslint-plugin-vue / vue-eslint-parser     | 10.11.1 / 10.4.1  | L5 for Vue                                                                       |
+| eslint-plugin-svelte                      | 3.23.0            | L5 for Svelte                                                                    |
+| eslint-plugin-astro / astro-eslint-parser | 3.2.1 / 3.2.0     | L5 for Astro                                                                     |
+| @angular-eslint/eslint-plugin             | 22.5.0            | with `eslint-plugin-template` and `template-parser`: L5 for Angular              |
+| eslint-plugin-solid                       | 0.18.0            | L5 for Solid, as an oxlint JS plugin                                             |
+| eslint-plugin-solid (`catalog:solid2`)    | 0.19.0            | L5 for Solid 2, its `v2-strict` rules                                            |
+| eslint-plugin-qwik                        | 2.0.0-rc.5        | the `rc` tag (`latest` is Qwik 1's); typed rules in ESLint (ADR-0045)            |
+| vue-jsx-vapor                             | 3.2.25            | prior art: Vue directives and macros in JSX                                      |

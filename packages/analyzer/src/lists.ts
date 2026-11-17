@@ -227,8 +227,16 @@ export function lowerList(
     ? lowerKey(lowered.key ?? written, body, callback, variables, render)
     : undefined;
   render.enclosing.splice(render.enclosing.length - variables.length, variables.length);
-  // `<component is>` is no list's body: `lowerDynamic` reports it there.
-  if (!lowered.element || lowered.element.kind === "Dynamic") return undefined;
+  // `<component is>`, `<Teleport>` and `<Transition>` are no list's body: `lowerDynamic`,
+  // `lowerTeleport` and `lowerTransition` report them there.
+  if (
+    !lowered.element ||
+    lowered.element.kind === "Dynamic" ||
+    lowered.element.kind === "Teleport" ||
+    lowered.element.kind === "Transition"
+  ) {
+    return undefined;
+  }
   if (!key || !valid || reporter.hasErrorsSince(mark)) return undefined;
   const [item, index] = variables;
   return createFor(list.expression, item!.id, key, lowered.element, span(call), index?.id);

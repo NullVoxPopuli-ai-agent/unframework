@@ -15,6 +15,7 @@ import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
 import { UNIQUE_ID } from "./setup.ts";
 import { spellingOf } from "./spelling.ts";
+import { withoutTeleports } from "./teleport.ts";
 
 /**
  * Why nothing runs in the browser (ADR-0045, ADR-0047): Astro renders each component once, on
@@ -70,6 +71,7 @@ export const astro: Target = defineTarget({
       note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": inert("A component's listener is inert"),
@@ -121,6 +123,22 @@ export const astro: Target = defineTarget({
     "generic-slot-props": { support: "native" },
     composables: { support: "native" },
     "composable-effect-order": inert("A composable's watchers, effects and hooks never run"),
+    hydration: { support: "unsupported", code: "UF4001", severity: "info", reason: STATIC },
+    // No list requires it: the specs that reorder or replace a list's items do (ADR-0096).
+    "keyed-identity": {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "info",
+      reason: "Astro renders a list once on the server, so nothing reorders it in the page.",
+    },
+    // A teleport mounts once its component has, in the browser (ADR-0098).
+    teleport: inert("A `<Teleport>` renders nothing"),
+    // A transition runs in the browser (ADR-0100): its child renders settled.
+    transition: inert("A `<Transition>`'s classes never run: its child renders settled"),
+    // A directive's hooks run in the browser (ADR-0099): the element renders without them.
+    directive: inert("A directive's hooks never run"),
+    // Top-level `await` in the frontmatter, which the Container API waits for (ADR-0101).
+    "async-setup": { support: "native" },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
@@ -130,8 +148,11 @@ export const astro: Target = defineTarget({
    * (`./composition.ts`, ADR-0054): the markup is printed first, since whether it names `Astro`
    * decides how the frontmatter declares `Props`.
    */
-  emit(component: UfComponent, context): OutputFile[] {
+  emit(source: UfComponent, context): OutputFile[] {
     const { module } = context;
+    // A teleport prints nothing (ADR-0098), nor does a directive (ADR-0099), and a transition's
+    // child prints in its place (ADR-0100).
+    const component = withoutTeleports(source);
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
     // The imports that pass through, which the markup reads as written (ADR-0064).
@@ -182,6 +203,8 @@ export const astro: Target = defineTarget({
   },
   // A composable is a static `.ts` module, which returns initial values (ADR-0069).
   emitComposable,
+  // A static page runs no hook, so a directive's module has no file (ADR-0099).
+  emitDirective: () => [],
 });
 
 export default astro;

@@ -159,6 +159,13 @@ class Evaluator {
           }
           return;
         }
+        // A static render holds none of a teleport's content, on every target (ADR-0098).
+        case "Teleport":
+          return;
+        // A static render holds a transition's child settled, with no class (ADR-0100).
+        case "Transition":
+          for (const child of node.children) visit(child, names);
+          return;
         // Composition (ADR-0055) renders through its lanes in M3, not here yet.
         case "Component":
         case "SlotOutlet":
@@ -224,13 +231,18 @@ class Evaluator {
           }
           break;
         }
-        // A listener and a template ref render nothing: they act in the browser (ADR-0047,
-        // ADR-0049), which the corpus's behaviour layers check.
+        // A listener, a template ref and a directive render nothing: they act in the browser
+        // (ADR-0047, ADR-0049, ADR-0099), which the corpus's behaviour layers check.
         case "Event":
         case "Ref":
+        case "Directive":
           break;
         case "Model":
           throw new Error("a v-model is not rendered yet (ADR-0055)");
+        // Markup the browser parses, which static IR cannot hold (ADR-0097): the corpus's
+        // server HTML and DOM layers check it.
+        case "RawHtml":
+          throw new Error("raw HTML is not rendered by the reference (ADR-0097)");
         default:
           throw new Error(`unknown attribute ${(attribute satisfies never as Attribute).kind}`);
       }

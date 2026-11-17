@@ -6,13 +6,14 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 ## Output
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
-`@angular/core` and `@angular/common`, of the children's output files, of the composables'
+`@angular/core`, `@angular/common` and `@angular/platform-browser`, of the children's output files, of the composables'
 (`./use-toggle`, ADR-0069) and of the values the source imports from `.ts` modules, each under a
 name no source name takes; the type declarations; the module's constants the component reads, and
-those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); `let nextId = 0;` when the
-component makes ids; the
+those they read, as written (`const GAP = sizes.sm * 2;`, ADR-0070); the application's id
+counter, an injection token (`idCounter`, ADR-0095), when the component makes ids; the
 injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
-`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the directives its listeners'
+`modelText`, `toggle`, `selectedValues`, `optionText`); the slot directives; the pipe `innerHTML`
+reads its markup through (`TrustedHtmlPipe`, ADR-0097); the directives its listeners'
 options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
@@ -103,7 +104,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `let timer: T`                            | a field: `private timer: T \| undefined;`, `private refreshes = 0;`                                                            |
 | `let remaining = limit` (an input)        | `private remaining!: number;`, assigned in `ngOnInit` (below)                                                                  |
 | `const input = useTemplateRef<T>()`       | `viewChild<ElementRef<T>>("input")`, with `#input` on the element                                                              |
-| `const id = useId()`                      | `` `uf-id-<component>-${nextId++}` ``: a module counter (emulated, `use-id`)                                                   |
+| `const id = useId()`                      | `` `uf-id-<component>-${inject(idCounter).next++}` ``: a counter per application (emulated, `use-id`)                          |
 | `function save()`, arrow `const`          | a method; one passed as a value (`setTimeout(tick, 100)`) an arrow field, which keeps `this`, declared before the other fields |
 | `const { on, toggle } = useToggle(false)` | `protected readonly toggle_1 = useToggle(false)`, read as `this.toggle_1.on()` and `@let on = this.toggle_1.on();` (below)     |
 | `emit("change", value)`                   | `this.change.emit(value)`, by the payload rule                                                                                 |
@@ -112,6 +113,7 @@ the template itself, which reads through `@let`, and a template statement's inpu
 | `watchEffect(effect)`                     | `afterRenderEffect(effect)` in the constructor: after the render, in the browser only                                          |
 | `onMounted(callback)`                     | `afterNextRender(callback)` in the constructor: in the browser, once the view is in the document                               |
 | `onUnmounted(callback)`                   | in `ngOnDestroy`, in the browser only                                                                                          |
+| `const user = await loadUser(id)`         | `protected user!: …;`, assigned in `ngOnInit` inside `PendingTasks.run`, the template behind `@if (resolved())` (below)        |
 
 A watcher is created in `ngOnInit`, once the inputs are set, so the source's value at creation is
 known and typed: `let lastCount = currentCount();`. Its source goes through a `computed`
@@ -158,6 +160,23 @@ component still emits. So a watcher or a `watchEffect` with an `onCleanup` keeps
 returns runs in a function of its own (`(() => { … })();`), so its `return` ends it and not
 `ngOnDestroy`. A callback the class runs (a hook, an effect, a watcher's) returns no value, as
 none is read: its `return x;` keeps only what `x` changes.
+
+An async setup (ADR-0101) goes on in `ngOnInit`, where the inputs are set, inside
+`this.pendingTasks.run(async () => { … })`: the server's render waits for the application to be
+stable, which a pending task holds off, and so does every settle of the harness. Each awaited
+binding is a field `ngOnInit` assigns, `protected user!: User;` with its annotation, or typed by
+what the promise resolves to through a private method that makes it,
+`Awaited<ReturnType<typeof this.initialUser>>` and `this.user = await this.initialUser();`. After
+the awaits, `if (this.destroyRef.destroyed) return;` ends a setup whose component went while it
+waited, then `ngOnInit`'s other code runs (the seeded reads, the watchers, and every hook and
+`watchEffect`, registered there with `{ injector }`), then `this.resolved.set(true)`. What reads an
+awaited binding is deferred as what reads an input is: a state is `linkedSignal`, a constant a
+setup-once `computed`, a `let` assigned in `ngOnInit`, a composable's call made there. The
+template, its `@let`s included, sits in `@if (resolved()) { … }`, which renders nothing but its
+anchor comment until then; on a hydrated page Angular keeps the server's view of the `@if` and
+claims it once `resolved` is set. `ngOnDestroy` runs the `onUnmounted` hooks only
+`if (this.resolved())`. `PendingTasks.run` is a developer preview; `add()` with `finally` is its
+stable form, and the target uses `run`, which reports a rejection to the `ErrorHandler`.
 
 ### Composables (ADR-0069)
 
@@ -235,7 +254,7 @@ parent, so the composable's effects stay the component's view effects.
 | `slots.title` as a condition                    | `this.titleTemplate()`, read from the class past any template variable                                                                                                                                                                                                                                                        |
 | `defineModel("value", { default: 0 })`          | `readonly value = model<number>(0)`, read and written as a signal; `model<number>(0, { alias: "value" })` where its binding has another name                                                                                                                                                                                  |
 | `v-model:value={cups.value}`                    | `[(value)]="this.cups"`, on the signal                                                                                                                                                                                                                                                                                        |
-| `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box, `[selected]` on a select's options                                                                                                                                                                         |
+| `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box, `[selected]` on a select's options, and a bound `<textarea>` the `TextCaret` directive, which puts a hydrated field's caret after its text (ADR-0095)                                                      |
 | `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both                                                                                                                                                                                                                      |
 | `defineExpose({ focus })`, `ref={search}`       | `focus` public; `viewChild<{ focus(): void }>("search")`, read as `this.search()?.focus()`                                                                                                                                                                                                                                    |
 | `export const LocaleKey: InjectionKey<T>`       | `export const LocaleKey = new InjectionToken<T>("…")` in the module's main component's file                                                                                                                                                                                                                                   |
@@ -358,10 +377,11 @@ reported at a component's first stylesheet import.
 ### Capabilities
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
-above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (emulated,
+above, helper `uf<Event><Option>`), `use-id` (emulated, `idCounter`), `next-tick` (emulated,
 `nextTick`), `class-binding` (emulated, `classNames`, for a class part that may be an array or an
 object), `style-binding` (emulated, `styleObject`, for a style bound to a value that a merge
-spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
+spreads; ADR-0065), `raw-html` (emulated, `TrustedHtmlPipe`, a pure pipe that marks `innerHTML`'s
+markup trusted, so Angular's sanitiser keeps it as written; ADR-0097) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
@@ -372,6 +392,12 @@ constraint (ADR-0068), or `any` for a parameter without one, as ngtsc types a ge
 cannot infer. Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
+
+`directive` is emulated (ADR-0099): a standalone attribute directive, `VFocusTrap` in `v-focus-trap.ts` for a `.uf.ts` module's, bound as `[vFocusTrap]` and in the component's `imports`, whose `afterRenderEffect` passes the value to an inline `runDirective` and whose `DestroyRef` stops it. The helper runs the hooks as a `MutationObserver` sees the element come into the document and leave it, since Angular creates projected content before a child puts it there, and queues them through an inline `queueHook`, which runs them in Vue's order.
+
+`transition` is emulated (ADR-0100): a `<Transition>`'s element takes an inline directive, `Transition`, bound as `[ufTransition]="'fade'"`, and a conditional child sits in `<ng-container [ufTransitionRegion]="…">`, whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The element's directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when a view around the element goes, so the directive lets the element go at once while its region still shows its branch.
+
+`teleport` is emulated (ADR-0098): an `<ng-template ufTeleport>` whose inline directive, `Teleport`, creates its view in its own view container once the application has rendered and moves the view's nodes into `to`. A render's teleports mount in the document's order, and a root teleport takes its parents' scope attributes off the host.
 
 Inline content on either side of a child component's host reads with a space in the accessible
 name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
@@ -405,6 +431,11 @@ Tests and tooling build, check and run the Angular output through three subpaths
   since Angular cannot unset an input (ADR-0043). The test's listeners are bound to the outputs
   of their events (`outputBinding`, `ufChange` for `change`), and each payload is given back by
   its event's shape.
+- `@unframework.dev/target-angular/toolchain/hydrate`: the hydrate adapter (L12, ADR-0095), which
+  moves the hydration marker and the `ng-state` script into `<body>`, then creates the component on
+  the server's host with `provideClientHydration()`, and reports NG05xx as mismatches.
+  `renderForHydration` adds `provideClientHydration()` and `provideServerRendering()`, and renders
+  one at a time.
 - `@unframework.dev/target-angular/toolchain/server`: the SSR renderer (`renderApplication`), which
   returns the component's HTML only. It runs on the `ssr` Vite configuration, which links
   Angular's packages as they load.

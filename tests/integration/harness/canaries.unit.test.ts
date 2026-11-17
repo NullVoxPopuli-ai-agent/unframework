@@ -145,6 +145,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L9: ["browser"],
   L10: ["browser"],
   L11: ["browser"],
+  L12: ["hydrate"],
   L13: ["ssr", "browser"],
   L14: ["compile", "ssr", "browser"],
   L15: ["bench"],
@@ -541,7 +542,10 @@ describe("canaries", () => {
       "L9-unwired-handler",
       "L9-rerender-text",
     ]);
-    expect(() => selectCanaries(["L12"])).toThrow("No canary proves L12: it is not live.");
+    expect(selectCanaries(["L12"]).map(({ id }) => id)).toEqual([
+      "L12-client-text",
+      "L12-unwired-listener",
+    ]);
     expect(() => selectCanaries(["L5-lint"])).toThrow(/Unknown canary "L5-lint"/);
   });
 
@@ -640,6 +644,7 @@ describe("canaries", () => {
         // They corrupt the maps of served modules, not the compile: tests of their own above.
         canary.servedMap === undefined &&
         canary.id !== "L9-unwired-handler" &&
+        canary.id !== "L12-unwired-listener" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
   )("$id changes the output of every target it corrupts, without plugin errors", async (canary) => {
@@ -705,8 +710,12 @@ describe("canaries", () => {
   // copy, Angular's `styleUrl` included (the unplugin's `getSheet`).
   it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
     const styled = listCases().filter((info) => canaryCase(info).styled);
-    // The scoping corpus, and the Styleframe cases with a sheet of their own (ADR-0064).
-    for (const { id } of styled) expect(["styles", "styleframe"], id).toContain(id.split("/")[0]);
+    // The scoping corpus, the Styleframe cases with a sheet of their own (ADR-0064), a teleport
+    // root's sheet (ADR-0098), and the transition cases, whose sheets declare their classes
+    // (ADR-0100).
+    for (const { id } of styled) {
+      expect(["styles", "styleframe", "teleport", "transitions"], id).toContain(id.split("/")[0]);
+    }
     expect(styled.length).toBeGreaterThanOrEqual(15);
     /** The cases a sheet of which the reference emitted. */
     const sheets = new Set<string>();
@@ -881,12 +890,12 @@ describe("canaries", () => {
     expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     // Qwik's root also takes the fallthrough `class` and `style` (ADR-0054): oxfmt breaks it.
     expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
-    expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
+    expect(root("vue")).toMatch(/^<section :title.uf="'uf-canary'" class=/);
     // Svelte's and Astro's roots also spread their styled parents' scope attributes (ADR-0063):
     // the tag breaks.
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1"\s+class=/);
     expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
-    expect(root("astro")).toMatch(/^<section set:html="uf-canary"\s+class:list=/);
+    expect(root("astro")).toMatch(/^<section set:text="uf-canary"\s+class:list=/);
   });
 
   it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {
@@ -1306,6 +1315,65 @@ describe("canaries", () => {
     expect(JSON.stringify(module).match(/"Event"/g)).toHaveLength(4);
   });
 
+  it("L12's canaries corrupt the hydrate projects' page alone, on the targets that hydrate", () => {
+    const text = findCanary("L12-client-text");
+    const unwired = findCanary("L12-unwired-listener");
+    for (const canary of [text, unwired]) {
+      expect(canary.clientOnly, canary.id).toBe(true);
+      expect(Object.keys(canary.evidence), canary.id).toEqual(["hydrate"]);
+      expect(canary.targets, canary.id).toEqual([
+        "react",
+        "vue",
+        "svelte",
+        "solid",
+        "solid2",
+        "angular",
+      ]);
+    }
+    // A diagnostics case has no spec, so no hydrate project mounts it.
+    expect(text.appliesTo!({ ...fixture(false), runs: () => false }, "react")).toBe(false);
+    expect(text.appliesTo!(fixture(false), "react")).toBe(true);
+    const acting = { ...fixture(false), interacts: () => true, listens: true };
+    expect(unwired.appliesTo!(acting, "vue")).toBe(true);
+    expect(unwired.appliesTo!({ ...acting, listens: false }, "vue")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, interacts: () => false }, "vue")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, runs: () => false }, "vue")).toBe(false);
+    // Each target is judged on the sub-checks that catch a client-only text there.
+    const check = text.evidence.hydrate!["client render"] as (target: string) => RegExp;
+    expect(check("react").test("mismatch: Hydration failed")).toBe(true);
+    expect(check("react").test("client agreement: differs")).toBe(false);
+    expect(check("solid").test("client agreement: differs")).toBe(true);
+    expect(check("solid").test("DOM: differs")).toBe(true);
+    expect(check("solid2").test("client agreement: differs")).toBe(true);
+    expect(check("solid2").test("DOM: differs")).toBe(true);
+    expect(check("angular").test("DOM: differs")).toBe(true);
+    expect(check("svelte").test("interactions: failed")).toBe(false);
+  });
+
+  it("L12-unwired-listener removes every element listener", () => {
+    const span = { start: 0, end: 1 };
+    const listener = {
+      kind: "Event",
+      event: "click",
+      handler: { kind: "Function", binding: "add@3", span },
+      span,
+    };
+    const render = {
+      kind: "Element",
+      tag: "div",
+      attributes: [],
+      children: [{ kind: "Element", tag: "button", attributes: [listener], children: [], span }],
+      span,
+    };
+    const module = { components: [{ name: "C", render }] } as unknown as UfModule;
+    const plugin = findCanary("L12-unwired-listener").plugin!();
+    const corrupted = (plugin.ir as (module: UfModule) => UfModule)(module);
+    expect(JSON.stringify(corrupted)).not.toContain('"Event"');
+    expect(JSON.stringify(corrupted).match(/"Element"/g)).toHaveLength(2);
+    // The module the compiler handed over is left as it was.
+    expect(JSON.stringify(module)).toContain('"Event"');
+  });
+
   it("L9's canaries apply to the cases whose tests act or rerender, on the targets they run on", () => {
     const unwired = findCanary("L9-unwired-handler");
     const rerender = findCanary("L9-rerender-text");
@@ -1462,6 +1530,37 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
       expect(result.outputs[target]![0]!.contents, target).toContain("</script>");
     }
     expect(result.outputs.vue![0]!.contents).toMatch(/<\/span>\n<\/template>\n$/);
+  });
+
+  it("add an attribute to the root element of React's async component, which `<Name>Resolved` renders (ADR-0101)", () => {
+    const contents = [
+      "async function profileSetup({ id }: { id: string }) {",
+      "  const user = await loadUser(id);",
+      "  return { user };",
+      "}",
+      "",
+      "export default function Profile(props: { id: string }) {",
+      "  const [setup] = useState(() => profileSetup(props));",
+      "  return (",
+      "    <Suspense fallback={<SetupPending setup={setup} />}>",
+      "      <ProfileResolved {...props} setup={setup} />",
+      "    </Suspense>",
+      "  );",
+      "}",
+      "",
+      "function ProfileResolved({ setup }: { setup: ReturnType<typeof profileSetup> }) {",
+      "  const { user } = use(setup);",
+      '  return <p className="profile">{user.name}</p>;',
+      "}",
+      "",
+      "function SetupPending({ setup }: { setup: Promise<unknown> }): null {",
+      "  return null;",
+      "}",
+      "",
+    ].join("\n");
+    const written = addRootAttribute({ path: "Profile.tsx", contents }, 'class="uf-canary"');
+    expect(written).toContain('return <p class="uf-canary" className="profile">{user.name}</p>;');
+    expect(written).toContain("<Suspense fallback={<SetupPending setup={setup} />}>");
   });
 
   it("add an attribute to the root element only, after any frontmatter, options or script", () => {

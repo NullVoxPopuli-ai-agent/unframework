@@ -134,6 +134,28 @@ first option, where HTML and the other targets select none (ADR-0033). Every oth
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
 all of composition, composables and their effect order included.
 
+A directive is Vue's own custom directive (ADR-0099): an `ObjectDirective`, `vFocusTrap.ts` for a
+`.uf.ts` module's, which `<script setup>` imports and resolves by its name, or a `const` there for
+an in-file one. Its hooks read the value from Vue's binding, and `updated` returns early on the
+same value, since Vue calls it after every update of the component.
+
+A `<Teleport>` is Vue's own, behind a `mounted` ref set in `onMounted`, so neither the server nor the
+hydrating client renders its content, and a component whose whole render is a teleport sets
+`inheritAttrs: false`, so Vue doesn't warn about a parent's scope attribute (ADR-0098).
+
+A `<Transition>` is Vue's own, around `v-if` and its branches, with no `name` when it is `"v"`.
+`appear` is bound as an object, `v-bind="{ appear: true }"`: Vue's server compiler wraps the child
+in `<template>` when it finds `appear` as an attribute or a `:appear` binding, and reads no object
+binding, so the server renders the settled child (ADR-0100).
+
+An async setup (ADR-0101) awaits in `<script setup>`, which Vue compiles through
+`withAsyncContext`, so every item after an await binds to the component. Vue renders it only under
+a `<Suspense>`: a parent prints one around each use of an async child, and a component whose whole
+render is an async child turns `inheritAttrs` off and binds `$attrs` on it, since `<Suspense>` drops
+fallthrough. `defineExpose` comes before the first await, with the functions it names as
+declarations, or the parent's ref keeps the bare proxy. The toolchain's client and hydrate adapters
+render a root whose `setup` is async inside a `<Suspense>`.
+
 ## Composables
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (ADR-0069, `src/composable.ts`):
@@ -169,7 +191,9 @@ Models, context and `<component is>` (ADR-0054) are Vue's own as well:
   `false` (ADR-0034);
 - a control's `v-model` with its modifiers (`v-model.trim`); a range input takes `.number`,
   since Vue's `vModelText` casts only a number input's value, and the contract casts both; a
-  component's `v-model:value`;
+  bound `<textarea>` also takes a local directive, `v-text-caret`, which sets its text again once
+  it is mounted, so a hydrated field's caret is after its text, as a client render leaves it
+  (ADR-0095); a component's `v-model:value`;
 - the module's injection keys in a plain `<script lang="ts">` block of its main component's
   output (the default export's), typed with Vue's `InjectionKey` (and `Ref`), which another
   component imports from that file; `provide` and `inject` as written; the template reads an
@@ -201,6 +225,9 @@ For tests and tooling (the target's main entry never loads it):
   props (`onChange` for an event `change`), only for the events the component declares, so a
   rerender never removes them. `rerender` replaces the props whole: an absent key is deleted, so
   the prop takes its default again. `nextTick` settles: watchers and post-flush effects have run.
+- **`…/toolchain/hydrate`** (L12, ADR-0095): hydrates with `createSSRApp`, its root rendering the
+  component as the mount adapter's does, and reports Vue's `Hydration` warnings as mismatches.
+  `renderForHydration` renders the same root, so `useId` makes the same ids on both sides.
 - **`…/toolchain/server`**: renders with `createSSRApp` and `vue/server-renderer`. Vue runs an
   immediate watcher's first callback during the server's setup, and nothing else of the effects.
 

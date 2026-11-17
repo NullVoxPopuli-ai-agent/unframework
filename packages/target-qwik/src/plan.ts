@@ -19,6 +19,7 @@ import type {
   ConstItem,
   ElementNode,
   EventAttribute,
+  Expression,
   FunctionCode,
   FunctionItem,
   ListenerAttribute,
@@ -795,6 +796,11 @@ function planListeners(component: UfComponent): ListenerPlan {
         );
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
         return;
+      case "Teleport":
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
+        for (const child of node.children) visit(child, path);
+        return;
       default:
         unreachable(node);
     }
@@ -923,6 +929,19 @@ function declaredQrls(
   for (const id of [...(component.exposes?.functions ?? []), ...returned]) {
     if (client(id)) need(id);
   }
+  // A directive's value is read in its visible task (./directive.ts), and a function it names is
+  // a QRL its hooks call (ADR-0099).
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind !== "Directive") continue;
+        for (const reference of attribute.value.refs) {
+          if (reference.kind === "Binding" && client(reference.binding)) need(reference.binding);
+        }
+      }
+    },
+  });
   for (const item of component.setup) {
     switch (item.kind) {
       // A task's calls run in place (./setup.ts `bodyStatements`).
@@ -935,6 +954,8 @@ function declaredQrls(
       case "Lifecycle":
         visit(item.callback.body, kindOf(item.callback), true, item.hook === "mounted");
         break;
+      // An awaited value reads no setup function (ADR-0101).
+      case "Await":
       case "State":
       case "Variable":
       case "Const":
@@ -997,6 +1018,8 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
         case "state":
         case "derived":
         case "localConst":
+        // A plain value the body reads from its computed (./setup.ts, ADR-0101).
+        case "awaited":
         case "emit":
         case "model":
         case "slots":
@@ -1116,6 +1139,7 @@ export function usedFunctionRenderCalls(component: UfComponent): BindingReferenc
         if (item.initial) codes.push(item.initial);
         break;
       case "Const":
+      case "Await":
         codes.push(item.value);
         break;
       case "Derived":
@@ -1385,8 +1409,18 @@ function planFunctions(
   };
   // A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
   const fills = fillExpressions(component);
+  // A directive's value is read in its visible task (./directive.ts): client code.
+  const directed = new Set<Expression>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Directive") directed.add(attribute.value);
+      }
+    },
+  });
   for (const { expression } of expressionsOf(component)) {
-    mark(fills.has(expression) ? client : render, expression.refs);
+    mark(fills.has(expression) || directed.has(expression) ? client : render, expression.refs);
   }
   for (const item of component.setup) {
     switch (item.kind) {
@@ -1395,6 +1429,7 @@ function planFunctions(
         if (item.initial) mark(render, item.initial.refs);
         break;
       case "Const":
+      case "Await":
         mark(render, item.value.refs);
         break;
       case "Derived":
@@ -1608,6 +1643,8 @@ export function isReactive(kind: BindingKind): boolean {
     case "loopVar":
     case "templateRef":
     case "localConst":
+    // An awaited value is evaluated once each time the setup runs (ADR-0101).
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
@@ -1647,6 +1684,8 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Lifecycle":
         visit(item.callback.body.refs);
         break;
+      // An awaited value cannot emit (UF2039).
+      case "Await":
       case "State":
       case "Derived":
       case "TemplateRef":
@@ -1731,6 +1770,14 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
       case "Dynamic":
         for (const child of node.children) visit(child, conditional);
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
+        return;
+      // A teleport renders once the component has mounted (ADR-0098).
+      case "Teleport":
+        for (const child of node.children) visit(child, true);
+        return;
+      // A transition's element comes and goes as its branch does (ADR-0100).
+      case "Transition":
+        for (const child of node.children) visit(child, conditional);
         return;
       default:
         unreachable(node);

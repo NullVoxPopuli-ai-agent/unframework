@@ -105,7 +105,7 @@ export default function Counter(
   (`!user ? A : B`) is `<Show when={props.user} fallback={A}>`. An accessor is named after its
   binding or last property (`value` for one no target can declare), or a free name where that
   would capture a name the output prints as it is, the object form's parameter, an import or
-  helper, or another callback's around it; it takes a list item's, a state's or a derived
+  helper, or another callback's around it; it takes a state's or a derived
   value's own name only in a branch without a listener or a template ref. A handler in a branch
   that reads what its tests narrow is one call (UF3029), which runs while its element and so its
   branch are there: its arguments read through the accessor too
@@ -119,10 +119,16 @@ export default function Counter(
   one interpolation is a fragment (`{(user) => <>{user().name + props.label}</>}`), which Solid
   compiles to a memo. The rules are syntactic: a value taken where none was needed renders
   alike.
-- Lists are `<For each={items}>{(item, index) => <li>…</li>}</For>`. `<For>` keys rows by the
-  items themselves, so the source's `key` is not printed (M1 guarantees a list's content and
-  order, not its DOM identity); the index is an accessor, `index()`. A parameter nothing reads
-  is left out, the key not counting.
+- Lists are `<KeyedFor each={items} by={(item) => item.id}>{(item) => <li>…</li>}</KeyedFor>`,
+  an inline helper over `<For>` whose rows follow the source's `key`, printed as `by`
+  (`keyed-identity`, emulated, ADR-0096). `<For>` follows the items themselves, so an item
+  replaced by a copy of the same key would get a new row. A row is an object of getters named as
+  the item, read as `item.value` and `item.index`, which TypeScript narrows as it narrows a prop.
+  `by` takes the item and the index as values, as the key reads them. A parameter neither
+  callback reads is left out of it.
+- `directive` is emulated (ADR-0099): a ref factory, `ref={vFocusTrap(() => open())}`, joined to the element's own ref callback where it has one, whose `onMount`, effect and `onCleanup` queue the hooks through an inline `queueHook`, which runs them in Vue's order.
+- `transition` is emulated (ADR-0100): an inline component, `Transition`, resolves the child with `children()` and renders a signal of the elements it keeps, the shown one and each one leaving until its leave ends, running Vue's classes on each. The server renders the child as it is.
+- `teleport` is emulated (ADR-0098): an inline helper, `Teleport`, inserts the element into `to` once the component has mounted, as `<Portal>` does in `<head>`, with no wrapper, in a root its owner owns.
 - HTML's attribute names as written (`class`, `for`, `tabindex`, `readonly`), which Solid's JSX
   takes; SVG's in their own case (`viewBox`, `stroke-width`). Every bindable boolean attribute
   is one Solid's compiler sets as a boolean, so none needs `bool:` (`test/attributes.test.ts`).
@@ -148,8 +154,8 @@ export default function Counter(
 
 Three rewrites keep the output what Solid's tools expect:
 
-- an interpolated conditional whose branch prints as a bare name (a list's item, `undefined`, or
-  a value a keyed callback received) is a `<Show>`, as `solid/prefer-show` asks:
+- an interpolated conditional whose branch prints as a bare name (a setup constant, `undefined`,
+  or a value a keyed callback received, never a list's item, which prints as `item.value`) is a `<Show>`, as `solid/prefer-show` asks:
   `{done ? title : "-"}` becomes `<Show when={done} fallback={"-"}>{title}</Show>`;
 - Solid compiles static content into an HTML template, where the browser drops a line feed
   right after `<pre>`. A line feed that would start a `<pre>`'s template (text after only
@@ -260,6 +266,47 @@ The setup's items in source order (`src/setup.ts`), after `mergeProps`:
 - Constants and functions that capture nothing of the component move to module scope
   (`unicorn/consistent-function-scoping`).
 
+### Async setup (ADR-0101)
+
+The awaits open an async setup, so they run in one `createResource`, whose fetcher awaits each
+in order and returns their values as a record. The rest of the setup and the template wait for
+it in the function child of `<Show>`, inside a `<Suspense>` with no fallback:
+
+```tsx
+const [awaited] = createResource(async () => {
+  const user = await loadUser(props.id);
+  return { user };
+});
+
+return (
+  <Suspense>
+    <Show when={awaited()}>
+      {(resolved) => {
+        const { user } = resolved();
+        const [visits, setVisits] = createSignal(user.visits);
+        return <p>…</p>;
+      }}
+    </Show>
+  </Suspense>
+);
+```
+
+- The server render waits for the `<Suspense>` and writes the resolved template. A resource
+  read with no `<Suspense>` around it would render nothing there.
+- The fetcher runs untracked, so a prop an awaited expression reads is read once, with no
+  `untrack`, as the source's rule asks.
+- `when` tests the record, so a falsy awaited value still renders.
+- The rest of the setup closes over `props` in the callback. An inner component that took the
+  awaited values as props would fail `solid/reactivity` (L5).
+- `useId()` is created above the resource, where hydration still runs, so it keeps the server's
+  id: the subtree the callback renders is created anew on the client.
+- A parent's `ref` gets the exposed functions once the setup resolves, as on Vue.
+- Declared: after hydration, Solid creates the component's subtree again once its setup
+  resolves, so focus and selection inside it reset. With the data Solid's server render
+  serializes by default, the client hydrates in place and doesn't run the setup again; the
+  harness renders with `noScripts`, which leaves that data out. A setup whose promise rejects
+  throws from the resource's read.
+
 ## Composables and shared modules (ADR-0069, ADR-0070)
 
 A `.uf.ts` module's composable is its own module, `useToggle.ts` (`src/composable.ts`): the
@@ -346,7 +393,7 @@ export function useToggle(initial: boolean) {
 
 Every name the output introduces (`props`, `rawProps`, `_props`, `defaults`, `cx`, setters,
 `createWatcher`, `createWatchEffect`, the scheduler's `queuedWatchers`, `queueWatcher` and
-`flushQueued`, `nextTick`, `narrowed`, the events' interface, the `solid-js` imports) is
+`flushQueued`, `nextTick`, `KeyedFor`, `narrowed`, the events' interface, the `solid-js` imports) is
 claimed around the source's own names, so none captures another. The target reports one
 difference, `composable-effect-order` (UF4005, info); what else Solid cannot render as the other
 targets do is the analyser's to reject (ADR-0033).
@@ -357,6 +404,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `event-capture`, `event-once`, `event-passive` | native: `on:event={{ handleEvent, … }}`                                                                      |
 | `event-semantics`                              | native: some events delegated, the others native                                                             |
 | `use-id`                                       | native: `createUniqueId`                                                                                     |
+| `async-setup`                                  | native: `createResource`, with the rest of the setup in a `<Show>` callback inside `<Suspense>` (ADR-0101)   |
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
 | `class-binding`                                | emulated: `cx`, which reads an array's entries where a part may be an array or an object (ADR-0065)          |
 | `style-binding`                                | emulated: `styleProperties`, a style bound to a value as an object with kebab-case keys (ADR-0065)           |
@@ -364,6 +412,7 @@ targets do is the analyser's to reject (ADR-0033).
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
+| `keyed-identity`                               | emulated: `KeyedFor`, a list whose rows follow the source's `key` (ADR-0096)                                 |
 | `composable-effect-order`                      | unsupported (UF4005, info): a composable's watchers keep its own module's queue (ADR-0069)                   |
 | everything else                                | native                                                                                                       |
 
@@ -376,7 +425,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | `import Field from "./Field.uf.tsx"`        | `import Field from "./Field"`; a component that renders itself calls its own function                         |
 | `<Field label="Name" tone={tone.value} />`  | `<Field label="Name" tone={tone()} />`                                                                        |
 | `onClear={clear}` on a component            | `onClear={clear}`, the handler taking the event's payload                                                     |
-| a component as a `.map` root                | `<For>`, as an element                                                                                        |
+| a component as a `.map` root                | `<KeyedFor>`, as an element                                                                                   |
 | `defineSlots<{ … }>()`                      | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
 | `{slots.default?.()}`, `{slots.title?.()}`  | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
 | `{slots.title?.() ?? <em>None</em>}`        | `{props.title ?? <em>None</em>}`                                                                              |
@@ -401,7 +450,7 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | Control                                 | Solid                                                                                                  |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | a text-like `<input>`                   | `value={text()}` and `onInput`                                                                         |
-| a `<textarea>`                          | `value` in the browser and its text on the server (`isServer`), and `onInput`                          |
+| a `<textarea>`                          | `value` in the browser and its text on the server (`isServer`), `onInput`, and `ref={textCaret}`       |
 | a `<select>`                            | each option `selected={size() === "m"}`, and `onChange`                                                |
 | a checkbox, a radio                     | `checked={agreed()}`, `checked={plan() === "monthly"}`, and `onChange`                                 |
 | checkboxes into an array                | `checked={drinks().includes("tea")}`, and `onChange` writes `toggle(drinks(), "tea", checked)`         |
@@ -424,6 +473,8 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   root's declaration, as Vue's merge does. A root's static class merges with a conditional
   rather than `cx`, so two components of one module, which the unplugin joins into one file,
   declare no helper twice; a root's class from parts or from a spread merges through `cx`.
+- A bound `<textarea>`'s `ref` callback, `textCaret`, sets its text again, so a hydrated field's
+  caret is after its text, as a client render leaves it (ADR-0095).
 - Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
   `<select>` marks its options, in groups, lists and conditionals alike, an option without a
   `value` by its text (collapsed as the DOM collapses it), and a `<textarea>` holds its text
@@ -475,7 +526,13 @@ The tests and tooling build, check and run Solid output through three entries:
   proxy with a signal per key, which `mergeProps` reads as reactive props, holding the values the
   test passed (never a store's proxies), and rerenders by replacing each prop, removing those
   left out.
-- `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`.
+- `@unframework.dev/target-solid/toolchain/hydrate` (browser, L12, ADR-0095): hydrates with
+  `hydrate`, from a fresh `_$HY` and an unfinished `sharedConfig`, both compiled hydratable
+  (`vite("hydrate")` sets `ssr: true`). Solid throws for what it cannot hydrate, and checks no
+  text or attribute. `renderForHydration` is `renderToString`.
+- `@unframework.dev/target-solid/toolchain/server` (Node): renders with `renderToStringAsync`,
+  which waits for each `<Suspense>`, with `noScripts`, so the HTML holds no `<script>` of
+  resource data (ADR-0101).
 
 `test/output.test.ts` runs L3, L4 and L5 over what the emitter writes for sources that reach
 every shape above, and renders the rewritten ones on the server (`test/rewrites.browser.test.ts`

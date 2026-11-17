@@ -54,6 +54,8 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   // A parent reads it to reject explicit type arguments and `<component is>` (UF6006).
   const parameters = node.typeParameters?.params ?? [];
   if (parameters.length) api.typeParameters = parameters.map((parameter) => parameter.name.name);
+  // A parent in another file wraps an async child its own way: Vue's in `<Suspense>` (ADR-0101).
+  if (node.async && body.some(awaits)) api.async = true;
   for (const statement of body) {
     const call = macroCall(statement, context);
     if (!call) continue;
@@ -80,7 +82,7 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
         break;
     }
   }
-  const root = rootOf(node);
+  const root = rootOf(node, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
   return api;
@@ -411,8 +413,14 @@ export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProp
   );
 }
 
-/** What a component's returned JSX is: one element (with its tag), one component, or other. */
-function rootOf(node: ComponentFunction): {
+/**
+ * What a component's returned JSX is: one element (with its tag), one component, or other, as a
+ * `<Teleport>` or a `<Transition>` is (ADR-0098, ADR-0100).
+ */
+function rootOf(
+  node: ComponentFunction,
+  context: ApiContext,
+): {
   kind: ComponentApi["root"];
   tag?: string;
 } {
@@ -432,7 +440,24 @@ function rootOf(node: ComponentFunction): {
   if (returned?.type !== "JSXElement") return { kind: "other" };
   const name = returned.openingElement.name;
   if (name.type !== "JSXIdentifier") return { kind: "other" };
+  const resolution = context.scopes.resolve(name as unknown as AST.IdentifierReference);
+  if (
+    resolution.kind === "import" &&
+    (context.authoring.get(resolution.declaration) === "Teleport" ||
+      context.authoring.get(resolution.declaration) === "Transition")
+  ) {
+    return { kind: "other" };
+  }
   if (isComponentName(name.name)) return { kind: "component" };
   if (name.name === "component") return { kind: "other" };
   return { kind: "element", tag: name.name };
+}
+
+/** Whether a setup statement is an awaited declaration, `const user = await …` (ADR-0101). */
+function awaits(statement: AST.Directive | AST.Statement): boolean {
+  return (
+    statement.type === "VariableDeclaration" &&
+    statement.kind === "const" &&
+    statement.declarations.some((declarator) => declarator.init?.type === "AwaitExpression")
+  );
 }

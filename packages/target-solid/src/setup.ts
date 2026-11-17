@@ -57,7 +57,7 @@ import {
   watcherHelperCode,
 } from "./helpers.ts";
 import type { WatcherUses } from "./helpers.ts";
-import { eventProp, listIndexes } from "./props.ts";
+import { eventProp } from "./props.ts";
 import type { SolidProps } from "./props.ts";
 import { edited, untrackEdits } from "./untracked.ts";
 
@@ -154,7 +154,15 @@ export class SolidCode {
         this.#reading.add(item.binding);
       }
     }
-    const indexes = listIndexes(component);
+    // Each list's index, by the name of the item whose row it is read through.
+    const rowItems = new Map<BindingId, string>();
+    walk(component.render, {
+      enter: (node) => {
+        if (node.kind === "For" && node.index !== undefined) {
+          rowItems.set(node.index, this.#binding(node.item).name);
+        }
+      },
+    });
     this.rules = {
       binding: (reference, binding, text) => {
         // A read a condition narrows, where Solid's spelling loses it (src/asserted.ts).
@@ -162,9 +170,12 @@ export class SolidCode {
         switch (binding.kind) {
           case "prop":
             return `${props.read(binding, text)}${asserted}`;
-          case "loopVar":
-            // `<For>` passes the index as an accessor.
-            return indexes.has(binding.id) ? `${text}()` : text;
+          case "loopVar": {
+            // A keyed list's row is an object of getters named as the item, which TypeScript
+            // narrows as it narrows the props (src/jsx.ts, ADR-0096).
+            const item = rowItems.get(binding.id);
+            return item === undefined ? `${text}.value` : `${item}.index`;
+          }
           // A composable returns its state and derived values as accessors (ADR-0069).
           case "state":
           case "derived":
@@ -178,6 +189,8 @@ export class SolidCode {
           case "localFn":
           case "localVar":
           case "emit":
+          // An awaited value is a constant the resource's record hands on (ADR-0101).
+          case "awaited":
             return text;
           // A slot reads as a prop (src/composition.ts), an injected value and a slot's props as
           // written, and a component by its import's name. A module's values are the copied
@@ -216,6 +229,7 @@ export class SolidCode {
           case "localConst":
           case "localFn":
           case "emit":
+          case "awaited":
           case "slots":
           case "slotScope":
           case "context":
@@ -340,6 +354,11 @@ export class SolidCode {
     return this.value(value);
   }
 
+  /** A name of the output's own, past every name the source and the output take. */
+  claim(name: string): string {
+    return this.#imports.claim(name);
+  }
+
   /** A Solid import's local name. */
   solid(name: string): string {
     return this.#imports.add("solid-js", name);
@@ -353,6 +372,14 @@ export class SolidCode {
     const text = rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
     if (!this.#readsReactive(code)) return text;
     return `${this.solid("untrack")}(() => ${arrowBody(text)})`;
+  }
+
+  /**
+   * An awaited expression, for the `pure` site, with no `untrack`: the resource runs its fetcher
+   * untracked already (solid-js 1.9 `createResource`), so a prop it reads is read once (ADR-0101).
+   */
+  awaited(code: Code): string {
+    return rewriteCode(this.#asserted(code), this.component, this.rules, "pure");
   }
 
   /** A getter (`computed`, a watch source) as an arrow, for the `pure` site. */
@@ -559,6 +586,8 @@ function tracked(kind: Binding["kind"]): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    // Read once from the resource's record, never a signal (ADR-0101).
+    case "awaited":
       return false;
     case "slots":
     case "slotScope":
@@ -579,8 +608,29 @@ function tracked(kind: Binding["kind"]): boolean {
 export interface SolidSetup {
   /** Constants and functions that capture nothing of the component, at module scope (ADR-0045). */
   hoisted: Statement[];
-  /** The setup's statements, in source order. */
+  /**
+   * The setup's statements, in source order: an async setup's from its awaited bindings on,
+   * which run once its awaits resolve (ADR-0101).
+   */
   statements: Statement[];
+  /** An async setup's awaits, as one resource (ADR-0101), or none. */
+  resource?: SolidResource;
+}
+
+/**
+ * An async setup's awaits (ADR-0101): one `createResource` whose fetcher runs them in order and
+ * returns their values as a record, `{ user }`, which the component's `<Show>` hands its function
+ * child once it resolves. The rest of the setup and the template run in that child.
+ */
+export interface SolidResource {
+  /** What the component runs first: its ids, then the resource. */
+  statements: Statement[];
+  /** The resource's accessor, `awaited`. */
+  accessor: string;
+  /** The parameter of `<Show>`'s function child, `resolved`. */
+  parameter: string;
+  /** The first statement of that child, which reads the awaited values out of the record. */
+  bindings: Statement;
 }
 
 /** The setup's statements, in source order, and those hoisted out of the component. */
@@ -602,22 +652,53 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
       module.push(placeholders.statements(`${texts.get(item)!}\n`));
     }
   }
+  const awaits = component.setup.filter((item) => item.kind === "Await");
+  // An async setup's ids are created before its resource, where hydration still runs, so they
+  // keep the server's (ADR-0101): the subtree the resource renders is created again on the
+  // client once it resolves, and an id created there would be a client one (`cl-N`).
+  const early = (item: SetupItem) => awaits.length > 0 && item.kind === "Id";
   // A `provide` wraps the template in its context's provider (src/composition.ts).
   const kept = teardownFirst(
     component.setup.filter(
-      (item) => item.kind !== "Provide" && !("binding" in item && hoisted.has(item.binding)),
+      (item) =>
+        item.kind !== "Provide" &&
+        item.kind !== "Await" &&
+        !early(item) &&
+        !("binding" in item && hoisted.has(item.binding)),
     ),
   );
+  let resource: SolidResource | undefined;
+  if (awaits.length) {
+    const accessor = code.claim("awaited");
+    const parameter = code.claim("resolved");
+    const names = awaits.map((item) => bindingOf(item.binding).name).join(", ");
+    const fetcher = [...awaits.map((item) => texts.get(item)!), `return { ${names} };`];
+    const statements = [
+      ...component.setup.filter(early).map((item) => placeholders.statements(texts.get(item)!)),
+      placeholders.statements(
+        `const [${accessor}] = ${code.solid("createResource")}(async () => {\n${fetcher.join("\n")}\n});\n`,
+      ),
+    ];
+    // The awaited values, read once from the record (`when` tests the record, so a falsy value
+    // still renders).
+    const bindings = placeholders.statements(
+      `const { ${names} } = ${parameter}();${kept.length ? "" : "\n"}`,
+    );
+    resource = { statements, accessor, parameter, bindings };
+  }
   for (const [index, item] of kept.entries()) {
     // A blank line around a block (a function, a watcher, an effect, a hook) and before the
     // return, as the source sets them apart: oxfmt keeps one blank line and adds none.
-    const before = index > 0 && (BLOCKS.has(item.kind) || BLOCKS.has(kept[index - 1]!.kind));
+    const previous = kept[index - 1];
+    const before =
+      (index > 0 || resource !== undefined) &&
+      (BLOCKS.has(item.kind) || (previous !== undefined && BLOCKS.has(previous.kind)));
     const after = index === kept.length - 1;
     body.push(
       placeholders.statements(`${before ? "\n" : ""}${texts.get(item)!}${after ? "\n" : ""}`),
     );
   }
-  return { hoisted: module, statements: body };
+  return { hoisted: module, statements: body, ...(resource ? { resource } : {}) };
 }
 
 /**
@@ -686,6 +767,11 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
     case "Id": {
       const { name } = bindingOf(item.binding);
       return `const ${name} = \`uf-id-\${${code.solid("createUniqueId")}()}\`;`;
+    }
+    case "Await": {
+      // A statement of the resource's fetcher (ADR-0101).
+      const { name } = bindingOf(item.binding);
+      return `const ${name}${annotation(item.type)} = await ${code.awaited(item.value)};`;
     }
     case "Const": {
       const { name } = bindingOf(item.binding);
@@ -826,6 +912,7 @@ function itemCode(item: SetupItem): Code[] {
     case "Variable":
       return item.initial ? [item.initial] : [];
     case "Const":
+    case "Await":
       return [item.value];
     case "Derived":
       return [item.getter.body];
@@ -907,6 +994,10 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
         return;
       case "SlotOutlet":
         node.fallback.forEach(visit);
+        return;
+      case "Teleport":
+      case "Transition":
+        node.children.forEach(visit);
         return;
       default:
         unreachable(node);

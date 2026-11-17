@@ -43,16 +43,22 @@ import {
 } from "./browser/console.ts";
 import { prepareSpecFile } from "./browser/determinism.ts";
 import { boundElementTimeout } from "./browser/element-timeout.ts";
+import { isHydrateProject } from "./browser/hydrate.ts";
 import { installMatchers } from "./browser/matchers.ts";
 import { installNavigationGuard, takePreventedNavigations } from "./browser/navigation.ts";
 import { currentTarget } from "./browser/target.ts";
+import { leftInBody, startTeleports } from "./browser/teleports.ts";
 import { closeTraces } from "./browser/trace.ts";
 import { releaseKeys } from "./browser/user.ts";
 import { cleanup } from "./browser/view.ts";
 import { caseOfFile } from "./harness.ts";
 import type { ColorScheme } from "./harness.ts";
-import { BROWSER_LAYERS, recordLayer, recordStandIn } from "./layers.ts";
+import { BROWSER_LAYERS, recordEveryLayerAs, recordLayer, recordStandIn } from "./layers.ts";
 import type { LayerSubject } from "./layers.ts";
+
+/** A hydrate project (L12, ADR-0095): every check a spec runs is recorded as L12. */
+const hydrating = isHydrateProject();
+if (hydrating) recordEveryLayerAs("L12");
 
 installConsoleCapture();
 beginSpecFileConsole();
@@ -67,6 +73,8 @@ installNavigationGuard();
 // oxlint-disable-next-line no-empty-pattern
 aroundAll(async (runSuite, {}, suite) => {
   await runSuite();
+  // A hydrate project captures no pixels, so no follower waits on it.
+  if (hydrating) return;
   await commands.ufSpecFinished({ case: caseOfFile(suite.file.filepath, inject("ufHarness")) });
 });
 
@@ -89,6 +97,8 @@ async function emulateColorScheme(file: string): Promise<ColorScheme> {
 
 beforeEach(({ task, skip }) => {
   beginTestConsole();
+  // What `body` holds now is the page's: anything else the test leaves there is a leak.
+  startTeleports();
   // A trace a test before this one left behind is that test's, judged already.
   closeTraces();
   const requires = task.meta.ufRequires;
@@ -96,7 +106,12 @@ beforeEach(({ task, skip }) => {
   // A case the target has no output for has a stand-in for its component, which renders
   // nothing: each of its tests is skipped there, whatever it requires, with the errors the case
   // expects.
-  const reason = noOutputReason(subject.case) ?? (requires ? requiredSkip(requires) : undefined);
+  // A hydrate project skips every test where the target does not hydrate, whatever else would
+  // skip it there, so every L12 cell of such a target says why (ADR-0095).
+  const reason =
+    (hydrating ? requiredSkip(["hydration"]) : undefined) ??
+    noOutputReason(subject.case) ??
+    (requires ? requiredSkip(requires) : undefined);
   if (reason === undefined) {
     // A case the target cannot compile yet has a stand-in for its component too, which throws
     // when the spec mounts it, before `expectParity` records L7, L9, L10 or L11: every browser
@@ -133,7 +148,9 @@ aroundEach(async (runTest, { task }) => {
 /**
  * Unmounts what the test mounted, restores the real intervals a view's clock faked, resets the
  * input, records L9's leftover steps, L13 and then L8, and fails the test with every failed
- * layer. Throwing from afterEach fails the test (verified by the browser-projects spike). A test
+ * layer. L8 also fails a test that left an element in `body` once its views were unmounted: a
+ * component that appends one, a teleport's content among them, removes it as it unmounts
+ * (ADR-0098). Throwing from afterEach fails the test (verified by the browser-projects spike). A test
  * skipped by capability ran nothing: it has recorded every layer, and the console's entries are
  * the next test's to judge.
  */
@@ -163,8 +180,14 @@ async function afterTest(task: RunnerTestCase): Promise<void> {
       ? { status: "fail", message: describeConsole(unexpected) }
       : { status: "pass" },
   );
+  const left = leftInBody();
+  const leaks = left.length
+    ? [
+        `The test left ${left.length === 1 ? "an element" : `${left.length} elements`} in <body> once its views were unmounted: ${left.join(", ")}. A component removes what it appends to <body>, a teleport's content among it, as it unmounts (ADR-0098).`,
+      ]
+    : [];
   // Last, so L8 sees every error the spec's own hooks threw (they ran before this one).
-  judgeTest(task, subject, cleanupError, takePreventedNavigations());
+  judgeTest(task, subject, cleanupError, [...takePreventedNavigations(), ...leaks]);
 }
 
 /** The case and target a test verifies, with the run's quarantine. */

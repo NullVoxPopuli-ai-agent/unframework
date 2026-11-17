@@ -36,6 +36,8 @@ const renderNodeKinds = {
   Component: true,
   SlotOutlet: true,
   Dynamic: true,
+  Teleport: true,
+  Transition: true,
 } satisfies Record<RenderNode["kind"], true>;
 const attributeKinds = {
   Static: true,
@@ -49,6 +51,8 @@ const attributeKinds = {
   Prop: true,
   Listener: true,
   ModelBinding: true,
+  RawHtml: true,
+  Directive: true,
 } satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
   prop: true,
@@ -59,6 +63,7 @@ const bindingKinds = {
   localConst: true,
   localFn: true,
   localVar: true,
+  awaited: true,
   emit: true,
   model: true,
   slots: true,
@@ -74,6 +79,7 @@ const bindingKinds = {
   usedConst: true,
 } satisfies Record<BindingKind, true>;
 const setupItemKinds = {
+  Await: true,
   State: true,
   Derived: true,
   TemplateRef: true,
@@ -161,13 +167,15 @@ export interface Visitor {
 /**
  * The child nodes of a node, in document order: an element's or a fragment's children, every
  * branch's children of an `If` in order, a `For`'s body, every fill's children of a component in
- * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', and nothing for
- * text.
+ * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', a `Teleport`'s
+ * or a `Transition`'s content, and nothing for text.
  */
 export function childrenOf(node: VisitedNode): readonly RenderNode[] {
   switch (node.kind) {
     case "Element":
     case "Fragment":
+    case "Teleport":
+    case "Transition":
       return node.children;
     case "If":
       return node.branches.flatMap((branch) => branch.children);
@@ -233,6 +241,12 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
     }
   };
   for (const composable of module.composables ?? []) setup(composable);
+  for (const directive of module.directives ?? []) {
+    for (const binding of directive.bindings) features.bindingKinds.add(binding.kind);
+    for (const hook of directive.hooks) {
+      for (const ref of hook.body.refs) features.codeReferenceKinds.add(ref.kind);
+    }
+  }
   for (const component of module.components) {
     setup(component);
     walk(component.render, {
@@ -262,6 +276,8 @@ function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
     case "Dynamic":
       return node.attributes;
     case "Fragment":
+    case "Teleport":
+    case "Transition":
     case "Text":
     case "Interpolation":
     case "If":
@@ -338,6 +354,8 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
         fills(node.fills ?? [], `${path}/fills`);
         return;
       case "Fragment":
+      case "Teleport":
+      case "Transition":
         for (const [index, child] of node.children.entries()) {
           visit(child, `${path}/children/${index}`);
         }
@@ -382,6 +400,8 @@ function attributeExpressions(
     case "Model":
     case "Prop":
     case "ModelBinding":
+    case "RawHtml":
+    case "Directive":
       add(attribute.value, `${path}/value`);
       return;
     case "Class":
@@ -476,6 +496,7 @@ function partsOf(
       case "Variable":
         if (item.initial) parts.push({ value: item.initial, path: `${path}/initial` });
         break;
+      case "Await":
       case "Const":
         parts.push({ value: item.value, path: `${path}/value` });
         break;
@@ -580,6 +601,8 @@ function walkHandlers(
       fills(node.fills ?? []);
       return;
     case "Fragment":
+    case "Teleport":
+    case "Transition":
       for (const [index, child] of node.children.entries()) {
         walkHandlers(child, `${path}/children/${index}`, visit);
       }
@@ -759,6 +782,19 @@ export function spansOf(module: UfModule): LocatedSpan[] {
     codeSpans(constant.value, `${path}/value`, at);
     add(constant.span, path);
   }
+  for (const [index, directive] of (module.directives ?? []).entries()) {
+    const path = `/directives/${index}`;
+    add(directive.value.span, `${path}/value`);
+    if (directive.element) add(directive.element.span, `${path}/element`);
+    for (const [hook, { body, span }] of directive.hooks.entries()) {
+      codeSpans(body, `${path}/hooks/${hook}/body`, at);
+      add(span, `${path}/hooks/${hook}`);
+    }
+    for (const [binding, { span }] of directive.bindings.entries()) {
+      add(span, `${path}/bindings/${binding}`);
+    }
+    add(directive.span, path);
+  }
   return found;
 }
 
@@ -876,6 +912,8 @@ function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void
     case "Model":
     case "Prop":
     case "ModelBinding":
+    case "RawHtml":
+    case "Directive":
       return;
     case "Class":
       for (const [item, { span }] of attribute.items.entries()) {
@@ -952,6 +990,8 @@ function walkSpans(node: VisitedNode, path: string, add: AddSpan) {
       fillSpans(node.fills ?? [], `${path}/fills`, add);
       return;
     case "Fragment":
+    case "Teleport":
+    case "Transition":
       for (const [index, child] of node.children.entries()) {
         walkSpans(child, `${path}/children/${index}`, add);
       }

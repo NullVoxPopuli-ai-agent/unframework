@@ -13,6 +13,7 @@ import type {
   Attribute,
   ComponentAttribute,
   ComponentNode,
+  DirectiveAttribute,
   DynamicNode,
   ElementNode,
   EventAttribute,
@@ -31,10 +32,13 @@ import type {
   SlotOutletNode,
   SlotReference,
   StyleAttribute,
+  TeleportNode,
+  TransitionNode,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
 
+import { assertedValue } from "../directives.ts";
 import { functionSource, handlerText } from "../functions.ts";
 import { parseExpression } from "../parse.ts";
 import { referencedBindings } from "../references.ts";
@@ -46,9 +50,17 @@ import type { CodeToken } from "./escape.ts";
 
 /**
  * What holds a child list: an element, a branch of an `If`, a `For` (its body), the root, a
- * fill of a child's slot, or a slot outlet (its fallback).
+ * fill of a child's slot, a slot outlet (its fallback), or a teleport (its one element).
  */
-export type Container = ElementNode | FragmentNode | IfBranch | ForNode | SlotFill | SlotOutletNode;
+export type Container =
+  | ElementNode
+  | FragmentNode
+  | IfBranch
+  | ForNode
+  | SlotFill
+  | SlotOutletNode
+  | TeleportNode
+  | TransitionNode;
 
 /** Where a text or an interpolation sits, for the compilers that treat edges differently. */
 export interface TextPosition {
@@ -128,6 +140,13 @@ export interface PrintedRef {
   name: string;
 }
 
+/** A directive an element applies, as a dialect writes it (ADR-0099). */
+export interface PrintedDirective {
+  attribute: DirectiveAttribute;
+  /** The value's code. */
+  value: string;
+}
+
 /** Where a component element's attributes and fills are printed (ADR-0053). */
 export interface ComponentContext {
   component: ComponentNode;
@@ -189,6 +208,38 @@ export interface PrintedDynamic {
   is: string;
 }
 
+/**
+ * `<Teleport to>` (ADR-0098): the dialect writes what mounts the content into `to` once the
+ * component has mounted, with a `nodes` piece of the node's children for its one element, which
+ * the printer prints as a root's, outside every element around the teleport.
+ */
+export interface PrintedTeleport {
+  node: TeleportNode;
+}
+
+/**
+ * `<Transition name appear>` (ADR-0100): the dialect writes what runs Vue's classes on the child,
+ * with a `nodes` piece of the node's children in `container`, printed in the transition's place.
+ * `branch` is the code of the index of the conditional's branch that shows an element, or `-1`
+ * when none does: `0` where the child is one element.
+ */
+export interface PrintedTransition {
+  node: TransitionNode;
+  container: Container;
+  branch: string;
+}
+
+/**
+ * The element of a `<Transition>` (ADR-0100), or of a branch of its conditional, with `branch`:
+ * the index of that branch, which {@link PrintedTransition}'s `branch` holds while it is shown,
+ * and absent for an element with no conditional.
+ */
+export interface PrintedTransitionElement {
+  node: TransitionNode;
+  element: ElementNode;
+  branch?: number;
+}
+
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
 export interface PrintedSlotOutlet {
   node: SlotOutletNode;
@@ -248,6 +299,8 @@ export type MarkupPiece =
 export interface BlockSegment {
   open: string;
   content: MarkupPiece;
+  /** Code the segment writes before its content: the constants a branch declares. */
+  leading?: readonly string[];
   /**
    * Whether the content goes in parentheses when it takes lines of its own, as JSX in an
    * expression does (Astro's `{c ? (` … `) : null}`).
@@ -318,6 +371,11 @@ export interface MarkupDialect {
   styleAttribute(parts: readonly StylePart[], context: AttributeContext): PrintedAttribute[];
   /** Writes a conditional: the first branch whose condition is truthy renders, or the else. */
   conditional(branches: readonly ConditionalBranch[]): MarkupPiece[];
+  /**
+   * Writes a constant a branch declares before its content, for a language that declares one in
+   * markup (Svelte's `{@const name = value}`, ADR-0099).
+   */
+  branchConstant?(name: string, value: string): string;
   /** Writes a list: the body for each item of the source, in order. */
   list(list: ListParts): MarkupPiece[];
   /**
@@ -329,6 +387,20 @@ export interface MarkupDialect {
   eventAttribute(event: PrintedEvent, context: AttributeContext): PrintedAttribute[];
   /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
   refAttribute(ref: PrintedRef, context: AttributeContext): PrintedAttribute[];
+  /**
+   * Writes a directive (ADR-0099): its hooks run in the browser with the value, once the element
+   * is in the DOM, after a render that changes the value, and once it leaves (Vue's
+   * `v-focus-trap`, Svelte's `{@attach}`, Angular's `[vFocusTrap]`).
+   */
+  directiveAttribute?(directive: PrintedDirective, context: AttributeContext): PrintedAttribute[];
+  /**
+   * Writes `innerHTML={markup}` (ADR-0097) as an attribute: the element's content is the markup
+   * the code's string holds, parsed, never escaped (Vue's `v-html`, Angular's `[innerHTML]`,
+   * Astro's `set:html`). A language that writes it as content implements `rawHtmlContent`.
+   */
+  rawHtmlAttribute?(code: string, context: AttributeContext): PrintedAttribute[];
+  /** Writes `innerHTML={markup}` as the element's content instead (Svelte's `{@html markup}`). */
+  rawHtmlContent?(code: string): string;
   /**
    * Whether the language runs no code in the browser (Astro): it writes no listener and no
    * template ref, so a list's index that only a handler reads is left out too.
@@ -371,6 +443,24 @@ export interface MarkupDialect {
    * `component` piece's name as the dialect gives them, with the node's attributes.
    */
   dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
+  /** Writes `<Teleport to>` (ADR-0098): see {@link PrintedTeleport}. */
+  teleport?(teleport: PrintedTeleport): MarkupPiece[];
+  /**
+   * A child component in the tree (ADR-0101): the pieces it prints as, around a `component`
+   * piece of it, such as Vue's `<Suspense>` around an async child. Absent: the component alone.
+   */
+  component?(component: ComponentNode): MarkupPiece[];
+  /**
+   * Writes `<Transition>` around its child (ADR-0100): see {@link PrintedTransition}. By default
+   * the child prints in its place, with no wrapper, and {@link transitionAttributes} marks it.
+   */
+  transition?(transition: PrintedTransition): MarkupPiece[];
+  /**
+   * The attributes that run a transition's classes on its element, or on each branch's element
+   * of its conditional (ADR-0100), written before the element's own: Svelte's `in:` and `out:`,
+   * Angular's directive and `(animate.leave)`. See {@link PrintedTransitionElement}.
+   */
+  transitionAttributes?(element: PrintedTransitionElement): PrintedAttribute[];
   /**
    * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
    * them against the child's props (Svelte): `name=""` each, as on an element, without it.
@@ -417,6 +507,22 @@ export interface MarkupOptions {
    * spells.
    */
   component?: UfComponent;
+  /**
+   * Whether the language reads a directive's value in a closure, where TypeScript no longer
+   * narrows what a conditional around the element narrows: the value's narrowed paths are then
+   * asserted present (ADR-0099).
+   */
+  closureDirectiveValues?: boolean;
+  /**
+   * The directives whose value a closure reads and a branch around the element narrows, by the
+   * branch that declares a constant of each value (Svelte's `{@const}`) under the name given:
+   * TypeScript keeps no narrowing of a reassigned variable in a closure, nor one a `!` can't
+   * write (`typeof`), while the constant takes the narrowed type (ADR-0099).
+   */
+  narrowedDirectiveValues?: ReadonlyMap<
+    Container,
+    readonly { attribute: DirectiveAttribute; name: string }[]
+  >;
   /**
    * The component's module, whose imports give a child's scoped styles: without it, the content
    * filled into a styled child carries no `-s` attribute (ADR-0063). The component's own
@@ -656,6 +762,12 @@ interface Scope {
   /** The components a `<component is>` whose pieces are printed may render. */
   candidates: readonly string[] | undefined;
   /**
+   * The transition whose child the nodes are (ADR-0100): its element, or each branch's element of
+   * its conditional, takes the dialect's {@link MarkupDialect.transitionAttributes}, with the
+   * index of its branch.
+   */
+  transition?: { node: TransitionNode; branches: ReadonlyMap<ElementNode, number> };
+  /**
    * Whether the nodes are the template's own top level, outside every element and fill, where
    * a component's roots are (`scopeRoots`).
    */
@@ -690,6 +802,12 @@ export function printMarkup(
       : expression.code;
   const indent = options.indent ?? "  ";
   const printWidth = options.printWidth ?? 100;
+  // Each narrowed directive value's constant, by its attribute (ADR-0099).
+  const narrowedNames = new Map(
+    [...(options.narrowedDirectiveValues?.values() ?? [])].flatMap((entries) =>
+      entries.map(({ attribute, name }) => [attribute, name] as const),
+    ),
+  );
   const scope: Scope = {
     dialect,
     element: undefined,
@@ -754,19 +872,24 @@ export function printMarkup(
           return node.branches.length === 0
             ? []
             : piecesItems(
-                at.dialect.conditional(
-                  node.branches.map((branch) =>
-                    branch.condition === undefined
-                      ? { branch }
-                      : { condition: code(branch.condition), branch },
+                withBranchConstants(
+                  at.dialect.conditional(
+                    node.branches.map((branch) =>
+                      branch.condition === undefined
+                        ? { branch }
+                        : { condition: code(branch.condition), branch },
+                    ),
                   ),
+                  at,
                 ),
                 at,
               );
         case "For":
           return piecesItems(at.dialect.list(listParts(node)), at);
         case "Component":
-          return [componentItem(node, [], at)];
+          return at.dialect.component
+            ? piecesItems(at.dialect.component(node), at)
+            : [componentItem(node, [], at)];
         case "SlotOutlet":
           return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
         case "Dynamic":
@@ -776,6 +899,31 @@ export function printMarkup(
               each.kind === "Component" ? [each.component] : [],
             ),
           });
+        case "Teleport":
+          // The content's parent is `to`'s element: no element, `<pre>` or root is around it.
+          return piecesItems(hook(at.dialect, "teleport")({ node }), {
+            ...at,
+            element: undefined,
+            namespace: "html",
+            preformatted: false,
+            top: false,
+          });
+        case "Transition": {
+          // The child renders in the transition's place, inside the same element.
+          const [child] = node.children;
+          const branches = new Map<ElementNode, number>();
+          if (child?.kind === "If") {
+            for (const [index, branch] of child.branches.entries()) {
+              for (const each of branch.children) {
+                if (each.kind === "Element") branches.set(each, index);
+              }
+            }
+          }
+          const inner: Scope = { ...at, transition: { node, branches } };
+          return at.dialect.transition
+            ? piecesItems(at.dialect.transition({ node, container, branch: branchOf(node) }), inner)
+            : itemsOf(node.children, container, inner);
+        }
         default:
           return unreachable(node);
       }
@@ -798,6 +946,24 @@ export function printMarkup(
     };
   }
 
+  /**
+   * The code of the index of the branch of a transition's conditional that shows an element, or
+   * `-1` (ADR-0100): a ternary chain of the branches' conditions, each in parentheses, which every
+   * dialect's expressions read alike. `0` where the child is one element.
+   */
+  function branchOf(node: TransitionNode): string {
+    const [child] = node.children;
+    if (child?.kind !== "If") return "0";
+    const value = (index: number) => (child.branches[index]!.children.length ? `${index}` : "-1");
+    const last = child.branches.length - 1;
+    let chain = child.branches[last]!.condition === undefined ? value(last) : "-1";
+    for (let index = child.branches.length - 1; index >= 0; index -= 1) {
+      const { condition } = child.branches[index]!;
+      if (condition !== undefined) chain = `(${code(condition)}) ? ${value(index)} : ${chain}`;
+    }
+    return chain;
+  }
+
   function listParts(node: ForNode): ListParts {
     // An index no printed expression or handler reads is left out, so linters see no unused
     // variable; one only a handler reads is kept where the language runs handlers.
@@ -811,6 +977,28 @@ export function printMarkup(
       ...(index === undefined ? {} : { index }),
       key: code(node.key, "key"),
     };
+  }
+
+  /** A conditional's blocks, each branch's segment with the constants the branch declares. */
+  function withBranchConstants(pieces: readonly MarkupPiece[], at: Scope): MarkupPiece[] {
+    const constants = options.narrowedDirectiveValues;
+    if (!constants?.size || !at.dialect.branchConstant) return [...pieces];
+    const declare = hook(at.dialect, "branchConstant");
+    return pieces.map((piece) => {
+      if (piece.kind !== "block") return piece;
+      return {
+        ...piece,
+        segments: piece.segments.map((segment) => {
+          const { content } = segment;
+          const declared = content.kind === "nodes" ? constants.get(content.container) : undefined;
+          if (!declared?.length) return segment;
+          return {
+            ...segment,
+            leading: declared.map(({ attribute, name }) => declare(name, code(attribute.value))),
+          };
+        }),
+      };
+    });
   }
 
   function piecesItems(pieces: readonly MarkupPiece[], at: Scope): Item[] {
@@ -844,7 +1032,10 @@ export function printMarkup(
             kind: "block",
             segments: piece.segments.map((segment) => ({
               open: segment.open,
-              children: pieceItems(segment.content, at),
+              children: [
+                ...(segment.leading ?? []).map((text) => inline(text)),
+                ...pieceItems(segment.content, at),
+              ],
               parentheses: segment.parentheses ?? false,
             })),
             close: piece.close,
@@ -1081,7 +1272,12 @@ export function printMarkup(
       candidates: undefined,
       top: false,
     };
-    const children = itemsOf(element.children, element, inner);
+    const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
+    // The markup is the element's content, which has no children beside it (ADR-0097).
+    const children =
+      raw && inner.dialect.rawHtmlContent
+        ? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
+        : itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
     // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
     // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).
@@ -1091,10 +1287,22 @@ export function printMarkup(
         children.length === 0 &&
         (inner.dialect.selfClosingSvg?.(element.tag) ?? true));
     const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
+    const branch = at.transition?.branches.get(element);
+    const marked =
+      at.transition && at.dialect.transitionAttributes
+        ? [
+            ...at.dialect.transitionAttributes({
+              node: at.transition.node,
+              element,
+              ...(branch === undefined ? {} : { branch }),
+            }),
+            ...directives,
+          ]
+        : directives;
     return {
       kind: "element",
       tag: name,
-      attributes: attributesOf(element, directives, inner, rootAttributes(element, at)),
+      attributes: attributesOf(element, marked, inner, rootAttributes(element, at)),
       end: selfClosing ? " />" : ">",
       children,
       close: isVoid || selfClosing ? "" : `</${name}>`,
@@ -1223,6 +1431,27 @@ export function printMarkup(
             ...hook(of, "modelAttribute")({ attribute, value: code(attribute.value) }, context),
           );
           break;
+        case "RawHtml":
+          // A language that writes the markup as content wrote it with the children.
+          if (!of.rawHtmlContent) {
+            printed.push(...hook(of, "rawHtmlAttribute")(code(attribute.value), context));
+          }
+          break;
+        case "Directive": {
+          // A language that reads the value in a closure (Svelte's attachment's getter) asserts
+          // what the element's branches narrow, as TypeScript narrows it no more there.
+          const constant = narrowedNames.get(attribute);
+          const value = options.closureDirectiveValues
+            ? assertedValue(attribute.value)
+            : attribute.value;
+          printed.push(
+            ...hook(of, "directiveAttribute")(
+              { attribute, value: constant ?? code(value) },
+              context,
+            ),
+          );
+          break;
+        }
         default:
           unreachable(attribute);
       }
@@ -1513,7 +1742,11 @@ function hook<
     | "slotOutlet"
     | "modelAttribute"
     | "modelBinding"
-    | "dynamic",
+    | "dynamic"
+    | "teleport"
+    | "rawHtmlAttribute"
+    | "directiveAttribute"
+    | "branchConstant",
 >(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
@@ -1619,6 +1852,12 @@ function attributeName(attribute: Attribute): string {
       return "ref";
     case "Model":
       return "v-model";
+    // Orders as Vue's `v-html`, which `vue/attributes-order` puts last, as content.
+    case "RawHtml":
+      return "v-html";
+    // Orders as Vue's custom directive, `v-focus-trap`, among the other directives.
+    case "Directive":
+      return `v-${directiveAttributeName(attribute.name)}`;
     default:
       return unreachable(attribute);
   }
@@ -1641,6 +1880,16 @@ function glue(lines: string[], next: string[]): string[] {
   if (rest === "") return [...lines.slice(0, -1), `${before}${closer}${start}`, ...more];
   const pad = first!.slice(0, first!.length - start.length);
   return [...lines.slice(0, -1), rest, `${pad}${closer}${start}`, ...more];
+}
+
+/**
+ * The kebab-case name a directive is applied by, without its `v-` (ADR-0099): `focus-trap` for
+ * `vFocusTrap`, a digit kept with the letters before it (`vStep2` is `step2`).
+ */
+export function directiveAttributeName(name: string): string {
+  return name
+    .slice(1)
+    .replace(/[A-Z]/g, (letter, at: number) => `${at ? "-" : ""}${letter.toLowerCase()}`);
 }
 
 /** The `never` default of an exhaustive switch. */

@@ -294,6 +294,10 @@ export function planComposition(
             visit(fill.children, scoped || fill.parameter !== undefined);
           }
           break;
+        case "Teleport":
+        case "Transition":
+          visit(node.children, scoped);
+          break;
         case "Text":
         case "Interpolation":
           break;

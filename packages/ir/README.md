@@ -7,8 +7,8 @@ plain, versioned, schema-validated JSON (plan §5.3).
   events and setup use), `UfComponent` (props, the props parameter, the events `defineEmits`
   declares, bindings, the setup and a render root that is an element or a root `Fragment`), the
   render nodes (`Element`, `Text`, `Interpolation`, `If`, `For`) and the attribute kinds
-  (`Static`, `Bound`, `Class`, `Style`, `Spread`, and the listeners and template refs, `Event` and
-  `Ref`). A binding is a prop, a loop variable, a `ref` (`state`), a `computed` (`derived`), a
+  (`Static`, `Bound`, `Class`, `Style`, `Spread`, the listeners and template refs, `Event` and
+  `Ref`, and an element's markup, `RawHtml`, ADR-0097). A binding is a prop, a loop variable, a `ref` (`state`), a `computed` (`derived`), a
   template ref, a setup `const`, function or `let`, or `emit`, by its `name@offset` id. The setup
   is a list of items in source order (`State`, `Derived`, `TemplateRef`, `Id`, `Const`,
   `Variable`, `Function`, `Watch`, `WatchEffect`, `Lifecycle`, ADR-0045). An `Expression` is a
@@ -19,11 +19,18 @@ plain, versioned, schema-validated JSON (plan §5.3).
 - **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the
   `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
   component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
-  and `Dynamic` (`<component is>`), a list's body that is a component, a component's attributes
+  and `Dynamic` (`<component is>`), the render node `Teleport` (`<Teleport to>`, one element
+  mounted elsewhere, ADR-0098), the render node `Transition` (`<Transition name appear>`, Vue's
+  classes on one element or one conditional of elements, ADR-0100), the `Directive` attribute and a module's `directives`, each with
+  its hooks' code (`v-focus-trap={open.value}`, ADR-0099), a list's body that is a component, a component's attributes
   (`Prop`, `Listener`, `ModelBinding`, `Class`, `Style`, `Ref`) and fills, an element's `v-model`
   (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
   `slotScope`, `context` and `component`, and a slot's presence (`Slot` references). The analyser
   lowers none of it yet: M3's lanes do.
+- **Async setup (ADR-0101):** the setup item `Await` (`const user = await loadUser(props.id)`),
+  whose `value` is the awaited expression without `await`, its binding kind `awaited`, a read-only
+  constant, and `ComponentApi.async`, set when a component's setup awaits, so a parent in another
+  file knows.
 - **Styles (ADR-0063):** a component's `styles`, the sibling stylesheets it imports, each with its
   specifier, its text and its span, and its `scopeId`; a child's `ComponentApi.styles`, its scope id
   and whether its sheets use `:slotted()`; a module's `passThroughImports`, of any module that is neither
@@ -100,7 +107,13 @@ plain, versioned, schema-validated JSON (plan §5.3).
   declaration of its API; a slot outlet, a slot's presence and a forwarded fill name a declared
   slot; a model's binding is a `state`'s or a `model`'s `.value`; an injected value is never
   written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
-  keeps as an element, or all components; slots, exposed functions and models are declared once,
+  keeps as an element, or all components; a `Teleport` (ADR-0098) holds exactly one element,
+  outside SVG, and its `to` is not empty; a `Transition` (ADR-0100) holds one element, or one `If`
+  whose every branch holds one element or nothing, outside a list's body, and its `name` has no
+  whitespace; no `Await` follows another setup item, and an `Await`'s value reads only props, module
+  values, globals and earlier `awaited` bindings (ADR-0101); a `Directive` names a directive the module declares or
+  imports, once per element, in a list's body too (ADR-0108), and a directive's hooks read their own
+  names, client globals and the bindings it lists (ADR-0099); slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
   imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected
   with a fallback, as a `state`, `derived` or `model` binding by its name, and its injected

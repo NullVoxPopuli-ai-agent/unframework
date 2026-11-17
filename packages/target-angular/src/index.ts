@@ -4,7 +4,10 @@ import {
   codeNames,
   codeKind,
   defineTarget,
+  directiveSpecifier,
   exportDeclaration,
+  importedDirectives,
+  ownDirectives,
   exportsOf,
   componentTypes,
   js,
@@ -40,7 +43,24 @@ import {
   tokenType,
 } from "./composition.ts";
 import type { Composition } from "./composition.ts";
-import { directiveCode, scopeDirectiveCode } from "./directives.ts";
+import {
+  directiveClassCode,
+  directiveClassName,
+  directiveFile,
+  emitDirective,
+  RUNNER_HELPER,
+  runnerCode,
+  runnerNames,
+} from "./directive.ts";
+import {
+  directiveCode,
+  scopeDirectiveCode,
+  teleportDirectiveCode,
+  transitionDirectiveCode,
+  transitionRegionCode,
+  textCaretDirectiveCode,
+  trustedHtmlPipeCode,
+} from "./directives.ts";
 import type { ScopeDirectiveNames } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
@@ -100,8 +120,8 @@ export const angular: Target = defineTarget({
     "conditional-event-control": { support: "native" },
     "use-id": {
       support: "emulated",
-      helper: "nextId",
-      note: "Angular has no id API: a module counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own.",
+      helper: "idCounter",
+      note: "Angular has no id API: a counter makes each instance's ids, `uf-id-<component>-<n>`, as Angular Material makes its own. It is one per application, an injection token's, so a server render and the client that hydrates it count the same ids (ADR-0095).",
     },
     "next-tick": {
       support: "emulated",
@@ -127,6 +147,13 @@ export const angular: Target = defineTarget({
       note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component or a `<component is>`, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
     },
     "attribute-spread": { support: "native" },
+    // Angular sanitises a bound `innerHTML`: it drops `id`, `data-*` and `style` attributes, form
+    // controls and SVG. A pure pipe marks the markup trusted, so it renders as written (ADR-0097).
+    "raw-html": {
+      support: "emulated",
+      helper: "TrustedHtmlPipe",
+      note: "A pure pipe passes the markup through `DomSanitizer.bypassSecurityTrustHtml`, so Angular renders it as written instead of sanitising it.",
+    },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -222,11 +249,39 @@ export const angular: Target = defineTarget({
     },
     composables: { support: "native" },
     "composable-effect-order": { support: "native" },
+    // `provideClientHydration()` on both sides (ADR-0024, ADR-0095).
+    hydration: { support: "native" },
+    // The setup goes on in `ngOnInit`, once the inputs are set, as a pending task the server's
+    // render and the application's stability wait for, and the template renders behind `@if`
+    // once it resolves, where hydration claims the server's nodes (ADR-0101).
+    "async-setup": { support: "native" },
+    "keyed-identity": { support: "native" },
+    // Angular's CDK portal is no framework import (P7), so an inline directive moves the view.
+    // An attribute directive whose hooks run through an inline runner and queue (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: RUNNER_HELPER,
+      note: "A directive is a standalone attribute directive, `[vFocusTrap]`, whose `afterRenderEffect` passes its value to an inline helper, `runDirective`. Angular creates projected content before a child puts it in the document and keeps it while the child takes it out, so the helper runs `mounted` and `unmounted` as a `MutationObserver` sees the element come and go, and `updated` behind `Object.is`. Angular mounts a parent before a child in its view and a child in an `@if` before its parent, so the hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
+    // Angular's `animate.enter` and `animate.leave` take one class list, which can't run Vue's
+    // three phases, so an inline directive runs them, with `animate.leave`'s function form
+    // holding the removal (ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>`'s element takes an inline directive, `ufTransition`, and a conditional child sits in an `<ng-container>` whose inline directive, `TransitionRegion`, is created with the transition and holds the branch shown. The directive runs Vue's enter classes once its region has rendered, or with `appear`, and the leave through `(animate.leave)`'s function form, which holds the element's removal until the leave ends. Angular runs that function too when something around the element removes it, so the directive lets the element go at once while its region still shows its branch (ADR-0100).",
+    },
+    teleport: {
+      support: "emulated",
+      helper: "Teleport",
+      note: "A `<Teleport>` is an `<ng-template>` whose inline directive, once the application has rendered, creates its view in its own view container and moves the view's nodes into `to`, as the CDK's `DomPortalOutlet` does, and removes them with the component (ADR-0098).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];
   },
   emitComposable,
+  emitDirective,
 });
 
 export default angular;
@@ -311,15 +366,54 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const refObject = usesRefObject ? imports.claim("refObject") : undefined;
   const provided = providers(plan, rules, composition, className, refObject);
   const nextId = component.setup.some((item) => item.kind === "Id")
-    ? imports.claim("nextId")
+    ? imports.claim("idCounter")
     : undefined;
   const directives = listeners.directives.map((spec) => directiveCode(spec, imports, placeholders));
+  // `innerHTML` reads its markup through a pure pipe that marks it trusted (ADR-0097).
+  const trustedHtml = rendersRawHtml(component) ? imports.claim("TrustedHtmlPipe") : undefined;
+  // A teleport mounts its view through an inline directive (ADR-0098).
+  const teleport = holdsTeleport(component) ? imports.claim("Teleport") : undefined;
+  // A transition runs through an inline directive, and a region directive around a conditional
+  // child (ADR-0100).
+  const transition = holdsTransition(component)
+    ? {
+        className: imports.claim("Transition"),
+        regionClass: imports.claim("TransitionRegion"),
+        // The region wraps a conditional child only, and the template imports it only then.
+        regions: holdsTransition(component, true),
+        ref: plan.members.claim("transition"),
+      }
+    : undefined;
+  // The directives it applies (ADR-0099): a `.uf.ts` module's from its output, `./v-focus-trap`,
+  // and its module's own as classes of this file, with the runner and queue their hooks run through.
+  const appliedImports = importedDirectives(component, module).map(({ specifier, imported }) =>
+    imports.add(
+      directiveSpecifier(specifier, directiveFile(imported)),
+      directiveClassName(imported),
+      { exact: true },
+    ),
+  );
+  const ownApplied = ownDirectives(component, module);
+  const runner = ownApplied.length ? runnerNames((base) => imports.claim(base)) : undefined;
+  const ownClasses = ownApplied.map((directive) => ({
+    directive,
+    className: imports.claim(directiveClassName(directive.name)),
+  }));
   // The child-root rule (ADR-0063): each root node binds the directive that gives it the scope
   // attributes the component's styled parents put on its host.
   const roots = scopedRoots(component);
   const scope = roots.size
     ? { ...scopeNames(component, module, imports), host: plan.members.claim("host") }
     : undefined;
+  // A teleport root takes its parents' scope attributes off the host (ADR-0098).
+  const { render } = component;
+  const teleportHost =
+    teleport !== undefined &&
+    render.kind === "Fragment" &&
+    render.children.length === 1 &&
+    render.children[0]!.kind === "Teleport"
+      ? (scope?.host ?? plan.members.claim("host"))
+      : undefined;
   const { members, implements: interfaces } = classMembers({
     plan,
     placeholders,
@@ -345,7 +439,15 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(composition.imports.length || directives.length || scope
+    ...(composition.imports.length ||
+    directives.length ||
+    scope ||
+    models.textCaret ||
+    trustedHtml ||
+    teleport ||
+    transition ||
+    appliedImports.length ||
+    ownClasses.length
       ? [
           [
             "imports",
@@ -354,6 +456,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
                 ...composition.imports,
                 ...listeners.directives.map(({ className: name }) => name),
                 ...(scope ? [scope.className] : []),
+                ...(models.textCaret === undefined ? [] : [models.textCaret]),
+                ...(trustedHtml === undefined ? [] : [trustedHtml]),
+                ...(teleport === undefined ? [] : [teleport]),
+                ...(transition === undefined
+                  ? []
+                  : [
+                      transition.className,
+                      ...(transition.regions ? [transition.regionClass] : []),
+                    ]),
+                ...appliedImports,
+                ...ownClasses.map(({ className: name }) => name),
               ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
@@ -380,7 +493,7 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     [
       "template",
       js.templateLiteral(
-        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host })}\n  `,
+        `\n${template(plan, listeners, reads, composition, models, fallthrough, scope && { roots, host: scope.host }, teleportHost, transition)}\n  `,
       ),
     ],
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063): Angular's own
@@ -406,16 +519,17 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const decorator = () =>
     `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
   // The host the root nodes' scope directive reads (`<button [ufScope]="this.host">`).
-  const hostMember = scope && [
+  const hostName = scope?.host ?? teleportHost;
+  const hostMember = hostName !== undefined && [
     js.propertyDefinition(
-      scope.host,
+      hostName,
       placeholders.expression(
         `${imports.add("@angular/core", "inject")}<${imports.add("@angular/core", "ElementRef")}<HTMLElement>>(${imports.add("@angular/core", "ElementRef")}).nativeElement`,
       ),
       { accessibility: "protected", readonly: true },
     ),
   ];
-  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember ?? [])], {
+  const declaration = js.classDeclaration(className, [], [...members, ...(hostMember || [])], {
     implements: interfaces,
   });
   declaration.typeParameters = typeParameters(component, placeholders);
@@ -461,6 +575,19 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
       ),
     ),
     ...(scope ? [scopeDirectiveCode(scope, imports)] : []),
+    ...(models.textCaret === undefined ? [] : [textCaretDirectiveCode(models.textCaret, imports)]),
+    ...(trustedHtml === undefined ? [] : [trustedHtmlPipeCode(trustedHtml, imports)]),
+    ...(teleport === undefined ? [] : [teleportDirectiveCode(teleport, imports)]),
+    ...(transition === undefined
+      ? []
+      : [
+          transitionRegionCode(transition.regionClass, imports),
+          transitionDirectiveCode(transition.className, transition.regionClass, imports),
+        ]),
+    ...(runner === undefined ? [] : runnerCode(runner)),
+    ...ownClasses.map(({ directive, className: name }) =>
+      directiveClassCode(directive, name, runner?.run ?? RUNNER_HELPER, imports),
+    ),
   ];
   if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
     imports.add("@angular/core", "WritableSignal", { type: true });
@@ -479,12 +606,18 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     })),
     ...typeExportsCode(component, module, kebabCase),
   ].toSorted((a, b) => a.span.start - b.span.start);
+  // One id counter per application, so a server render and the client that hydrates it count
+  // alike (ADR-0095). Claimed before the imports are printed.
+  const idCounter =
+    nextId === undefined
+      ? undefined
+      : `const ${nextId} = new ${imports.add("@angular/core", "InjectionToken")}<{ next: number }>("${nextId}", {\n  factory: () => ({ next: 0 }),\n});\n`;
   const contents = placeholders.print(() =>
     [
       printProgram(js.program(imports.toDeclarations())),
       ...typeCode.map(({ code }) => `${code}\n`),
       ...(constants.constants.length ? [`${constants.constants.join("\n")}\n`] : []),
-      ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
+      ...(idCounter === undefined ? [] : [idCounter]),
       ...declarations,
       ...directives.map(
         ({ decorator: written, statements: declared }) =>
@@ -495,6 +628,46 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     ].join("\n"),
   );
   return { path: `${kebabCase(component.name)}.ts`, contents };
+}
+
+/** Whether an element of the component's template sets `innerHTML` (ADR-0097). */
+function rendersRawHtml(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Element" && node.attributes.some(({ kind }) => kind === "RawHtml")) {
+        found = true;
+      }
+      return found ? false : undefined;
+    },
+  });
+  return found;
+}
+
+/** Whether the template holds a `<Transition>`, or one around a conditional (ADR-0100). */
+function holdsTransition(component: UfComponent, conditional = false): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Transition" && (!conditional || node.children[0]?.kind === "If")) {
+        found = true;
+      }
+      return found ? false : undefined;
+    },
+  });
+  return found;
+}
+
+/** Whether the template holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter: (node) => {
+      if (node.kind === "Teleport") found = true;
+      return found ? false : undefined;
+    },
+  });
+  return found;
 }
 
 /** A span's key in a set of root nodes. */

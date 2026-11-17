@@ -118,6 +118,7 @@ export {
   astroDialect,
   codeTokens,
   conjoin,
+  directiveAttributeName,
   htmlDialect,
   mapCode,
   member,
@@ -127,6 +128,7 @@ export {
   staticClassValue,
   svelteDialect,
   test,
+  TRUSTED_HTML_PIPE,
   vueAttributeCode,
   vueClassValue,
   vueDialect,
@@ -146,8 +148,12 @@ export type {
   MarkupOptions,
   MarkupPiece,
   PrintedAttribute,
+  PrintedDirective,
   PrintedEvent,
   PrintedRef,
+  PrintedTeleport,
+  PrintedTransition,
+  PrintedTransitionElement,
   StylePart,
 } from "./markup.ts";
 export {
@@ -194,6 +200,7 @@ export type { RemapResult } from "./sourcemap.ts";
 export {
   addPassThroughImports,
   childImports,
+  childIsAsync,
   ImportSet,
   keyImports,
   keyOwner,
@@ -211,3 +218,26 @@ export {
 } from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework.dev/diagnostics";
 export type * from "./toolchain.ts";
+export {
+  dependencyImports,
+  directiveDependencies,
+  directiveModuleNames,
+  directiveElement,
+  directiveHook,
+  directiveHooksObject,
+  directiveParameters,
+  directiveSpecifier,
+  hookCall,
+  assertedValue,
+  hookParameters,
+  wrapperNames,
+  importedDirectives,
+  ownDirectives,
+  appliedDirectives,
+  moduleDirectives,
+  readsElementScope,
+} from "./directives.ts";
+export type { DirectiveDependencies } from "./directives.ts";
+export { directiveRunnerCode, waitCode } from "./directive-runner.ts";
+export type { DirectiveRunnerNames } from "./directive-runner.ts";
+export { hookQueueCode } from "./hook-queue.ts";

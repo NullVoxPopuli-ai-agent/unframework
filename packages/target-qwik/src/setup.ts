@@ -21,6 +21,7 @@
 import { functionSource, rewriteCode, rewriteExpression } from "@unframework.dev/codegen";
 import type { CodeKind, RewriteSite } from "@unframework.dev/codegen";
 import type {
+  AwaitItem,
   BindingId,
   Code,
   CodeReference,
@@ -48,6 +49,7 @@ import {
   inlinedAt,
   isPredicate,
   isReactiveBinding,
+  readsReactive,
   referencedIds,
   unreachable,
 } from "./plan.ts";
@@ -204,6 +206,7 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
       add(item.initial);
       break;
     case "Const":
+    case "Await":
       add(item.value);
       break;
     case "Derived":
@@ -355,7 +358,7 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     case "Provide":
       return [block(`${names.core("useContextProvider")}(${item.key}, ${pure(item.value)});`)];
     case "Inject": {
-      // Qwik 2.0.0-beta.47's `useContext` throws where no ancestor provides the key, unless its
+      // Qwik 2.0.0-rc.5's `useContext` throws where no ancestor provides the key, unless its
       // default is not `undefined`, and calls a function default with the provided value: so it
       // takes a function, which gives the fallback, or `undefined` without one (ADR-0054), and
       // never mistakes a function fallback for one. Its optional parameter is the key's type or
@@ -372,9 +375,34 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
     }
     case "Use":
       return [declaration(useStatement(plan, item))];
+    case "Await":
+      return awaitStatements(plan, item);
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * An await, as an async `useComputed$` the body reads (ADR-0101): reading `.value` while the
+ * promise is pending throws it, and Qwik runs the body again once it settles, so every later
+ * statement sees the value. The computed reads the props once, through `untrack`, as Vue's
+ * setup does. It is two statements: the optimizer renames the binding of
+ * `useComputed$(…).value` to `computed$`, and two such bindings that a later `$` scope
+ * captures make a module that declares `computed$` twice.
+ */
+function awaitStatements(plan: SetupPlan, item: AwaitItem): Statement[] {
+  const { names } = plan;
+  const name = bindingName(plan, item.binding);
+  const load = names.fresh(`${name}Load`);
+  const type = item.type ? `: ${item.type.code}` : "";
+  const value = rewritten(plan, item.value, "expression", undefined, "pure");
+  const computed = readsReactive(item.value, plan.component, plan.arguments)
+    ? `${names.core("untrack")}(() => ${value})`
+    : value;
+  return [
+    declaration(`const ${load} = ${names.core("useComputed$")}(() => ${arrowBody(computed)});`),
+    declaration(`const ${name}${type} = ${load}.value;`),
+  ];
 }
 
 /**
@@ -879,6 +907,7 @@ function tracked(
     case "loopVar":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":
@@ -1092,10 +1121,12 @@ function singleRead(plan: SetupPlan, getter: FunctionCode): BindingId | undefine
 
 /**
  * `watchEffect` as a visible task that tracks, before it runs, each prop, state and derived value
- * its body reads, itself or through the functions it calls (static dependencies, ADR-0048). Qwik
- * 2.0.0-beta.47 runs a visible task twice when a task that ran for the same change writes what it
+ * its body reads, itself or through the functions it calls (static dependencies, ADR-0048). Qwik's
+ * 2.0 betas ran a visible task twice when a task that ran for the same change wrote what it
  * tracks (core `executeTasks` queues every dirty visible task each time it runs for the
- * component, and `executeAfterFlush` runs the queue as it is): so, as a watcher does, the effect
+ * component, and `executeAfterFlush` ran the queue as it was). From 2.0.0-rc.2,
+ * `executeAfterFlush` skips a queued task that is no longer dirty, but no case shows that each
+ * change now runs once, so the guard stays (ADR-0094): as a watcher does, the effect
  * keeps the values it last ran for and runs only when one changed by `Object.is`, with its
  * `onCleanup` callbacks in a list it empties before it runs again and at unmount (Qwik's own
  * `cleanup` would run before the skipped run too).

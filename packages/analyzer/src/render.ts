@@ -11,6 +11,7 @@ import type { AST } from "@unframework.dev/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
 import type { Reporter } from "./context.ts";
+import type { DirectiveInfo, DirectiveValues } from "./directives.ts";
 import type { PassThrough } from "./pass-through.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
@@ -214,8 +215,18 @@ export interface RenderContext {
   readonly passThrough: PassThrough;
   /** Set while a `class` part is checked: the one place a pass-through name is called. */
   readonly classPart?: true;
+  /**
+   * Set while a directive's value is checked (ADR-0099): React and Qwik read it outside the
+   * branches around its element, so a conditional child's narrowing it relies on is recorded, as a
+   * handler's is, with the `template` scope.
+   */
+  readonly directiveValue?: true;
   /** The values the module's imports of shared modules and its constants give (ADR-0070). */
   readonly shared: SharedValues;
+  /** The directives an element may apply, by local name (ADR-0099). */
+  readonly directives: ReadonlyMap<string, DirectiveInfo>;
+  /** The type oracle's checks of the directives' values, when it made any (ADR-0109). */
+  readonly directiveValues?: DirectiveValues;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

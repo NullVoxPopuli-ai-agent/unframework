@@ -3,6 +3,10 @@ import {
   addTypeImports,
   componentTypes,
   defineTarget,
+  directiveSpecifier,
+  hookQueueCode,
+  importedDirectives,
+  ownDirectives,
   moduleHelperName,
   exportDeclaration,
   exportsOf,
@@ -26,18 +30,28 @@ import {
   moduleValueNames,
 } from "./composable.ts";
 import { SolidComposition } from "./composition.ts";
+import { emitDirective, factoryCode, QUEUE_HELPER } from "./directive.ts";
 import { typeParameterDeclaration } from "./generics.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
-import { CLASS_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
+import {
+  CLASS_HELPER,
+  KEYED_HELPER,
+  SCOPE_HELPER,
+  solidJsx,
+  STYLE_HELPER,
+  TELEPORT_HELPER,
+} from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
 import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
+import type { SolidResource } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
+type Statement = Parameters<typeof js.blockStatement>[0][number];
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -98,6 +112,7 @@ export const solid: Target = defineTarget({
       note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
     },
     "attribute-spread": { support: "native" },
+    "raw-html": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
     "component-event": { support: "native" },
@@ -151,6 +166,40 @@ export const solid: Target = defineTarget({
       reason:
         "A composable's watchers coalesce in its own module's queue (`createWatcher`), apart from the caller's, so its watchers, effects and hooks cannot take their place among the caller's own, and code that relies on that order may see another (ADR-0069).",
     },
+    hydration: { support: "native" },
+    // One `createResource` runs the awaits, and the rest of the setup and the template wait for
+    // it in a `<Show>` callback inside `<Suspense>` (ADR-0101). Declared there and on the targets
+    // page: after hydration Solid creates that subtree again once the setup resolves, so focus
+    // and selection inside it reset; with the data its server render serializes by default, the
+    // client hydrates in place and doesn't run the setup again; a rejected setup throws from the
+    // resource's read.
+    "async-setup": { support: "native" },
+    // `<For>` follows the items themselves, so a list goes through an inline helper whose rows
+    // follow the source's key (ADR-0096).
+    "keyed-identity": {
+      support: "emulated",
+      helper: KEYED_HELPER,
+      note: "Solid's <For> follows the items themselves, so an item replaced by a copy gets a new row. A list goes through an inline helper over <For> whose rows follow the source's key, and a row reads its item and index through accessors.",
+    },
+    // `<Portal>` wraps its content in a `<div>` (ADR-0098).
+    // A ref factory, `ref={vFocusTrap(() => open())}`, whose hooks run through an inline queue
+    // in Vue's order: Solid runs a parent's ref before its children's (ADR-0099).
+    directive: {
+      support: "emulated",
+      helper: QUEUE_HELPER,
+      note: "A directive is a ref factory, `ref={vFocusTrap(() => open())}`, Solid 2's own form. Solid runs an element's ref before its children's, so its hooks go through an inline queue, `queueHook`, which runs them in Vue's order once the turn ends.",
+    },
+    // Solid's transitions are a package of their own, which no output imports (P7, ADR-0100).
+    transition: {
+      support: "emulated",
+      helper: "Transition",
+      note: "A `<Transition>` is an inline component, `Transition`, that resolves its child and keeps a leaving element among the nodes it renders until its leave ends, running Vue's classes on each element as it enters and leaves. The server renders the child as it is (ADR-0100).",
+    },
+    teleport: {
+      support: "emulated",
+      helper: TELEPORT_HELPER,
+      note: "Solid's <Portal> wraps its content in a <div>, so a `<Teleport>` goes through an inline helper, `Teleport`, that inserts its one element into `to` once the component has mounted, as <Portal> does in <head> (ADR-0098).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own
@@ -160,15 +209,22 @@ export const solid: Target = defineTarget({
     for (const name of freeNames(component, names)) names.delete(name);
     for (const name of moduleValueNames(context.module)) names.add(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each claims
-    // the class and scope helpers from bases of its own (`cx_1`), past the names any other
-    // component declares.
+    // the class, scope, style, keyed list, teleport and directive queue helpers from bases of its own (`cx_1`), past the
+    // names any other component declares.
     const index = context.module.components.findIndex((each) => each.name === component.name);
     const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
       for (const name of freeNames(each, taken)) taken.delete(name);
       return taken;
     });
-    const bases = [CLASS_HELPER, SCOPE_HELPER, STYLE_HELPER].map((helper) => {
+    const bases = [
+      CLASS_HELPER,
+      SCOPE_HELPER,
+      STYLE_HELPER,
+      KEYED_HELPER,
+      TELEPORT_HELPER,
+      QUEUE_HELPER,
+    ].map((helper) => {
       const { base, others } = moduleHelperName(helper, reserved, index);
       for (const name of others) names.add(name);
       return [helper, base] as const;
@@ -182,6 +238,10 @@ export const solid: Target = defineTarget({
     addTypeImports(component, context.module, imports, (name) => name);
     // The composables it calls, from their outputs (ADR-0069).
     addComposableImports(component, context.module, imports);
+    // The directives it applies from `.uf.ts` modules, from their outputs (ADR-0099).
+    for (const { specifier, imported, local } of importedDirectives(component, context.module)) {
+      imports.add(directiveSpecifier(specifier, imported), imported, { local, exact: true });
+    }
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -219,12 +279,18 @@ export const solid: Target = defineTarget({
     });
     const object = props.object ?? "";
     const exposed = composition.expose(object);
-    const fn = js.functionDeclaration(component.name, props.parameters, [
-      ...props.statements,
+    const body = [
       ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
       js.returnStatement(rendered(component, code, narrowings.types, jsx)),
+    ];
+    const { resource } = setup;
+    const fn = js.functionDeclaration(component.name, props.parameters, [
+      ...props.statements,
+      ...(resource
+        ? [...resource.statements, js.returnStatement(pending(resource, body, code))]
+        : body),
     ]);
     // A generic component is a generic function, `function List<T>(…)` (ADR-0068).
     fn.typeParameters = typeParameterDeclaration(component, placeholders);
@@ -234,6 +300,17 @@ export const solid: Target = defineTarget({
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // The module's own directives it applies, as ref factories, with the queue they run their
+    // hooks through (ADR-0099).
+    const own = ownDirectives(component, context.module);
+    const queue = own.length ? { name: scope.claim(QUEUE_HELPER) } : undefined;
+    const directives = queue
+      ? own.map((directive) =>
+          placeholders.statements(
+            `${factoryCode(directive, { solid: (name) => code.solid(name), queue: queue.name })}\n`,
+          ),
+        )
+      : [];
     // What it reads of its module: its imported values and its constants (ADR-0070).
     const reads = moduleReads(component.name, context.module, imports, placeholders);
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
@@ -253,8 +330,12 @@ export const solid: Target = defineTarget({
               ...(props.events ? [props.events] : []),
               ...composition.types,
             ],
-            body: [...keys, ...reads.constants, ...setup.hoisted, ...statements],
-            helpers: [...helpers(), ...code.helpers()],
+            body: [...keys, ...reads.constants, ...directives, ...setup.hoisted, ...statements],
+            helpers: [
+              ...helpers(),
+              ...code.helpers(),
+              ...(queue ? [hookQueueCode(queue.name)] : []),
+            ],
             // Collected last: the helpers import what they call.
             imports: [...imports.toDeclarations(), ...sheet],
             placeholders,
@@ -265,6 +346,7 @@ export const solid: Target = defineTarget({
     ];
   },
   emitComposable,
+  emitDirective,
 });
 
 /**
@@ -301,6 +383,31 @@ function rendered(
     );
   }
   return wrapped;
+}
+
+/**
+ * An async setup's template (ADR-0101): the rest of the setup and the template in the function
+ * child of `<Show>`, which runs once the resource resolves, inside a `<Suspense>` with no
+ * fallback, so the server render waits for it and a client mount shows nothing until then. A
+ * `<Show>` callback, not an inner component: the rest of the setup closes over `props`, which an
+ * inner component would read through props of its own, and `solid/reactivity` (L5) reports.
+ */
+function pending(resource: SolidResource, body: Statement[], code: SolidCode): JsxExpression {
+  const show = js.jsxElement(
+    code.solid("Show"),
+    [
+      js.jsxAttribute(
+        "when",
+        js.jsxExpressionContainer(js.callExpression(js.identifier(resource.accessor), [])),
+      ),
+    ],
+    [
+      js.jsxExpressionContainer(
+        js.arrowFunction([js.bindingIdentifier(resource.parameter)], [resource.bindings, ...body]),
+      ),
+    ],
+  );
+  return js.jsxElement(code.solid("Suspense"), [], [show]);
 }
 
 /**

@@ -22,7 +22,7 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 cases/basics/hello/
 ├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, ssrThrows: { props }, axe: [rule ids], requires: why, reference, colorScheme, typeOracle: "tsgo" }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework.dev/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -108,6 +108,11 @@ cases/components/form/
   case's own files and the packages they import: a props type or a child's API may come from
   another input or a `.ts` module of the case. The browser and SSR projects compile through the
   unplugin, whose resolver and oracle are rooted at Vite's root, this package.
+- A case whose `case.json` names `"typeOracle": "tsgo"` compiles with the tsgo adapter instead
+  (ADR-0109), for a check only a type-checker makes, like a directive's value (UF6007). Its
+  syntactic layer reads the same files, and its checker builds a project of the case's own
+  directory. The checker types the source each compile is given, a canary's corrupted one or a
+  fix-applied one included. Only `diagnostics/directive-value-type` needs it.
 - `__expected__/diagnostics.json` holds every input's diagnostics, each with its `file`, sorted by
   file, then by span; `__output__/diagnostics.txt` frames them by file.
 - The golden guard judges each module the browser and SSR projects compile on the files that
@@ -132,7 +137,9 @@ every comment, which frameworks use as anchors; the attributes its framework add
 `_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; Angular's `uf-*` host elements with
 `display: contents`; Qwik's `q:template` elements, where its server render keeps a slot's
 unclaimed fallback (ADR-0058); and Qwik's `<style q:style>` elements, where its server render
-writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063). For every target, the reference included, it also writes one form of what
+writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063); and
+Qwik's empty `<script hidden>` with only its own attributes, where its server render writes the
+visible task of a component that renders no element of its own, a teleport root's (ADR-0098). For every target, the reference included, it also writes one form of what
 renders alike however it is written:
 
 - attributes sorted by name, and a `class`'s tokens sorted, one space apart;
@@ -240,7 +247,10 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
    - A DOM read that feeds state or an emit reads what layout does not decide (`textContent`,
      attributes, `value`, `document.activeElement`), never geometry: the expectations are
      written on macOS and compared on Linux.
-   - No spec reorders a list, or replaces a row's item, while the focus is inside the list.
+   - A spec asserts the focus inside a list only where the focused row keeps its place: a browser
+     blurs a moved element, and only React puts the focus back (semantics contract, keyed
+     lists, ADR-0096). A reorder or a replaced item keeps a row's element and typed text
+     everywhere, so a spec asserts those freely, and requires `keyed-identity`.
    - A spec never branches on the target: one expectation, verified seven times.
    - Each test names its own scenario: unique in the case, with a string literal; and each test
      has a name of its own in the case, by which the summary compares the targets' tests.
@@ -280,6 +290,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L9    | `browser:<target>`                                               | After every action and rerender, the normalised DOM, the ARIA tree and the events emitted equal the steps of `trace.<name>.json`.                                                                                                                                                                                        |
 | L10   | `browser:<target>`                                               | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                                                                                         |
 | L11   | `browser:<target>`                                               | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                                                                                        |
+| L12   | `hydrate:<target>`                                               | Every spec again, each mount the case's server render hydrated: the framework reports no mismatch, the ids are the server's, the DOM is the expected one and the target's own client render, nothing logs, and the spec's steps and assertions pass (ADR-0095).                                                          |
 | L13   | `ssr:` and `browser:`                                            | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                                                                                             |
 | L14   | `compile`, and the `sourcemaps/*` cases in `ssr:` and `browser:` | Each output's source map decodes and names its source with that source's content, and each segment without a name maps to the same text in both files. A shared module's copy names itself, and a scoped sheet's map has no segments. A thrown error's top frame in the case maps to the case's `throw` line (ADR-0078). |
 | L15   | `bench`                                                          | Each case's compile time, as a ratio of `basics/hello`'s, stays within twice its budget, and each target's bundled output size within its budget plus 5%.                                                                                                                                                                |
@@ -320,11 +331,36 @@ mouse, the keys, the focus, the clock and the colour scheme. A console message l
 file's last test, once its `afterAll` hooks have run, is judged with the next file's first test and
 names the case it came after.
 
+A hydrate project (`hydrate:<target>`, L12, ADR-0095) runs every spec again, with each `mount` and
+`mountScenario` rendering the case's main component on the server, through the `ufHydrationRender`
+browser command, in the SSR environment of the project's own browser server, then hydrating that
+HTML with the target's hydrate adapter (`toolchain/hydrate`). It records every check as L12, and
+none as L7 to L11, L13 or L14: a failure names its sub-check, `mismatch` (the framework's own
+signal, or a hydration it could not finish), `ids` (the raw ids of the server's HTML), `DOM`,
+`client agreement` (the target's own client render of the same props, in a second root), `console`,
+`trace` or `interactions`.
+
+A hydrate project captures no pixels and writes nothing: it compares with the shared
+expectations, Vue's included, so an update run runs it last. A spec must mount its case's main
+component, which the server renders. Qwik resumes instead of hydrating and Astro runs nothing in a
+page, so their `hydration` cells are unsupported and their hydrate projects skip every test.
+
 `browser:vue` keeps a fresh frame for each spec file, because Vue's development build stops
 running mounted hooks on a page where one threw, and `sourcemaps/mounted-throws` throws on purpose.
 `FRESH_PAGE_PER_FILE` in `harness/projects.ts` lists each such target with its reason. In a live
 `browser:*` run, `browser:vue` runs alone before the followers, so it opens two tester pages per
 CPU, and every other run keeps Vitest's default (`referencePages`).
+
+The hydrate projects share their pages on every target, Vue's included: a fresh frame for each
+spec file that a `-t` run skips stalled the tests it kept. The harness's sequencer
+(`harness/sequencer.ts`) runs `sourcemaps/mounted-throws` after every other spec file of
+`hydrate:vue`, so no file runs after it on its page. `LEAVES_PAGE_UNUSABLE` in
+`harness/projects.ts` names that one case per target, with its reason (ADR-0106).
+
+An async setup's loaders resolve after a microtask (`await Promise.resolve()`), deterministically,
+so the server and the client load the same values, and a mount has resolved before the first
+settle round reads it: settling stops when two rounds read the same DOM, so a slower setup could
+read as settled while it is pending (ADR-0101).
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
@@ -366,6 +402,22 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 
 ## The rules that keep it honest
 
+- **A view's captures cover what it teleported** (ADR-0098). Each element a view's render appends
+  to `<body>` outside its container is the view's, claimed by the view or L12's client render
+  that reads it first. L7 and L9 write it after the container's children in a `<uf:teleported>`
+  marker, the ARIA snapshot after the container's, L10's geometry under `uf:teleported[i]/` and
+  its screenshot over the union of the boxes, and L11 runs axe on it. A case pins `to="body"`,
+  and marks each element it teleports `data-teleported`, which no server HTML holds.
+- **A test leaves nothing in `<body>`** (ADR-0098). Once its views are unmounted, an element the
+  test added fails L8, naming it: a component removes what it appends to `<body>`.
+- **A capture never samples a transition mid-way** (ADR-0100). The determinism reset gives every
+  transition and animation no duration, and each settle also waits until no CSS transition, CSS
+  animation or Web Animation in the page runs, for at most 2 seconds: one still running then fails
+  the settle, never a retry. A spec that tests a `<Transition>`'s timing gives its case's `-active`
+  classes a duration of its own, in a `<style>` it appends to `<head>` inside its own test, with
+  `!important`, and removes in a `finally`. It reads the classes once a frame, or with a
+  `MutationObserver` attached before the action, since `view.user` returns once the page has
+  settled. Each case's sheet declares durations of 100 ms or less, which the reset turns off.
 - **Check mode never writes.** A missing artefact fails with the command that creates it. CI is
   always in check mode, and `pnpm test:update` refuses to run there.
 - **One expectation, written once.** In update mode only the reference target writes the shared
@@ -409,7 +461,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   output, a mismatched closing tag, a type error, a `debugger` statement, an idiom the
   framework's lint rules forbid, wrong text, a render of nothing, element listeners removed on
   the cases whose specs act, wrong text on the cases whose specs rerender, a hidden root,
-  inverted colours, an invalid ARIA role, a console warning), with a fix that fixes nothing (corrupted by
+  inverted colours, an invalid ARIA role, a console warning, and in the hydrate projects' page alone
+  wrong text and element listeners removed, so the server's HTML stays right), with a fix that fixes nothing (corrupted by
   the harness, on the cases whose diagnostics have a fix), with a shifted segment of a compiled source map
   (corrupted by the harness, since the `output` hook runs before a map exists), with the map of
   every module the `ssr` and `browser` projects serve for the `sourcemaps/*` cases moved down a

@@ -33,6 +33,9 @@ import {
   typeExportsCode,
   typeNames,
   typeSpecifier,
+  directiveSpecifier,
+  importedDirectives,
+  ownDirectives,
 } from "@unframework.dev/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework.dev/codegen";
 import { codeOf, expressionsOf, functionsOf, walk } from "@unframework.dev/ir";
@@ -79,6 +82,7 @@ import {
   takesFallthrough,
 } from "./composition.ts";
 import type { Fallthrough } from "./composition.ts";
+import { attachmentCode, narrowedDirectiveValues } from "./directive.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
 import {
@@ -108,16 +112,38 @@ export interface InstanceScript {
    */
   markup: Pick<
     MarkupOptions,
-    "rewrite" | "attribute" | "handler" | "componentTag" | "scopeRootAttributes" | "candidates"
+    | "rewrite"
+    | "attribute"
+    | "handler"
+    | "componentTag"
+    | "scopeRootAttributes"
+    | "candidates"
+    | "narrowedDirectiveValues"
   >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
   /** The `styleText` helper's name, where a style is bound to one value (ADR-0065). */
   styleText?: string;
+  /**
+   * Where the markup holds a `<Teleport>` (ADR-0098): the state that turns true once the
+   * component has mounted, which each teleport's `{#if}` reads, and the attachment helper that
+   * moves its element into `to`.
+   */
+  teleport?: { mounted: string; helper: string };
+  /**
+   * Where the markup holds a `<Transition>` (ADR-0100): the transition functions that run Vue's
+   * enter and leave classes, which the elements' `in:` and `out:` name.
+   */
+  transition?: { enter?: string; leave?: string };
 }
 
 /** The modules a script imports from, in the order it prints them. */
-type Module = "svelte" | "svelte/elements" | "svelte/events";
+type Module =
+  | "svelte"
+  | "svelte/attachments"
+  | "svelte/elements"
+  | "svelte/events"
+  | "svelte/transition";
 
 /**
  * An import of a sibling output: a child component (its default export) or injection keys; or of
@@ -263,7 +289,15 @@ class Names {
       ];
       return [`import ${clause.join(", ")} from ${JSON.stringify(entry.specifier)};`];
     });
-    const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
+    const modules = (
+      [
+        "svelte",
+        "svelte/attachments",
+        "svelte/elements",
+        "svelte/events",
+        "svelte/transition",
+      ] as const
+    ).flatMap((source) => {
       const names = this.#imports.get(source);
       if (!names?.size) return [];
       const types = [...names.values()].every(({ type }) => type);
@@ -498,6 +532,8 @@ class ScriptWriter {
   readonly #slotLocals = new Map<string, string>();
   /** The name the markup writes a child under, where the script imports it under another. */
   readonly #componentTags = new Map<string, string>();
+  /** The attributes each `modelText` field's first value is read into (`#fieldInitials`). */
+  readonly #initials = new Map<ModelAttribute, string>();
   /** What the component reaches of its module, and the names its output declares them by. */
   readonly #reach: ModuleReach;
   readonly #moduleLocals: ReadonlyMap<string, string>;
@@ -579,6 +615,30 @@ class ScriptWriter {
       ? this.#names.claim("styleText")
       : undefined;
     const untrack = fields.length ? this.#names.import("svelte", "untrack") : undefined;
+    const teleport = holdsTeleport(component)
+      ? { mounted: this.#names.claim("mounted"), helper: this.#names.claim("teleport") }
+      : undefined;
+    const onMount = teleport ? this.#names.import("svelte", "onMount") : undefined;
+    // A transition's classes run through transition functions of its own (ADR-0100).
+    const phases = transitionPhases(component);
+    const transition =
+      phases.enter || phases.leave
+        ? {
+            ...(phases.enter ? { enter: this.#names.claim("enter") } : {}),
+            ...(phases.leave ? { leave: this.#names.claim("leave") } : {}),
+            classes: this.#names.claim("transitionClasses"),
+            runs: this.#names.claim("transitionRuns"),
+            config: this.#names.import("svelte/transition", "TransitionConfig", { type: true }),
+          }
+        : undefined;
+    // The module's own directives it applies, as attachment factories (ADR-0099).
+    const directives = ownDirectives(component, this.#module);
+    const attachments = directives.length
+      ? {
+          untrack: this.#names.import("svelte", "untrack"),
+          attachment: this.#names.import("svelte/attachments", "Attachment", { type: true }),
+        }
+      : undefined;
 
     const props = this.#props();
     const setup = this.#setup();
@@ -637,7 +697,18 @@ class ScriptWriter {
       ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
       ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
+      ...(teleport ? [teleportHelper(teleport.helper)] : []),
+      ...(transition ? transitionHelpers(transition) : []),
+      ...(attachments ? directives.map((directive) => attachmentCode(directive, attachments)) : []),
     ];
+    // A teleport's content waits for the component to mount, so the server and the hydrating
+    // client render none of it (ADR-0098).
+    const gate = teleport
+      ? [
+          `let ${teleport.mounted} = $state(false);`,
+          block(`${onMount!}(() => {`, [`${teleport.mounted} = true;`], "});"),
+        ]
+      : [];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
     // component's style after its script.
@@ -650,6 +721,7 @@ class ScriptWriter {
     ];
     // The module's constants it reads, before the props, whose defaults may read them (ADR-0070).
     const constants = constantsCode(this.#module, this.#reach, this.#moduleLocals);
+    const initials = untrack ? this.#fieldInitials(fields, untrack) : [];
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(moduleScript ? [] : types.map((each) => indent(each, INDENT))),
@@ -664,7 +736,9 @@ class ScriptWriter {
             ),
           ]
         : []),
-      ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
+      ...[...props, ...setup, ...dynamic, ...initials, ...gate, ...helpers].map((piece) =>
+        reindent(piece, INDENT),
+      ),
     ];
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
     const composed = composedRender(
@@ -675,6 +749,7 @@ class ScriptWriter {
       (parameter) => this.#fillParameter(parameter),
       (expression) => rewriteExpression(expression, component, this.rules, "render"),
     );
+    const narrowed = narrowedDirectiveValues(composed.render, (base) => this.#names.claim(base));
     const markup: InstanceScript["markup"] = {
       rewrite: this.rules,
       handler: (attribute) => this.#inlineHandler(attribute),
@@ -707,6 +782,8 @@ class ScriptWriter {
       ...(composed.candidates.size
         ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
+      // A narrowed directive value's constant, which its branch declares (ADR-0099).
+      ...(narrowed.size ? { narrowedDirectiveValues: narrowed } : {}),
     };
     const moduleBlock = moduleScript
       ? this.#moduleScript(types, constants, Boolean(owner))
@@ -718,6 +795,15 @@ class ScriptWriter {
       markup,
       render: composed.render,
       ...(styleText ? { styleText } : {}),
+      ...(teleport ? { teleport } : {}),
+      ...(transition
+        ? {
+            transition: {
+              ...(transition.enter === undefined ? {} : { enter: transition.enter }),
+              ...(transition.leave === undefined ? {} : { leave: transition.leave }),
+            },
+          }
+        : {}),
     });
     if (!pieces.length) {
       // Svelte parses the markup's code as TypeScript only in a component whose script is: a
@@ -831,6 +917,11 @@ class ScriptWriter {
         if (name.kind !== "Composable" || !called.has(name.local)) continue;
         this.#names.importNamed(`${directory}${name.imported}.svelte`, name.imported, name.local);
       }
+    }
+    // Each directive it applies from a `.uf.ts` module, from the directive's own module beside
+    // it, `vFocusTrap.svelte.ts`, without its `.ts` as a composable's (ADR-0099).
+    for (const { specifier, imported, local } of importedDirectives(component, this.#module)) {
+      this.#names.importNamed(directiveSpecifier(specifier, `${imported}.svelte`), imported, local);
     }
     // The values it reads of its `.ts` modules, from the output tree's copies, as the source
     // imports them (ADR-0070).
@@ -953,6 +1044,7 @@ class ScriptWriter {
    */
   #modelField(attribute: ModelAttribute, modelText: string, untrack: string): string {
     const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
+    const initial = this.#initials.get(attribute);
     const options = [
       ...(attribute.trim ? ["trim: true"] : []),
       ...(attribute.lazy ? ["lazy: true"] : []),
@@ -960,7 +1052,33 @@ class ScriptWriter {
     ];
     const args = [`() => ${value}`, `(value) => (${value} = value)`];
     if (options.length) args.push(`{ ${options.join(", ")} }`);
-    return `value={${untrack}(() => ${value})} {@attach ${modelText}(${args.join(", ")})}`;
+    const first = initial === undefined ? `value={${untrack}(() => ${value})}` : `{...${initial}}`;
+    return `${first} {@attach ${modelText}(${args.join(", ")})}`;
+  }
+
+  /**
+   * The first value of each field `modelText` binds to a variable of the component, read once into
+   * attributes of the script that the field spreads, `const nameField = { value: untrack(() => name)
+   * };` (ADR-0095). Written as `value={…}`, it would join the template's one render effect, which
+   * reruns as the other bindings change: once hydrated, Svelte has dropped the value it remembers
+   * the attribute by (`remove_input_defaults`), so a rerun writes the first value back over what
+   * the person typed. A spread of attributes that read no state is an effect of its own, which
+   * never reruns. A field bound to something a block declares (a list's row) keeps its read in
+   * the template. So does a `<textarea>`: the server renders a spread `value` as an attribute,
+   * which a textarea doesn't show, and Svelte never drops a textarea's remembered value.
+   */
+  #fieldInitials(fields: readonly ModelAttribute[], untrack: string): string[] {
+    const declarations: string[] = [];
+    for (const attribute of fields) {
+      if (attribute.control === "textarea") continue;
+      // The template's spelling: a variable reads the same in the script.
+      const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
+      if (!/^[A-Za-z_$][\w$]*$/.test(value)) continue;
+      const name = this.#names.claim(`${value}Field`);
+      this.#initials.set(attribute, name);
+      declarations.push(`const ${name} = { value: ${untrack}(() => ${value}) };`);
+    }
+    return declarations.length ? [declarations.join("\n")] : [];
   }
 
   /**
@@ -1025,6 +1143,8 @@ class ScriptWriter {
         return this.#usedRead(binding.id);
       case "loopVar":
       case "localConst":
+      // An awaited value, a plain constant once the await has resolved (ADR-0101).
+      case "awaited":
       case "localFn":
       case "localVar":
       case "emit":
@@ -1255,7 +1375,8 @@ class ScriptWriter {
   #setup(): string[] {
     const pieces: string[] = [];
     let previousDeclaration = false;
-    for (const item of setupInTeardownOrder(this.#component.setup)) {
+    const items = setupInTeardownOrder(this.#component.setup);
+    for (const item of setupInStartOrder(items, this.#bindings)) {
       if (item.kind === "Model") continue;
       const code = this.#item(item);
       // The first id is two declarations, `$props.id()` and the id itself.
@@ -1269,6 +1390,13 @@ class ScriptWriter {
 
   #item(item: SetupItem): string {
     switch (item.kind) {
+      // Top-level `await` in the instance script, under the `experimental.async` compiler option
+      // (ADR-0101). The awaited call reads the props once, as the setup's other values do.
+      case "Await": {
+        const name = this.#name(item.binding);
+        const type = item.type ? `: ${item.type.code}` : "";
+        return `const ${name}${type} = await ${this.#setupValue(item.value)};`;
+      }
       case "State": {
         const name = this.#name(item.binding);
         const rune = isPrimitiveState(item, this.#component, this.#module)
@@ -1782,6 +1910,64 @@ function setupInTeardownOrder(items: readonly SetupItem[]): SetupItem[] {
   return [...rest.slice(0, at), ...early, ...rest.slice(at)];
 }
 
+/**
+ * The setup items of a setup that awaits (ADR-0101), with the items Svelte needs during the
+ * component's synchronous start moved above the awaits, in their own order. Each `provide`
+ * {@link startsProvide} allows, since `setContext` after an await throws
+ * `set_context_after_init`. Each `mounted` hook and each template ref: an `onMount` registered
+ * after an await runs before `bind:this` sets the ref, and `bind:this` waits for the await that
+ * comes before the ref's declaration, so a hook that reads the ref sees it only when both come
+ * first. The hook's closure runs once the awaited values are set. `unmounted` hooks keep their
+ * teardown order. A setup without awaits keeps its order.
+ */
+function setupInStartOrder(
+  items: readonly SetupItem[],
+  bindings: ReadonlyMap<string, Binding>,
+): SetupItem[] {
+  if (!items.some((item) => item.kind === "Await")) return [...items];
+  const early = items.filter(
+    (item) =>
+      item.kind === "TemplateRef" ||
+      (item.kind === "Lifecycle" && item.hook === "mounted") ||
+      (item.kind === "Provide" && startsProvide(item, bindings)),
+  );
+  return [...early, ...items.filter((item) => !early.includes(item))];
+}
+
+/**
+ * Whether a `provide` of a setup that awaits can move above the awaits (ADR-0101): its value
+ * reads only props, module values and globals, nothing the awaits or a later item set. Its key is
+ * a module's or an imported one.
+ */
+function startsProvide(item: ProvideItem, bindings: ReadonlyMap<string, Binding>): boolean {
+  return item.value.refs.every((reference) => {
+    switch (reference.kind) {
+      case "Global":
+      case "Import":
+        return true;
+      case "Binding": {
+        const kind = bindings.get(reference.binding)?.kind;
+        return kind === "prop" || kind === "moduleConst" || kind === "import";
+      }
+      default:
+        return false;
+    }
+  });
+}
+
+/**
+ * The `provide` items of a setup that awaits which cannot move above the awaits (ADR-0101): each
+ * reads an awaited value or a later item, and `setContext` after an await throws
+ * `set_context_after_init`. The target reports them (UF1002) and emits nothing for the component.
+ */
+export function lateProvides(component: UfComponent): ProvideItem[] {
+  if (!component.setup.some((item) => item.kind === "Await")) return [];
+  const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
+  return component.setup.filter(
+    (item): item is ProvideItem => item.kind === "Provide" && !startsProvide(item, bindings),
+  );
+}
+
 /** Whether a setup item registers a cleanup that runs when the component is removed. */
 function registersCleanup(item: SetupItem): boolean {
   switch (item.kind) {
@@ -1797,6 +1983,7 @@ function registersCleanup(item: SetupItem): boolean {
 /** Whether an item is a declaration a line long, which the script keeps beside the next one. */
 function isDeclaration(item: SetupItem): boolean {
   switch (item.kind) {
+    case "Await":
     case "State":
     case "Derived":
     case "TemplateRef":
@@ -1908,6 +2095,160 @@ function onceHelper(name: string): string {
     ],
     "}",
   );
+}
+
+/** Whether the markup holds a `<Teleport>` (ADR-0098). */
+function holdsTeleport(component: UfComponent): boolean {
+  let found = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") found = true;
+    },
+  });
+  return found;
+}
+
+/**
+ * The phases the markup's transitions run (ADR-0100): a conditional's elements enter and leave,
+ * and an element with `appear` enters. One element without `appear` runs neither.
+ */
+function transitionPhases(component: UfComponent): { enter: boolean; leave: boolean } {
+  const phases = { enter: false, leave: false };
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Transition") return;
+      const conditional = node.children[0]?.kind === "If";
+      if (conditional || node.appear) phases.enter = true;
+      if (conditional) phases.leave = true;
+    },
+  });
+  return phases;
+}
+
+/**
+ * The transition functions of a `<Transition>` (`transition`, emulated, ADR-0100), which `in:`
+ * and `out:` name: Svelte's `transition:` runs its own CSS or tick, never Vue's classes. Each
+ * returns a deferred config, which Svelte calls for every run, once the element is in the document
+ * and before it is painted. The call stops what the element's other phase still runs, as when
+ * Svelte reverses a leave, adds the phase's `-from` and `-active` classes, swaps `-from` for `-to`
+ * two frames later, as Vue does, and reads the element's longest duration and delay, which Svelte
+ * waits before it ends the phase and removes a leaving element. The classes go at that end,
+ * Svelte's `introend` or `outroend`, so both elements of a swap end in one frame.
+ */
+function transitionHelpers(names: {
+  enter?: string;
+  leave?: string;
+  classes: string;
+  runs: string;
+  config: string;
+}): string[] {
+  const { enter, leave, classes, runs, config } = names;
+  return [
+    `/** The stop of the classes each element runs now, which its next phase stops first. */\nconst ${runs} = new WeakMap<Element, () => void>();`,
+    `/** Runs \`name\`'s classes of one phase on the element, as Vue's \`<Transition>\` does. */\n${block(
+      `function ${classes}(element: Element, name: string, phase: "enter" | "leave"): () => ${config} {`,
+      [
+        block(
+          "return () => {",
+          [
+            "// A phase that starts while the other runs, as Svelte reverses one, takes over from it.",
+            `${runs}.get(element)?.();`,
+            "const from = `${name}-${phase}-from`;",
+            "const active = `${name}-${phase}-active`;",
+            "const to = `${name}-${phase}-to`;",
+            'const event = phase === "enter" ? "introend" : "outroend";',
+            "let frame = 0;",
+            block(
+              "const stop = () => {",
+              [
+                "cancelAnimationFrame(frame);",
+                "element.removeEventListener(event, stop);",
+                "element.classList.remove(from, active, to);",
+                `if (${runs}.get(element) === stop) ${runs}.delete(element);`,
+              ],
+              "};",
+            ),
+            `${runs}.set(element, stop);`,
+            "element.addEventListener(event, stop, { once: true });",
+            "element.classList.add(from, active);",
+            block(
+              "frame = requestAnimationFrame(() => {",
+              [
+                block(
+                  "frame = requestAnimationFrame(() => {",
+                  ["element.classList.remove(from);", "element.classList.add(to);"],
+                  "});",
+                ),
+              ],
+              "});",
+            ),
+            "const style = getComputedStyle(element);",
+            block(
+              "const longest = (delays: string, durations: string) => {",
+              [
+                'const each = (list: string) => list.split(", ").map((time) => Number(time.slice(0, -1)) * 1000);',
+                "const delay = each(delays);",
+                "return Math.max(0, ...each(durations).map((duration, index) => duration + (delay[index % delay.length] ?? 0)));",
+              ],
+              "};",
+            ),
+            "return { duration: Math.max(longest(style.transitionDelay, style.transitionDuration), longest(style.animationDelay, style.animationDuration)) };",
+          ],
+          "};",
+        ),
+      ],
+      "}",
+    )}`,
+    ...(enter === undefined
+      ? []
+      : [
+          `/** Runs \`name\`'s enter classes, as \`in:\` starts it. */\n${block(
+            `function ${enter}(element: Element, name: string): () => ${config} {`,
+            [`return ${classes}(element, name, "enter");`],
+            "}",
+          )}`,
+        ]),
+    ...(leave === undefined
+      ? []
+      : [
+          `/** Runs \`name\`'s leave classes, as \`out:\` starts it. */\n${block(
+            `function ${leave}(element: Element, name: string): () => ${config} {`,
+            [`return ${classes}(element, name, "leave");`],
+            "}",
+          )}`,
+        ]),
+  ];
+}
+
+/**
+ * The attachment that moves a teleport's element into the element `to` selects (`teleport`,
+ * emulated, ADR-0098), and removes it on teardown, or removes it at once where nothing matches.
+ * The element is its branch's only node, so the branch's start and end are the element, and
+ * Svelte removes it where it is. A delegated event still reaches it: `mount()` listens on
+ * `document` too, for portals like this one.
+ */
+function teleportHelper(name: string): string {
+  return `/** Moves the element into the element \`to\` selects, and removes it on teardown. */\n${block(
+    `function ${name}(to: string): (element: HTMLElement) => () => void {`,
+    [
+      block(
+        "return (element) => {",
+        [
+          "const target = document.querySelector(to);",
+          "if (!target) element.remove();",
+          "else {",
+          "  const active = document.activeElement;",
+          "  target.append(element);",
+          "  // Moving a node blurs what it holds, which a component inside it may have focused.",
+          "  if (active instanceof HTMLElement && element.contains(active)) active.focus();",
+          "}",
+          "return () => element.remove();",
+        ],
+        "};",
+      ),
+    ],
+    "}",
+  )}`;
 }
 
 /** The type of the value a key holds, read from the key (`#moduleScript`). */
@@ -2256,6 +2597,7 @@ function isReactive(kind: BindingKind): boolean {
     case "loopVar":
     case "templateRef":
     case "localConst":
+    case "awaited":
     case "localFn":
     case "localVar":
     case "emit":

@@ -27,7 +27,7 @@ export interface Span {
  */
 export type BindingId = string;
 
-/** One `.uf.tsx` module, or a `.uf.ts` module of composables (ADR-0069). */
+/** One `.uf.tsx` module, or a `.uf.ts` module of composables and directives (ADR-0069, ADR-0099). */
 export interface UfModule {
   /** The IR format version. Bumped, with a migration, on every breaking change. */
   irVersion: 1;
@@ -84,6 +84,61 @@ export interface UfModule {
    * `use[A-Z]…`, each compiled to one module per target. Absent in a `.uf.tsx` module.
    */
   composables?: UfComposable[];
+  /**
+   * The module's directives, in source order (ADR-0099): a `.uf.ts` module's exports `v[A-Z]…`,
+   * each compiled to one module per target, and a `.uf.tsx` module's top-level ones, which every
+   * output that applies one declares. Absent when it has none.
+   */
+  directives?: UfDirective[];
+}
+
+/**
+ * A directive (ADR-0099): `const vFocusTrap = defineDirective<boolean>({ mounted(el, value) {…} })`,
+ * a behaviour an element takes with `v-focus-trap={open.value}`. Its hooks run in the browser
+ * only, and read their parameters, their own names, the browser's globals and, in a `.uf.ts`
+ * module, the module's constants and value imports.
+ */
+export interface UfDirective {
+  /**
+   * The constant's name: `v` and an upper-case letter, in ASCII letters and digits. An element
+   * applies it as `v-` and the rest in kebab case (`v-focus-trap`).
+   * @pattern ^v[A-Z][A-Za-z0-9]*$
+   */
+  name: string;
+  /** Set for a `.uf.ts` module's export, which compiles to a module of its own. */
+  exported?: true;
+  /** The value's type, `T` in `defineDirective<T>`, as written. */
+  value: TypeText;
+  /** The element's type, `E` in `defineDirective<T, E>`, as written: `HTMLElement` when absent. */
+  element?: TypeText;
+  /** The hooks, in source order, each named once. */
+  hooks: DirectiveHook[];
+  /**
+   * The module's constants and value imports the hooks read, in source order: `moduleConst` and
+   * `import` bindings, which its output declares and imports as a composable's does (ADR-0070).
+   */
+  bindings: Binding[];
+  /** The names of the module's `types` its hooks name, in source order. */
+  types: string[];
+  /** The `const` declaration, from `export` or `const` to its end. */
+  span: Span;
+}
+
+/** A hook of a directive (ADR-0099): a method of the object `defineDirective` takes. */
+export interface DirectiveHook {
+  /** When it runs: once the element is in the DOM, after a render that changes the value, and once it leaves. */
+  name: "mounted" | "updated" | "unmounted";
+  /** Set for an `async` method, which nothing waits for. */
+  async?: true;
+  /**
+   * Its parameters' names, as written and unannotated: the element, then the value and the
+   * previous value, as many as the hook takes.
+   */
+  parameters: string[];
+  /** The method's block body, `{ … }`, with every name it reads resolved. */
+  body: Code;
+  /** The method, from its name to the end of its body. */
+  span: Span;
 }
 
 /** `import type { ButtonProps } from "./types"` (ADR-0067): types an output re-imports by name. */
@@ -293,9 +348,12 @@ export interface ModuleImport {
   span: Span;
 }
 
-/** A name an import binds: a component, an injection key, or a composable (ADR-0069). */
+/**
+ * A name an import binds: a component, an injection key, a composable (ADR-0069) or a directive
+ * (ADR-0099).
+ */
 export interface ImportedName {
-  kind: "Component" | "Key" | "Composable";
+  kind: "Component" | "Key" | "Composable" | "Directive";
   /** The imported name: `default` for a default import. */
   imported: string;
   /** The local name the module uses. */
@@ -341,6 +399,21 @@ export interface ModuleApi {
    * none.
    */
   composables?: ComposableApi[];
+  /**
+   * The directives a `.uf.ts` module exports, in source order (ADR-0099). Absent when it has
+   * none.
+   */
+  directives?: DirectiveApi[];
+}
+
+/**
+ * What a caller reads of a directive (ADR-0099): its name. A caller's output never depends on the
+ * hooks, and a target that holds the element in a typed ref of its own (Qwik's signal) reads the
+ * element's type from the directive's own module, `typeof vFocusTrap`.
+ */
+export interface DirectiveApi {
+  /** @pattern ^v[A-Z][A-Za-z0-9]*$ */
+  name: string;
 }
 
 /**
@@ -422,6 +495,11 @@ export interface ComponentApi {
    * child is generic. Absent when it has none.
    */
   typeParameters?: string[];
+  /**
+   * Set when the component's setup awaits (ADR-0101), so a parent in another file knows: Vue's
+   * parent wraps it in `<Suspense>`. Absent otherwise.
+   */
+  async?: true;
 }
 
 /**
@@ -689,6 +767,8 @@ export interface Binding {
  * - `localConst`: a setup `const` holding a value, `useId()`'s included;
  * - `localFn`: a setup function, `function save() {…}` or `const save = () => …`;
  * - `localVar`: a setup `let`, which holds what no template reads (a timer's id);
+ * - `awaited`: `const user = await loadUser(props.id)`, a read-only constant the setup awaits
+ *   once each time it runs (ADR-0101);
  * - `emit`: the function `defineEmits` returns;
  * - `model`: `const open = defineModel<boolean>("open")`, read and written as `open.value`, as
  *   state is (ADR-0054);
@@ -712,6 +792,7 @@ export type BindingKind =
   | "localConst"
   | "localFn"
   | "localVar"
+  | "awaited"
   | "emit"
   | "model"
   | "slots"
@@ -1036,6 +1117,7 @@ export interface ParameterPattern {
 
 /** What a component's setup declares or runs, in source order (ADR-0045). */
 export type SetupItem =
+  | AwaitItem
   | StateItem
   | DerivedItem
   | TemplateRefItem
@@ -1050,6 +1132,22 @@ export type SetupItem =
   | ProvideItem
   | InjectItem
   | UseItem;
+
+/**
+ * `const user = await loadUser(props.id)`: an `awaited` binding (ADR-0101). The awaits open the
+ * setup: no `Await` follows another item, and its value reads only props, module values, globals
+ * and the `awaited` bindings before it.
+ */
+export interface AwaitItem {
+  kind: "Await";
+  binding: BindingId;
+  /** The type annotation as written. */
+  type?: TypeText;
+  /** The awaited expression, without `await`. */
+  value: Code;
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
 
 /** `const count = ref(initial)`: a `state` binding (ADR-0046). */
 export interface StateItem {
@@ -1356,7 +1454,9 @@ export type RenderNode =
   | ForNode
   | ComponentNode
   | SlotOutletNode
-  | DynamicNode;
+  | DynamicNode
+  | TeleportNode
+  | TransitionNode;
 
 /**
  * A component element, `<Field label="Name" onClear={reset} />` (ADR-0053): an imported
@@ -1404,6 +1504,39 @@ export interface DynamicNode {
   children: RenderNode[];
   /** The fills of component candidates. */
   fills?: SlotFill[];
+  span: Span;
+}
+
+/**
+ * `<Teleport to="body">` (ADR-0098): content that mounts into another element of the document,
+ * once its component has mounted. The server renders none of it.
+ */
+export interface TeleportNode {
+  kind: "Teleport";
+  /** The CSS selector of the element the content mounts into: a static string, not empty. */
+  to: string;
+  /** The content: exactly one element (ADR-0098). */
+  children: RenderNode[];
+  span: Span;
+}
+
+/**
+ * `<Transition name="fade">` (ADR-0100): Vue's CSS-class contract around one element, or one
+ * conditional of elements. When the child enters or leaves, `<name>-enter-*` or `<name>-leave-*`
+ * classes run, and a leaving element is removed only once its transition ends. The server renders
+ * the settled child.
+ */
+export interface TransitionNode {
+  kind: "Transition";
+  /** The prefix of the transition's classes, a static string: `"v"` when the source leaves it out. */
+  name: string;
+  /** Set when the first element enters on a client mount too (`appear`). */
+  appear?: true;
+  /**
+   * The child: exactly one element, or one `If` whose every branch holds one element or nothing
+   * (ADR-0100).
+   */
+  children: RenderNode[];
   span: Span;
 }
 
@@ -1537,7 +1670,9 @@ export type Attribute =
   | SpreadAttribute
   | EventAttribute
   | RefAttribute
-  | ModelAttribute;
+  | ModelAttribute
+  | RawHtmlAttribute
+  | DirectiveAttribute;
 
 /**
  * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
@@ -1654,6 +1789,35 @@ export interface RefAttribute {
   kind: "Ref";
   /** The `templateRef` binding. */
   binding: BindingId;
+  span: Span;
+}
+
+/**
+ * `innerHTML={markup}` (ADR-0097): the element's content is the markup a string holds, parsed by
+ * the browser, never escaped. Its element is an HTML element that holds content, and has no
+ * children of its own. A static `innerHTML="<b>Hi</b>"` is a string literal's expression.
+ */
+export interface RawHtmlAttribute {
+  kind: "RawHtml";
+  /** An expression whose value is a string: the markup. */
+  value: Expression;
+  span: Span;
+}
+
+/**
+ * `v-focus-trap={open.value}` (ADR-0099): applies a directive to the element. It renders nothing,
+ * and its hooks run in the browser only. A static `v-x="text"` is a string literal's expression.
+ */
+export interface DirectiveAttribute {
+  kind: "Directive";
+  /**
+   * The directive's local name: a top-level directive of the module, or a directive it imports
+   * from a `.uf.ts` module.
+   * @pattern ^v[A-Z][A-Za-z0-9]*$
+   */
+  name: string;
+  /** The value the hooks receive. */
+  value: Expression;
   span: Span;
 }
 

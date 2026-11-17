@@ -47,6 +47,7 @@ import { lowerClass } from "./class.ts";
 import type { LoweredClass } from "./class.ts";
 import { reportCharacter, reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import type { RawSpan, Reporter } from "./context.ts";
+import { isDirectiveAttribute, lowerDirectiveAttribute } from "./directives.ts";
 import { emptyValue, enumeratedProblem, enumeratedStaticProblem } from "./enumerated.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
@@ -56,6 +57,7 @@ import { listenerName, lowerListener, lowerRef } from "./listeners.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
 import { bindsInputType, CONTROL_MODEL, lowerControlModel } from "./models.ts";
+import { lowerRawHtml, RAW_HTML } from "./raw-html.ts";
 import type { RenderContext } from "./render.ts";
 import { spreadSource } from "./spread-source.ts";
 import { lowerStaticStyle, lowerStyleObject, lowerStyleValue, styleValueProblem } from "./style.ts";
@@ -133,11 +135,11 @@ interface Read {
 }
 
 /**
- * A listener or a template ref, lowered on its own (`./listeners.ts`), or a `v-model`, lowered
- * once the element's `type` is known (`./models.ts`).
+ * A listener or a template ref, lowered on its own (`./listeners.ts`), a `v-model`, lowered
+ * once the element's `type` is known (`./models.ts`), or `innerHTML` (`./raw-html.ts`).
  */
 interface OwnRead {
-  own: "listener" | "ref" | "model";
+  own: "listener" | "ref" | "model" | "html" | "directive";
   node: AST.JSXAttribute;
   nameNode: AST.JSXIdentifier;
   attribute: Attribute | undefined;
@@ -194,6 +196,14 @@ export function lowerAttributes(
       );
       continue;
     }
+    if (nameNode.type === "JSXNamespacedName" && /^v-/i.test(nameNode.namespace.name)) {
+      reporter.unsupported(
+        nameNode,
+        `\`${authored}\` passes the directive an argument, and a directive's arguments and modifiers are not supported yet (ADR-0099).`,
+        { help: "Pass what the directive needs as its value: `v-name={value}`." },
+      );
+      continue;
+    }
     if (nameNode.type === "JSXNamespacedName" && !/^(xlink|xml|xmlns):/.test(authored)) {
       reporter.unsupported(nameNode, "Namespaced attributes are not supported yet.");
       continue;
@@ -217,6 +227,37 @@ export function lowerAttributes(
           key: "v-model",
           canonical: "v-model",
           modifier: model[1] as OwnRead["modifier"],
+        });
+        continue;
+      }
+      // The element's content as markup (ADR-0097), in any case: a misspelt case is renamed.
+      if (authored.toLowerCase() === "innerhtml") {
+        const attribute = lowerRawHtml(item, nameNode, element);
+        entries.push({
+          own: "html",
+          node: item,
+          nameNode,
+          attribute,
+          key: RAW_HTML,
+          canonical: RAW_HTML,
+        });
+        continue;
+      }
+      // A directive (ADR-0099), lowered on its own as a listener is: it renders no attribute.
+      if (isDirectiveAttribute(authored)) {
+        const attribute = lowerDirectiveAttribute(
+          item,
+          nameNode,
+          element,
+          element.render.directives,
+        );
+        entries.push({
+          own: "directive",
+          node: item,
+          nameNode,
+          attribute,
+          key: `v:${authored}`,
+          canonical: authored,
         });
         continue;
       }
@@ -699,13 +740,16 @@ function readSpread(
         ? reservedSpreadKey(
             `A spread's \`${name}\` key is not rendered: \`${name}\` has its own channel, and a spread renders attributes.`,
           )
-        : name !== authored
-          ? {
-              code: "UF3004",
-              message: `The spread's key \`${authored}\` is written \`${name}\`: a spread's keys are attribute names.`,
-              help: "Rename the member in its type.",
-            }
-          : nameProblem(tag, namespace, authored, name);
+        : // Markup has a channel of its own, `innerHTML={markup}` on the element (ADR-0097).
+          name === "innerhtml"
+          ? nameProblem(tag, namespace, authored, name)
+          : name !== authored
+            ? {
+                code: "UF3004",
+                message: `The spread's key \`${authored}\` is written \`${name}\`: a spread's keys are attribute names.`,
+                help: "Rename the member in its type.",
+              }
+            : nameProblem(tag, namespace, authored, name);
     if (problem) {
       report(reporter, item, problem, related);
       continue;
@@ -914,11 +958,17 @@ function checkAgainstElement(
         reporter.report(
           "UF3007",
           entry.nameNode,
-          entry.own === "ref" || entry.own === "model"
+          entry.own === "ref" ||
+            entry.own === "model" ||
+            entry.own === "html" ||
+            entry.own === "directive"
             ? `\`${entry.canonical}\` is set twice on this <${tag}>.`
             : `\`${entry.canonical}\` is set twice on this <${tag}>: an element listens to an event with one handler for each option.`,
           {
-            help: "Keep one: call both functions from one handler.",
+            help:
+              entry.own === "html" || entry.own === "directive"
+                ? "Keep one."
+                : "Keep one: call both functions from one handler.",
             related: [{ span: first, message: "First set here" }],
           },
         );

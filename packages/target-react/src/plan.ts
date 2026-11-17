@@ -14,6 +14,7 @@ import {
   ImportSet,
   parseCodeSource,
   pascalCase,
+  readsElementScope,
   sourceNames,
   typeNames,
 } from "@unframework.dev/codegen";
@@ -32,6 +33,8 @@ import type {
   Code,
   ComposableApi,
   ComposableMemberApi,
+  DirectiveAttribute,
+  Expression,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -50,6 +53,7 @@ import type {
 
 import { planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
+import { directiveRefBase, directivesInPostOrder } from "./directive.ts";
 import { elementInterface } from "./elements.ts";
 import { synthetic } from "./events.ts";
 
@@ -198,9 +202,40 @@ export interface ReactPlan {
     refObject?: string;
     toggle?: string;
     modelText?: string;
+    /**
+     * The portal helper, the store subscription it passes `useSyncExternalStore`, and the local
+     * that says the component has mounted, where the template holds a `<Teleport>` (ADR-0098).
+     */
+    teleport?: TeleportNames;
+    /** The inline components a `<Transition>` runs through, where the template holds one (ADR-0100). */
+    transition?: TransitionNames;
+    /**
+     * The inline hooks a directive's element calls, and the hooks' type (ADR-0099): `hook` for
+     * a use whose value the component reads once, `each` for one whose value each element passes
+     * its ref callback (ADR-0108).
+     */
+    directive?: { hook?: string; each?: string; hooks: string; queue: string };
+    /**
+     * The inline helper that joins an element's ref callbacks, where a directive whose value reads
+     * the row makes its own as the row renders beside another (ADR-0108), claimed as it prints.
+     */
+    mergeRefs?: string;
+    /** The names a setup that awaits takes (ADR-0101), where it does. */
+    async?: AsyncSetupNames;
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
+  /**
+   * The ref callback each directive's call returns (ADR-0099), or the function that makes one from
+   * an element's value (ADR-0108), in a post-order of the elements, the order the calls are
+   * declared in.
+   */
+  readonly directiveRefs: Map<DirectiveAttribute, string>;
+  /**
+   * The directives whose value reads a list's row or a scoped fill's props (ADR-0108): the
+   * element's callback is made from its own value as the row renders.
+   */
+  readonly elementDirectives: Set<DirectiveAttribute>;
 }
 
 /**
@@ -216,7 +251,13 @@ export function planComponent(
 ): ReactPlan {
   const bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
   const kindOf = (id: BindingId) => bindings.get(id)?.kind;
-  const returned = new Set(composable?.returns.map((member) => member.binding));
+  // A composable's returned functions, and a directive's value that is a setup function, which
+  // its hooks call (ADR-0099), run as client code a value passed out of the component runs.
+  const passedToDirectives = directiveFunctionValues(component);
+  const returned = new Set([
+    ...(composable?.returns.map((member) => member.binding) ?? []),
+    ...passedToDirectives.keys(),
+  ]);
   const summaries = new Map(
     [...summarize(component)].map(([id, summary]) => [
       id,
@@ -395,6 +436,8 @@ export function planComponent(
               case "state":
               case "templateRef":
               case "localConst":
+              // What `use` read of the setup, the same value at every render (ADR-0101).
+              case "awaited":
               case "localVar":
               case "emit":
               case "model":
@@ -446,7 +489,9 @@ export function planComponent(
       }
     }
   };
-  for (const { expression } of expressionsOf(component)) renderCalls(expression);
+  for (const { expression } of expressionsOf(component)) {
+    if (![...passedToDirectives.values()].includes(expression)) renderCalls(expression);
+  }
   for (const { code, context } of codeOf(component)) if (context === "pure") renderCalls(code);
   for (const { function: fn, role } of functionsOf(component)) {
     if (role === "getter") renderCalls(fn.body);
@@ -608,6 +653,8 @@ export function planComponent(
         case "import":
         case "usedFn":
         case "usedConst":
+        // Render and client code read the same value of the setup by its name (ADR-0101).
+        case "awaited":
           break;
         default:
           kind satisfies never;
@@ -648,8 +695,18 @@ export function planComponent(
   }
   const helpers: ReactPlan["helpers"] = {};
   if (onceGuards.size) helpers.once = names.claim("useOnce");
+  // A directive whose value reads a list's row or a fill's props makes its element's callback as
+  // the row renders, so the element's own callback is written in place too, as for a listener
+  // that reads the row (ADR-0108).
+  const elementDirectives = new Set(
+    directivesInPostOrder(component).filter((attribute) => readsElementScope(attribute, component)),
+  );
+  const passesValues = (element: ElementNode) =>
+    element.attributes.some(
+      (attribute) => attribute.kind === "Directive" && elementDirectives.has(attribute),
+    );
   for (const [element, native] of nativeElements) {
-    if (stable(native.groups)) {
+    if (stable(native.groups) && !passesValues(element)) {
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }
@@ -661,7 +718,7 @@ export function planComponent(
       if (model?.kind !== "Model") return;
       const native = nativeElements.get(node);
       // A callback written in place runs at every render, which would move the caret each time.
-      if (native && !native.callback) return;
+      if ((native && !native.callback) || passesValues(node)) return;
       carets.set(
         model,
         native
@@ -684,6 +741,79 @@ export function planComponent(
   }
 
   if (nextTick) helpers.nextTick = names.claim("useNextTick");
+  let teleports = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Teleport") teleports = true;
+    },
+  });
+  if (teleports) {
+    helpers.teleport = {
+      helper: names.claim("teleport"),
+      subscribe: names.claim("subscribeNothing"),
+      mounted: names.claim("mounted"),
+    };
+  }
+  let transitions = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Transition") transitions = true;
+    },
+  });
+  if (transitions) {
+    helpers.transition = {
+      component: names.claim("Transition"),
+      item: names.claim("TransitionItem"),
+      entry: names.claim("TransitionEntry"),
+      attach: names.claim("attachRef"),
+      // One store subscription serves the teleports and the transitions.
+      subscribe: helpers.teleport?.subscribe ?? names.claim("subscribeNothing"),
+    };
+  }
+
+  // Each directive's call, in a post-order of the elements, so a component's hooks run in Vue's
+  // order (ADR-0099).
+  // A directive whose value each element passes is a function that makes the element's callback
+  // from the value, `withTrace(item.label)`, not a ref: React Compiler reads a `…Ref` name called
+  // during render as a ref read (ADR-0108).
+  const directiveRefs = new Map(
+    directivesInPostOrder(component).map(
+      (attribute) =>
+        [
+          attribute,
+          names.claim(
+            elementDirectives.has(attribute)
+              ? `with${attribute.name.slice(1)}`
+              : directiveRefBase(attribute.name),
+          ),
+        ] as const,
+    ),
+  );
+  if (directiveRefs.size) {
+    const perUse = [...directiveRefs.keys()].some((attribute) => !elementDirectives.has(attribute));
+    const hook = perUse ? names.claim("useDirective") : undefined;
+    const hooks = names.claim("DirectiveHooks");
+    const queue = names.claim("queueHook");
+    helpers.directive = {
+      ...(hook ? { hook } : {}),
+      ...(elementDirectives.size ? { each: names.claim("useElementDirective") } : {}),
+      hooks,
+      queue,
+    };
+  }
+  // A setup that awaits splits the component in three (ADR-0101).
+  if (!composable && component.setup.some((item) => item.kind === "Await")) {
+    const base = component.name[0]!.toLowerCase() + component.name.slice(1);
+    helpers.async = {
+      setup: names.claim(`${base}Setup`),
+      resolved: names.claim(`${component.name}Resolved`),
+      pending: names.claim("SetupPending"),
+      promise: names.claim("setup"),
+      settled: names.claim("settled"),
+      setSettled: names.claim("setSettled"),
+      props: parameter?.form === "object" ? parameter.name! : names.claim("props"),
+    };
+  }
 
   return {
     owner: component,
@@ -712,7 +842,30 @@ export function planComponent(
     ...(nextTick ? { nextTick } : {}),
     helpers,
     composition,
+    directiveRefs,
+    elementDirectives,
   };
+}
+
+/** The setup functions directives take by name as their values, by binding (ADR-0099). */
+function directiveFunctionValues(component: UfComponent): Map<BindingId, Expression> {
+  const found = new Map<BindingId, Expression>();
+  const functions = new Set(
+    component.bindings.filter(({ kind }) => kind === "localFn").map(({ id }) => id),
+  );
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind !== "Directive") continue;
+        const [ref, other] = attribute.value.refs;
+        if (ref?.kind === "Binding" && other === undefined && functions.has(ref.binding)) {
+          found.set(ref.binding, attribute.value);
+        }
+      }
+    },
+  });
+  return found;
 }
 
 /**
@@ -763,6 +916,48 @@ export function liveReaderNames(
   return readers;
 }
 
+/** The names a `<Transition>` needs (ADR-0100), as the target claims them. */
+export interface TransitionNames {
+  /** The inline component that runs the classes around a transition's child. */
+  component: string;
+  /** The inline component that renders one of its elements with its classes and refs. */
+  item: string;
+  /** The type of one of its elements' state. */
+  entry: string;
+  /** The inline helper that gives an element's own ref the element. */
+  attach: string;
+  /** The subscription `useSyncExternalStore` takes, to a store that never changes. */
+  subscribe: string;
+}
+
+/** The names an async setup needs (ADR-0101), as the target claims them. */
+export interface AsyncSetupNames {
+  /** The module-level `async` function that runs the awaits, `profileSetup`. */
+  setup: string;
+  /** The component as today, which reads the setup's values with `use`, `ProfileResolved`. */
+  resolved: string;
+  /** The inline fallback that tells the component its setup has settled. */
+  pending: string;
+  /** The setup's promise: the outer component's state, and the prop it passes it as. */
+  promise: string;
+  /** Whether the setup has settled: the outer component's state, and the prop it passes it as. */
+  settled: string;
+  /** The setter of {@link settled}. */
+  setSettled: string;
+  /** The outer component's props, which it passes on whole: the source's object form's name. */
+  props: string;
+}
+
+/** The names a `<Teleport>` needs (ADR-0098), as the target claims them. */
+export interface TeleportNames {
+  /** The inline helper that portals an element into the element a selector matches. */
+  helper: string;
+  /** The subscription `useSyncExternalStore` takes, to a store that never changes. */
+  subscribe: string;
+  /** The local that is true once the component has mounted, or hydrated. */
+  mounted: string;
+}
+
 /** The inline helpers' names, as the target claims them. */
 const HELPER_NAMES = [
   "cx",
@@ -775,6 +970,12 @@ const HELPER_NAMES = [
   "useModelText",
   "looseToNumber",
   "scopeAttributes",
+  "useDirective",
+  "DirectiveHooks",
+  "queueHook",
+  "useElementDirective",
+  "mergeRefs",
+  "SetupPending",
 ];
 
 /**
@@ -798,6 +999,8 @@ export function reactive(kind: BindingKind): boolean {
     case "localConst":
     case "localFn":
     case "localVar":
+    // A read-only constant, awaited once each time the setup runs (ADR-0101).
+    case "awaited":
     case "emit":
     case "slotScope":
     case "component":
@@ -1224,6 +1427,8 @@ function hoistable(
                 case "derived":
                 case "templateRef":
                 case "localVar":
+                // The resolved component reads it from its setup's promise (ADR-0101).
+                case "awaited":
                 case "emit":
                 case "model":
                 case "slots":

@@ -23,11 +23,15 @@ import { loadToolchain, selectTargets } from "./targets.ts";
 
 /** What an output may import, besides its siblings (M3): its framework only (P7, D11). */
 const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
-  react: ["react", "react/*"],
+  // `createPortal` lives in react-dom, React's renderer, which a `<Teleport>` needs (ADR-0098).
+  react: ["react", "react/*", "react-dom"],
   vue: ["vue", "vue/*"],
   svelte: ["svelte", "svelte/*"],
   solid: ["solid-js", "solid-js/*"],
-  angular: ["@angular/core", "@angular/common"],
+  // Solid 2's DOM renderer is a package of its own, which owns the JSX types (ADR-0102).
+  solid2: ["solid-js", "@solidjs/web"],
+  // `DomSanitizer`, which renders `innerHTML` as written (ADR-0097).
+  angular: ["@angular/core", "@angular/common", "@angular/platform-browser"],
   qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
   astro: ["astro", "astro/*"],
 };
@@ -51,6 +55,7 @@ const BASELINE_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
 const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   react: "oxlint",
   solid: "oxlint",
+  solid2: "oxlint",
   qwik: "oxlint",
   vue: "eslint",
   svelte: "eslint",
@@ -79,6 +84,7 @@ const BASELINE_RULE = "no-debugger";
 const UNUSED_RULE: Record<string, string> = {
   react: "no-unused-vars",
   solid: "no-unused-vars",
+  solid2: "no-unused-vars",
   qwik: "no-unused-vars",
   angular: "no-unused-vars",
   vue: "@typescript-eslint/no-unused-vars",
@@ -119,6 +125,19 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
     ].join("\n"),
     rules: ["solid/no-react-specific-props"],
   },
+  solid2: {
+    file: "Probe.tsx",
+    contents: [
+      "export default function Probe() {",
+      "  debugger;",
+      '  const label = "Hi";',
+      "  const unused = 1;",
+      '  return <p className="x">{label}</p>;',
+      "}",
+      "",
+    ].join("\n"),
+    rules: ["solid/no-react-specific-props"],
+  },
   qwik: {
     file: "Probe.tsx",
     contents: [
@@ -147,11 +166,11 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
       "</script>",
       "",
       "<template>",
-      '  <p v-html="html"></p>',
+      '  <p :title.uf="html"></p>',
       "</template>",
       "",
     ].join("\n"),
-    rules: ["vue/no-v-html"],
+    rules: ["vue/valid-v-bind"],
   },
   svelte: {
     file: "Probe.svelte",
@@ -162,10 +181,10 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
       "  const unused = 1;",
       "</script>",
       "",
-      "<p>{@html html}</p>",
+      "{#each [html] as line}<p>{line}</p>{/each}",
       "",
     ].join("\n"),
-    rules: ["svelte/no-at-html-tags"],
+    rules: ["svelte/require-each-key"],
   },
   astro: {
     file: "Probe.astro",
@@ -176,10 +195,10 @@ const PROBES: Record<string, { file: string; contents: string; rules: readonly s
       "const unused = 1;",
       "---",
       "",
-      "<p set:html={html} />",
+      "<p set:text={html} />",
       "",
     ].join("\n"),
-    rules: ["astro/no-set-html-directive"],
+    rules: ["astro/no-set-text-directive"],
   },
   angular: {
     file: "probe.ts",

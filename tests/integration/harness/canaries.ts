@@ -187,7 +187,37 @@ export interface Canary {
    * project corrupts, and the verdict judges, only those.
    */
   appliesTo?(info: CanaryCase, target: string): boolean;
+  /**
+   * `true`: the plugin corrupts the compile of a hydrate project's page alone (L12, ADR-0095), and
+   * the server render stays right. A compiler plugin does not know its environment, and one
+   * unplugin shares its compile between them, so the hydrate project runs a second unplugin,
+   * without the canary, for its server (`tests/integration/harness/projects.ts`). Only the hydrate
+   * projects.
+   */
+  clientOnly?: true;
 }
+
+/** The targets that hydrate (ADR-0095): Qwik resumes instead, and Astro runs nothing in a page. */
+const HYDRATING: readonly TargetName[] = ["react", "vue", "svelte", "solid", "solid2", "angular"];
+
+/**
+ * The L12 sub-checks that catch a client render's text that differs from the server's, on each
+ * target (ADR-0095), every case judged on one of its target's. React and Vue report the mismatch.
+ * Solid keeps a text the server wrote, which only the client render shows, and throws for a
+ * structure the marker changed, but an async setup's subtree it creates again from the client's
+ * render once the setup resolves, which the expected DOM shows (ADR-0101). Angular and Svelte
+ * throw for such a structure too, and elsewhere write the client's text over the server's, which
+ * the expected DOM shows, or keep the server's.
+ * `ids` and `client agreement` each fail on their own in the testing package's tests.
+ */
+const CLIENT_TEXT_CHECK: Readonly<Record<string, RegExp>> = {
+  react: /^mismatch: /m,
+  vue: /^mismatch: /m,
+  solid: /^(?:mismatch|DOM|client agreement): /m,
+  solid2: /^(?:mismatch|DOM|client agreement): /m,
+  angular: /^(?:mismatch|DOM|client agreement): /m,
+  svelte: /^(?:mismatch|DOM|client agreement): /m,
+};
 
 const MARKER = "[uf canary]";
 
@@ -213,18 +243,22 @@ interface FrameworkRule {
  */
 const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   react: { attribute: 'class="uf-canary"', rule: "react/no-unknown-property" },
-  vue: { attribute: "v-html=\"'uf-canary'\"", rule: "vue/no-v-html" },
+  // A modifier `v-bind` does not have, which Vue's compiler ignores. `v-html` is an output's
+  // own idiom since ADR-0097, which turned `vue/no-v-html` off.
+  vue: { attribute: ":title.uf=\"'uf-canary'\"", rule: "vue/valid-v-bind" },
   svelte: {
     attribute: 'style:uf-canary="1"',
     rule: "svelte/no-unknown-style-directive-property",
   },
   solid: { attribute: 'className="uf-canary"', rule: "solid/no-react-specific-props" },
+  solid2: { attribute: 'className="uf-canary"', rule: "solid/no-react-specific-props" },
   angular: {
     attribute: '*ngIf="true"',
     rule: "@angular-eslint/template/prefer-control-flow",
   },
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
-  astro: { attribute: 'set:html="uf-canary"', rule: "astro/no-set-html-directive" },
+  // `set:html` is an output's own idiom since ADR-0097, which turned its rule off.
+  astro: { attribute: 'set:text="uf-canary"', rule: "astro/no-set-text-directive" },
 };
 
 /** The case L15-slow-compile slows down. */
@@ -468,7 +502,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L5-framework-rule",
     layer: "L5",
     description:
-      "Writes on every output's root element an idiom its framework's lint plugin forbids: `class` in React, `className` in Solid and Qwik, `v-html`, a style directive for no property, `*ngIf`, `set:html`.",
+      "Writes on every output's root element an idiom its framework's lint plugin forbids: `class` in React, `className` in Solid and Qwik, a `v-bind` modifier Vue does not have, a style directive for no property, `*ngIf`, `set:text`.",
     evidence: {
       toolchain: {
         "framework rules": (target) =>
@@ -660,6 +694,43 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
   {
+    id: "L12-client-text",
+    layer: "L12",
+    description:
+      "Appends a marker to the text of an element every render of every component shows, in the hydrate projects' page alone: the server's HTML stays right, and only the client's render differs from it (ADR-0095). React and Vue must report it as a `mismatch`. Solid, Svelte and Angular may report a `mismatch`, `DOM` or `client agreement` one, since those frameworks throw on some changes, keep the server's text on others, and write the client's over it on others (Solid where an async setup's subtree is created again, ADR-0101).",
+    evidence: {
+      hydrate: {
+        "client render": (target) => CLIENT_TEXT_CHECK[target] ?? /^client agreement: /m,
+      },
+    },
+    targets: HYDRATING,
+    clientOnly: true,
+    // A diagnostics case has no spec, so no hydrate project mounts it.
+    appliesTo: (info, target) => info.runs(target),
+    plugin: wrongText,
+  },
+  {
+    id: "L12-unwired-listener",
+    layer: "L12",
+    description:
+      "Removes every element listener from every component in the hydrate projects' page alone, on the cases whose specs act: the hydrated page looks right, and no action does anything (ADR-0095). A spec's `interactions` or `trace` check must fail: a spec compares each step's trace before it asserts what the step changed.",
+    evidence: {
+      // A spec compares each step (the trace) and then asserts what it changed: either fails.
+      hydrate: { interactions: /^(?:interactions|trace): /m },
+    },
+    targets: HYDRATING,
+    clientOnly: true,
+    appliesTo: (info, target) => info.runs(target) && info.interacts(target) && info.listens,
+    plugin: () => ({
+      name: "uf-canary-L12-unwired",
+      ir: (module) => {
+        const copy = structuredClone(module);
+        for (const { render } of copy.components) unwire(render);
+        return copy;
+      },
+    }),
+  },
+  {
     id: "L13-console-warn",
     layer: "L13",
     description:
@@ -694,7 +765,7 @@ export const CANARIES: readonly Canary[] = [
     layer: "L13",
     description:
       "Gives every Qwik component a leaf component, rendered last, with a document listener, for the events every action dispatches, that throws a task later: nothing the component renders or does changes, and only Qwik's report of the error on the console (`QWIK ERROR`) shows it, on the cases whose specs act. Qwik's test mode (`qTest`) would silence the report.",
-    // Qwik 2.0.0-beta.47's development build wraps the host of a handler that throws in an
+    // Qwik 2.0.0-rc.5's development build wraps the host of a handler that throws in an
     // `<errored-host>`, and loops forever where that host re-renders or holds another errored
     // host, or where its first wrap lands with a re-render the same event schedules (a select's
     // `input` and its model's `change` come in one task). The leaf has no props, no state and no
@@ -750,7 +821,7 @@ export const CANARIES: readonly Canary[] = [
     description:
       "Moves every line of the map of each module the browser projects serve for the cases whose specs wrap a throwing step in `expectThrown`, Qwik's segments included, down one, so the error's top frame in the case maps a line below the `throw`. The code gains one line break at its end, and no line moves. Astro runs no such step.",
     evidence: { browser: { "mapped stack": /The top frame in the case maps to \S+, not to / } },
-    targets: ["react", "vue", "svelte", "solid", "angular", "qwik"],
+    targets: ["react", "vue", "svelte", "solid", "solid2", "angular", "qwik"],
     appliesTo: (info, target) => info.throws(target),
     servedMap: linesShifted,
   },
@@ -1188,6 +1259,9 @@ function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element (ADR-0098), and a transition's (ADR-0100).
+      case "Teleport":
+      case "Transition":
         return elementsOf(childrenOf(node));
       case "Text":
       case "Interpolation":
@@ -1314,8 +1388,23 @@ function markText(render: ElementNode | FragmentNode): boolean {
               ? node.fills.flatMap((fill) =>
                   fill.children.filter((child): child is ElementNode => child.kind === "Element"),
                 )
-              : [],
+              : // A root transition's element renders in its place (ADR-0100).
+                node.kind === "Transition"
+                ? node.children.filter((child): child is ElementNode => child.kind === "Element")
+                : [],
         );
+  // A root teleport's element renders in `to` once mounted (ADR-0098): the DOM, the ARIA tree and
+  // the client's render show its text, and a parent's server HTML its own. An element in place
+  // comes first, which the server HTML shows too.
+  if (render.kind === "Fragment") {
+    for (const node of render.children) {
+      if (node.kind === "Teleport") {
+        always.push(
+          ...node.children.filter((child): child is ElementNode => child.kind === "Element"),
+        );
+      }
+    }
+  }
   for (const root of always) {
     const holder = textHolder(root, "html");
     if (holder) {
@@ -1437,7 +1526,12 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
       case "Component":
       case "SlotOutlet":
       case "Dynamic":
+      // A teleport's element mounts in `to`, not among the roots (ADR-0098).
+      case "Teleport":
         return [];
+      // A transition's child renders in its place (ADR-0100).
+      case "Transition":
+        return topElements(node.children);
       default:
         return unreachable(node);
     }
@@ -1534,7 +1628,8 @@ function widenProps(file: OutputFile, target: string): string {
   const { contents } = file;
   switch (target) {
     case "react":
-    case "solid": {
+    case "solid":
+    case "solid2": {
       const open = componentParameters(contents);
       if (open === undefined) return contents;
       const close = matchingBracket(contents, open, "(", ")");
@@ -1736,7 +1831,13 @@ function templateRange(path: string, contents: string): { start: number; end: nu
     const returned = /\breturn\s*(?:\(\s*)?(?=<[A-Za-z>])/g;
     returned.lastIndex = body;
     const start = endOf(returned.exec(contents));
-    return start === undefined ? undefined : { start, end };
+    if (start === undefined) return undefined;
+    // An inline component the output declares after its own, Solid's keyed list (ADR-0096),
+    // holds JSX that is no template's: the range ends where it starts. The output hook sees the
+    // code before oxfmt, so indentation can't tell where the component ends.
+    const helper = /\nfunction [A-Z]/g;
+    helper.lastIndex = start;
+    return { start, end: helper.exec(contents)?.index ?? end };
   }
   if (path.endsWith(".ts")) {
     const start = endOf(/\btemplate:\s*`/.exec(contents));
@@ -1903,9 +2004,16 @@ function classBodyStart(contents: string): number | undefined {
  * past a generic component's type parameters, `function List<T>(` (ADR-0068).
  */
 function componentParameters(contents: string): number | undefined {
-  const component = /\bfunction\s+[A-Z][\w$]*\s*(?=[<(])/.exec(contents);
+  const component = /\bfunction\s+([A-Z][\w$]*)\s*(?=[<(])/.exec(contents);
   if (!component) return undefined;
-  const index = component.index + component[0].length;
+  // React's async component (ADR-0101) renders its template in `<Name>Resolved`, which the
+  // exported one renders under `<Suspense>`: that function's parameters are the template's.
+  const name = component[1]!;
+  const resolved = new RegExp(`\\bfunction\\s+${escapeRegExp(name)}Resolved\\s*(?=[<(])`).exec(
+    contents,
+  );
+  const own = resolved && contents.includes(`<${name}Resolved `) ? resolved : component;
+  const index = own.index + own[0].length;
   if (contents[index] !== "<") return index;
   // A constraint may hold brackets of its own.
   const parameters = matchingBracket(contents, index, "<", ">");

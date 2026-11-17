@@ -1,6 +1,7 @@
 import {
   analyze,
   componentImports,
+  directiveValueQueries,
   shapeQueries,
   sharedModuleImports,
   stylesheetImports,
@@ -14,7 +15,7 @@ import {
   remapFormatted,
   scopeStylesheet,
 } from "@unframework.dev/codegen";
-import type { FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
+import type { EmitContext, FormatOutcome, OutputFile, Target } from "@unframework.dev/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework.dev/diagnostics";
 import type { Diagnostic } from "@unframework.dev/diagnostics";
 import { checkInvariants, validateModule } from "@unframework.dev/ir";
@@ -28,7 +29,7 @@ import type {
 import { parseModule } from "@unframework.dev/parser";
 import type { ParsedModule } from "@unframework.dev/parser";
 import { createSyntacticOracle } from "@unframework.dev/type-oracle";
-import type { TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
+import type { DirectiveValueCheck, TypeOracle, TypeShape } from "@unframework.dev/type-oracle";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
@@ -42,7 +43,7 @@ import {
 } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
-import type { TargetName } from "./targets.ts";
+import type { TargetSelector } from "./targets.ts";
 
 /** What an `output` plugin hook receives besides the files. */
 export interface OutputHookContext {
@@ -75,8 +76,11 @@ export interface CompileOptions {
    * with forward slashes for output that does not depend on the machine.
    */
   filename: string;
-  /** The targets to emit, by name or as target objects. */
-  targets: readonly (TargetName | Target)[];
+  /**
+   * The targets to emit, by selector (`solid@2`, ADR-0102) or as target objects. Outputs are keyed
+   * by each target's id, so `solid@2`'s are under `solid2`.
+   */
+  targets: readonly (TargetSelector | Target)[];
   /** Formats the output with oxfmt. Defaults to `true`; the dev server may skip it. */
   format?: boolean;
   /**
@@ -217,6 +221,22 @@ export async function compile(source: string, options: CompileOptions): Promise<
         diagnostics.push(internal(file, error, `The type oracle failed on \`${type}\``));
       }
     }
+    // Each directive's value, checked against its type argument by an oracle with a checker, in
+    // one request for the module (ADR-0109).
+    const directiveValues = new Map<string, DirectiveValueCheck>();
+    const valueQueries = oracle.checkDirectiveValues ? directiveValueQueries(parsed) : [];
+    if (valueQueries.length) {
+      try {
+        const answer = await oracle.checkDirectiveValues!(file, source, valueQueries);
+        valueQueries.forEach((query, index) => {
+          const check = answer.checks[index];
+          if (check) directiveValues.set(`${query.value.start}:${query.value.end}`, check);
+        });
+        for (const dependency of answer.dependencies) dependencies.add(dependency);
+      } catch (error) {
+        diagnostics.push(internal(file, error, "The type oracle failed on the directives' values"));
+      }
+    }
     const imports = new Map<string, ModuleApi | undefined>();
     for (const specifier of options.resolve ? componentImports(parsed) : []) {
       // A caller's output depends on its composables' APIs, which the project graph watches
@@ -301,6 +321,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
       modules,
       stylesheets,
       shapes: (span) => shapes.get(`${span.start}:${span.end}`),
+      ...(directiveValues.size
+        ? { directiveValues: (span: Span) => directiveValues.get(`${span.start}:${span.end}`) }
+        : {}),
       ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
     diagnostics.push(...analysis.diagnostics);
@@ -547,7 +570,14 @@ async function emitTarget(
 
     // Only this component's code: another's identical text must not claim its place.
     if (options.sourceMap) {
-      const own = { ...module, components: [component], composables: [] };
+      // An exported directive's code is its own module's (ADR-0099); an in-file one's is printed
+      // in the components that apply it.
+      const own = {
+        ...module,
+        components: [component],
+        composables: [],
+        directives: (module.directives ?? []).filter((directive) => !directive.exported),
+      };
       files = files.map((output) => anchorOutput(output, own, source));
     }
     if (options.format !== false) {
@@ -580,15 +610,41 @@ async function emitTarget(
       written.push(output);
     }
   }
-  // A `.uf.ts` module's composables, each one module (ADR-0069). The `output` hooks are a
-  // component's, so they see none of it.
-  for (const composable of module.composables ?? []) {
-    if (!target.emitComposable) {
+  // A `.uf.ts` module's composables and exported directives, each one module (ADR-0069,
+  // ADR-0099). The `output` hooks are a component's, so they see none of it.
+  const emitComposable = target.emitComposable?.bind(target);
+  const emitDirective = target.emitDirective?.bind(target);
+  const modules: {
+    name: string;
+    span: Span;
+    what: string;
+    emit: ((context: EmitContext) => OutputFile[]) | undefined;
+    own: Pick<UfModule, "composables" | "directives">;
+  }[] = [
+    ...(module.composables ?? []).map((composable) => ({
+      name: composable.name,
+      span: composable.span,
+      what: "composables: it has no `emitComposable`",
+      emit: emitComposable && ((context: EmitContext) => emitComposable(composable, context)),
+      own: { composables: [composable] },
+    })),
+    ...(module.directives ?? [])
+      .filter((directive) => directive.exported)
+      .map((directive) => ({
+        name: directive.name,
+        span: directive.span,
+        what: "directives: it has no `emitDirective`",
+        emit: emitDirective && ((context: EmitContext) => emitDirective(directive, context)),
+        own: { composables: [], directives: [directive] },
+      })),
+  ].toSorted((a, b) => a.span.start - b.span.start);
+  for (const each of modules) {
+    if (!each.emit) {
       diagnostics.push(
         createDiagnostic("UF1002", {
           file,
-          span: composable.span,
-          message: `The ${target.name} target does not emit composables: it has no \`emitComposable\`.`,
+          span: each.span,
+          message: `The ${target.name} target does not emit ${each.what}.`,
           target: target.name,
         }),
       );
@@ -597,21 +653,22 @@ async function emitTarget(
     let files: OutputFile[];
     try {
       const emitted = readFiles(
-        target.emitComposable(composable, {
+        each.emit({
           module,
           options: options.targetOptions?.[target.name],
           report: (diagnostic) => diagnostics.push(reported(diagnostic, source, file, target.name)),
         }),
       );
-      if ("problem" in emitted) throw new TypeError(`emitComposable returned ${emitted.problem}`);
+      if ("problem" in emitted)
+        throw new TypeError(`emitting ${each.name} returned ${emitted.problem}`);
       files = emitted.files;
     } catch (error) {
-      const what = `The ${target.name} target failed on ${composable.name}`;
+      const what = `The ${target.name} target failed on ${each.name}`;
       diagnostics.push(internal(file, error, what, target.name));
       continue;
     }
     if (options.sourceMap) {
-      const own = { ...module, components: [], composables: [composable] };
+      const own = { ...module, components: [], ...each.own };
       files = files.map((output) => anchorOutput(output, own, source));
     }
     if (options.format !== false) {
@@ -632,14 +689,14 @@ async function emitTarget(
         diagnostics.push(
           internal(
             file,
-            `${owner.path} (${owner.component}) and ${output.path} (${composable.name}) are one file on a case-insensitive file system`,
+            `${owner.path} (${owner.component}) and ${output.path} (${each.name}) are one file on a case-insensitive file system`,
             `The ${target.name} target wrote two files at one path`,
             target.name,
           ),
         );
         continue;
       }
-      owners.set(key, { path: output.path, component: composable.name });
+      owners.set(key, { path: output.path, component: each.name });
       written.push(output);
     }
   }

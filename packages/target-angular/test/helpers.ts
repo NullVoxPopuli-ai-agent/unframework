@@ -74,9 +74,14 @@ export function corpusSources(): { name: string; file: string; source: string }[
         !COMPOSITION.test(name) &&
         !STYLED_COMPOSITION.test(name) &&
         !BINDING_COMPOSITION.test(name) &&
+        !HYDRATION_COMPOSITION.test(name) &&
+        !TELEPORT_COMPOSITION.test(name) &&
         !THROWN_COMPOSITION.test(name) &&
+        !TRANSITION_COMPOSITION.test(name) &&
         !TYPE_MODULES.test(name) &&
-        !COMPOSABLE_MODULES.test(name),
+        !COMPOSABLE_MODULES.test(name) &&
+        !DIRECTIVE_MODULES.test(name) &&
+        !ASYNC_MODULES.test(name),
     );
 }
 
@@ -96,11 +101,32 @@ const STYLED_COMPOSITION =
 const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
 
 /**
+ * The hydration case whose main source renders two instances of a child (ADR-0095): it resolves
+ * the child as `compile()` does, which `lower` has not. The corpus's toolchain project checks its
+ * Angular outputs.
+ */
+const HYDRATION_COMPOSITION = /^hydration\/use-id$/;
+
+/**
+ * The teleport cases whose main source renders a child (ADR-0098): they resolve the child as
+ * `compile()` does, which `lower` has not. The corpus's toolchain project checks their Angular
+ * outputs.
+ */
+const TELEPORT_COMPOSITION = /^teleport\/(?:components|dialog|root|siblings)$/;
+
+/**
  * The thrown-error case whose main source renders a child that throws once mounted (ADR-0078):
  * it resolves the child as `compile()` does, which `lower` has not. The corpus's toolchain project
  * checks its Angular outputs.
  */
 const THROWN_COMPOSITION = /^sourcemaps\/mounted-throws$/;
+
+/**
+ * The transition cases whose main source renders a child, or applies a `.uf.ts` module's
+ * directive (ADR-0100): they resolve it as `compile()` does, which `lower` has not. The corpus's
+ * toolchain project checks their Angular outputs.
+ */
+const TRANSITION_COMPOSITION = /^transitions\/(?:appear|directive)$/;
 
 /**
  * The types and generics cases whose sources import types from a module beside them, or render
@@ -117,6 +143,21 @@ const TYPE_MODULES = /^types\/(?!exported-types$)|^generics\/(?:scoped-slot|sele
  * outputs.
  */
 const COMPOSABLE_MODULES = /^(?:composables|modules)\/|^semantics\/composable-/;
+
+/**
+ * The directive cases whose sources import a directive from a `.uf.ts` module, or a child
+ * component, beside them (ADR-0099), which `compile()` resolves and `lower` does not. The corpus's toolchain project
+ * checks their Angular outputs.
+ */
+const DIRECTIVE_MODULES =
+  /^directives\/(?:click-outside|fill-props|focus-trap|order|repeated|rows|shapes|shared|slotted|updated-value)$/;
+
+/**
+ * The async setup cases, whose sources await loaders from a module beside them (ADR-0101), which
+ * `compile()` resolves and `lower` does not. The corpus's toolchain project checks their Angular
+ * outputs, and `emit.test.ts` a source that declares its loader.
+ */
+const ASYNC_MODULES = /^async-setup\//;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

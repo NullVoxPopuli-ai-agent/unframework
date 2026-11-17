@@ -36,6 +36,7 @@ import type {
   CodeReference,
   ComponentAttribute,
   ComponentNode,
+  AwaitItem,
   ConstItem,
   DerivedItem,
   DynamicCandidate,
@@ -84,6 +85,10 @@ import type {
   PropAttribute,
   PropsParameter,
   ProvideItem,
+  RawHtmlAttribute,
+  DirectiveAttribute,
+  DirectiveHook,
+  UfDirective,
   RefAttribute,
   RefType,
   Reference,
@@ -93,6 +98,8 @@ import type {
   SlotDeclaration,
   SlotFill,
   SlotOutletNode,
+  TeleportNode,
+  TransitionNode,
   SlotReference,
   Slots,
   Span,
@@ -136,6 +143,7 @@ export interface ModuleOptions {
   moduleImports?: SharedModuleImport[];
   constants?: ModuleConstant[];
   composables?: UfComposable[];
+  directives?: UfDirective[];
 }
 
 /** Builds a module: without imports, injection keys or pass-through imports unless given. */
@@ -149,7 +157,7 @@ export function createModule(
   passThroughImports: PassThroughImport[] = [],
   options: ModuleOptions = {},
 ): UfModule {
-  const { typeImports, typeExports, moduleImports, constants, composables } = options;
+  const { typeImports, typeExports, moduleImports, constants, composables, directives } = options;
   return {
     irVersion: IR_VERSION,
     file,
@@ -164,6 +172,7 @@ export function createModule(
     ...(moduleImports?.length ? { moduleImports } : {}),
     ...(constants?.length ? { constants } : {}),
     ...(composables?.length ? { composables } : {}),
+    ...(directives?.length ? { directives } : {}),
   };
 }
 
@@ -215,6 +224,45 @@ export function createModuleConstant(
   type?: TypeText,
 ): ModuleConstant {
   return { name, binding, ...(type ? { type } : {}), value, span: at };
+}
+
+/** What a directive declares besides its name, value type and hooks: each set only when given. */
+export interface DirectiveOptions {
+  exported?: boolean;
+  element?: TypeText;
+  bindings?: Binding[];
+  types?: string[];
+}
+
+/** Builds a directive (ADR-0099): not exported, on an `HTMLElement`, reading nothing of its module unless given. */
+export function createDirective(
+  name: string,
+  value: TypeText,
+  hooks: DirectiveHook[],
+  at: Span,
+  options: DirectiveOptions = {},
+): UfDirective {
+  return {
+    name,
+    ...(options.exported ? { exported: true as const } : {}),
+    value,
+    ...(options.element ? { element: options.element } : {}),
+    hooks,
+    bindings: options.bindings ?? [],
+    types: options.types ?? [],
+    span: at,
+  };
+}
+
+/** Builds a directive's hook (ADR-0099). */
+export function createDirectiveHook(
+  name: DirectiveHook["name"],
+  parameters: string[],
+  body: Code,
+  at: Span,
+  isAsync = false,
+): DirectiveHook {
+  return { name, ...(isAsync ? { async: true as const } : {}), parameters, body, span: at };
 }
 
 /** What a composable declares besides its name and parameters: each set only when given. */
@@ -682,6 +730,16 @@ export function createIdItem(binding: BindingId, at: Span): IdItem {
   return { kind: "Id", binding, span: at };
 }
 
+/** Builds `const user = await loadUser(props.id)` (ADR-0101). */
+export function createAwaitItem(
+  binding: BindingId,
+  value: Code,
+  at: Span,
+  type?: TypeText,
+): AwaitItem {
+  return { kind: "Await", binding, ...(type ? { type } : {}), value, span: at };
+}
+
 /** Builds a setup `const` holding a value. */
 export function createConstItem(
   binding: BindingId,
@@ -991,6 +1049,21 @@ export function createDynamicNode(
   };
 }
 
+/** Builds `<Teleport to>` (ADR-0098). */
+export function createTeleportNode(to: string, children: RenderNode[], at: Span): TeleportNode {
+  return { kind: "Teleport", to, children, span: at };
+}
+
+/** Builds `<Transition name appear>` (ADR-0100): `appear` is set only when true. */
+export function createTransitionNode(
+  name: string,
+  appear: boolean,
+  children: RenderNode[],
+  at: Span,
+): TransitionNode {
+  return { kind: "Transition", name, ...(appear && { appear: true as const }), children, span: at };
+}
+
 /** What a fill is besides its slot and children: each set only when given. */
 export interface SlotFillOptions {
   parameter?: Parameter;
@@ -1051,6 +1124,20 @@ export function createStaticAttribute(
 /** Builds a bound attribute. */
 export function createBoundAttribute(name: string, value: Expression, at: Span): BoundAttribute {
   return { kind: "Bound", name, value, span: at };
+}
+
+/** Builds `v-focus-trap={open.value}` (ADR-0099). */
+export function createDirectiveAttribute(
+  name: string,
+  value: Expression,
+  at: Span,
+): DirectiveAttribute {
+  return { kind: "Directive", name, value, span: at };
+}
+
+/** Builds `innerHTML={markup}` (ADR-0097). */
+export function createRawHtmlAttribute(value: Expression, at: Span): RawHtmlAttribute {
+  return { kind: "RawHtml", value, span: at };
 }
 
 /** Builds a `class` from its parts. */

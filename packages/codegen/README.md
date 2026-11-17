@@ -9,7 +9,8 @@ framework-specific.
   It is optional for a third-party target: `compile()` reports UF1002 for a composable of a
   target without it. The matrix has a cell for every name in `CAPABILITY_NAMES`: one per
   IR node and attribute kind (`element`, `text`, `interpolation`, `conditional`, `list`,
-  `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`),
+  `static-attribute`, `bound-attribute`, `class-binding`, `style-binding`, `attribute-spread`,
+  `raw-html`),
   plus `props`, a root `fragment`, `svg`, `listbox`, `interactivity` (listeners, template refs,
   watchers, `watchEffect` and lifecycle hooks), a listener's options (`event-capture`,
   `event-once`, `event-passive`), DOM semantics (`event-semantics`), an event control that runs
@@ -36,7 +37,7 @@ framework-specific.
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
   change what code does in the browser, or the cascade (`sheet-order`), not the markup that
   renders, so the render-parity tests compare a case that uses one its target leaves unsupported
-  as any other (ADR-0033, as amended by ADR-0047, ADR-0063 and ADR-0069);
+  as any other (ADR-0033, as amended by ADR-0047, ADR-0063, ADR-0069 and ADR-0095);
   `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the compiler reports
   alone where the target lacks it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
@@ -151,8 +152,23 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   differ entirely there is no default, and a dialect that meets the construct without its hook
   throws: `slotValue` (a component's own slot as a value, which a forwarded fill passes on),
   `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props), `modelAttribute` (a
-  control's `v-model`), `modelBinding` (a component's `v-model:<name>`) and `dynamic`
-  (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it). Text
+  control's `v-model`), `modelBinding` (a component's `v-model:<name>`), `dynamic`
+  (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it) and
+  `teleport` (`<Teleport to>`, ADR-0098, whose one element the markup printer prints as a root's,
+  outside every element around it), `transition` (`<Transition>`, ADR-0100, which React, Solid and
+  Qwik print through an inline helper, and a markup dialect wraps the child in a `transition` piece,
+  Vue's `<Transition>`, and marks its element, or each branch's, with `transitionAttributes`,
+  Svelte's `in:` and `out:` or Angular's directive, given the branch's index and the code of the
+  branch shown), `component` (an optional hook that prints a child component's pieces around it,
+  Vue's `<Suspense>` around an async child, ADR-0101, which `childIsAsync` tells) and `directiveAttribute` (`v-name={value}`, ADR-0099, which each
+  JSX target composes with the element's ref its own way; a markup dialect writes Vue's
+  `v-focus-trap`, Svelte's `{@attach}` or Angular's `[vFocusTrap]`). `directives.ts` prints a
+  directive's hooks and the module text its own module copies, and `readsElementScope` says
+  whether a directive's value reads a list's row or a scoped fill's props, which React and Qwik
+  then take from each element (ADR-0108). `directive-runner.ts` prints the inline
+  `runDirective` that runs them as their element comes into the document and leaves it, for
+  Angular and Qwik, and `hook-queue.ts` the inline `queueHook` that runs the hooks in Vue's
+  order on the targets whose own order differs. Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.
@@ -282,6 +298,16 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   whole: a prop the new props lack takes its default (Angular, whose inputs cannot be unset, sets
   it to `undefined`, which the emitted input's transform turns into the default). Like the
   mount, it resolves once the framework has settled (ADR-0043).
+- **The hydrate adapter** (`HydrateAdapter`, L12, ADR-0095): a target that hydrates ships
+  `…/toolchain/hydrate`, and its `…/toolchain/server` also exports `renderForHydration`, the
+  server HTML with every marker and script its client needs. The adapter puts that HTML in the
+  container and hydrates it, and returns a `HydratedComponent`: a mounted component whose
+  `takeMismatches()` gives the mismatches its framework reported. Its toolchain's `vite` takes a
+  third mode, `hydrate`, for a framework whose client compile differs when it hydrates
+  (Solid's). A target without one declares its `hydration` cell unsupported.
+- **`@unframework.dev/codegen/toolchain-browser`**: what a target's browser adapter and the
+  testing package share at run time, with no imports, so it loads in a page:
+  `assertSerialisableProps`, which rejects a prop that would not cross to a server render as JSON.
 - **`@unframework.dev/codegen/toolchain-node`** (Node only, never imported by the main entry): what
   the targets' toolchains share, since targets cannot import each other. `resolveInstalled` and
   `resolveToolBin` find tools in a toolchain directory without NODE_PATH; `runChecker` runs a

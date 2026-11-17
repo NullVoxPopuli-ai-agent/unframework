@@ -219,6 +219,27 @@ describe("rule 2b: removeQwikTemplates", () => {
     const template = "<section><template><p>t</p></template><q:slot>s</q:slot></section>";
     expect(apply(template, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(template));
   });
+
+  // The visible task's placeholder of a component that renders no element (ADR-0098).
+  it("removes Qwik's empty script placeholder, on Qwik alone", () => {
+    const placeholder =
+      '<section><p>Saving</p><script hidden="" q:key="a" q-d:qinit="b"></script></section>';
+    expect(normalizeHtml(placeholder, { target: "qwik" })).toBe(
+      normalizeHtml("<section><p>Saving</p></section>", { target: "qwik" }),
+    );
+    expect(normalizeHtml(placeholder, { target: "vue" })).toContain("<script");
+  });
+
+  it.each([
+    ['<section><script hidden="" q:key="a">x</script></section>', "content"],
+    ['<section><script q:key="a"></script></section>', "no hidden"],
+    [
+      '<section><script hidden="" type="module" q:key="a"></script></section>',
+      "an attribute of its own",
+    ],
+  ])("keeps a script that is no placeholder: %s (%s)", (html) => {
+    expect(apply(html, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(html));
+  });
 });
 
 describe("rule 2c: removeQwikStyles", () => {
@@ -742,29 +763,20 @@ describe("rule 4b: canonicalizeBooleanAttributes", () => {
     expect(normalizeHtml('<input disabled="false">')).not.toBe(normalizeHtml("<input disabled>"));
   });
 
-  // Qwik 2.0 beta's client: `<input disabled readOnly required={on} />` renders
-  // `disabled="true" readonly="true" required=""`, where its server and Vue write them empty.
-  it.each([
-    [
-      '<input disabled="true" readonly="TRUE" required="">',
-      '<input disabled="" readonly="" required="">',
-    ],
-    ['<details open="true"></details>', '<details open=""></details>'],
-    ['<div hidden="true"></div>', '<div hidden=""></div>'],
-  ])("writes Qwik's %s as an empty value", (html, expected) => {
-    const root = parseHtml(html);
-    canonicalizeBooleanAttributes(root, "qwik");
-    expect(printTree(root)).toBe(`${expected}\n`);
-    expect(normalizeHtml(html, { target: "qwik" })).toBe(
-      normalizeHtml(expected, { target: "vue" }),
-    );
-  });
-
-  it('keeps "true" from every other target, and "false" and until-found from Qwik', () => {
-    for (const target of NORMALIZE_TARGETS.filter((name) => name !== "qwik")) {
+  // Qwik 2's betas wrote `<input disabled readOnly required={on} />` as `disabled="true"
+  // readonly="true" required=""`, and rule 4b read that `"true"` as presence on Qwik alone
+  // (ADR-0044). From 2.0.0-rc.5 Qwik's client writes them empty, so no target's `"true"` is
+  // presence any more (ADR-0094).
+  it('keeps "true" from every target, Qwik included, and "false" and until-found', () => {
+    for (const target of NORMALIZE_TARGETS) {
       expect(normalizeHtml('<input disabled="true">', { target })).not.toBe(
         normalizeHtml("<input disabled>", { target }),
       );
+    }
+    for (const html of ['<details open="true"></details>', '<div hidden="true"></div>']) {
+      const root = parseHtml(html);
+      canonicalizeBooleanAttributes(root);
+      expect(printTree(root)).toBe(`${html}\n`);
     }
     expect(normalizeHtml('<input disabled="true">')).not.toBe(normalizeHtml("<input disabled>"));
     for (const html of ['<input disabled="false">', '<div hidden="until-found"></div>']) {

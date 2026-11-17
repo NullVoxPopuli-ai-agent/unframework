@@ -123,10 +123,28 @@ one `browser:<target>` project in Chromium and one `ssr:<target>` project for ea
 - **`mount(component, { props, clock? })`** mounts with the project's registered adapter into a
   `<div data-uf-root>` in the page's `<body>`, and returns a **`View`**: `container`, a `locator`
   (`page.getByTestId("uf-root-N")`, stable as the DOM changes), `getBy*` queries scoped to the
-  container, `html()` (the normalised DOM), `settle()`, `rerender(props)`, `user`, `clock`,
+  container and to what the view teleported, `html()` (the normalised DOM), `settle()`, `rerender(props)`, `user`, `clock`,
   `emitted(name)`, `events()` and `unmount()`. A component imported from a `.uf.tsx` is typed as its
   authored function, so `props` (and `rerender`'s) are checked against its props type; the untyped
   overload takes what is not a function only (the test stubs).
+- **What a view teleports** (ADR-0098) is the view's: each element its render appends to `<body>`
+  outside its container. It carries a test id of the view's, `uf-root-N-teleported`, so the
+  `getBy*` queries and `view.user` reach it and what it holds, as they reach what the container
+  holds; `locator` is the container alone. `html()` and L7 write each one after the container's
+  children, in a `<uf:teleported>` marker, and L7's ARIA snapshot, L10's geometry (under
+  `uf:teleported[i]/`) and screenshot, and L11's axe cover it too. An element with a `data-testid`
+  of its own fails the test, since the stamp would replace it.
+- **Settling waits for animations** (ADR-0100): each settle also waits until no CSS transition,
+  CSS animation or Web Animation in the page runs, for at most 2 seconds, so no capture samples one
+  mid-way. The reset gives every transition and animation no duration, so only one a test gives a
+  duration of its own, in a `<style>` it appends to `<head>`, makes a settle wait. One still running
+  after 2 seconds fails the settle.
+- **The focus after `client agreement`** (ADR-0101): a hydrate project's client render of the
+  same props gives the focus back to the element that held it, so a component that focuses as it
+  mounts keeps the focus in the hydrated view.
+- **The after-test check** (ADR-0098): once a test's views are unmounted, `<body>` holds no
+  element the test added, or the test fails L8, naming each one. A component removes what it
+  appends to `<body>`, a teleport's content or a toast container among it, as it unmounts.
 - **`mountScenario(component, name, { clock? })`** mounts with `case.json`'s `ssr[name].props`, so a
   browser scenario and its server twin render the same props; the test then checks it with
   `expectParity(name)`. A scenario `case.json` cannot hold (an explicit `undefined`, a rerender) is
@@ -338,8 +356,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   unmounts) before the next.
 - A DOM read that feeds state or an emit reads what layout does not decide (`textContent`,
   attributes, `value`, `document.activeElement`), never geometry.
-- No spec reorders a list, or replaces a row's item, while the focus is inside the list: keyed
-  identity on reorder is not guaranteed yet.
+- A spec asserts the focus inside a list only where the focused row keeps its place: a browser
+  blurs a moved element, and only React puts the focus back (ADR-0096). A reorder or a replaced
+  item keeps a row's element and typed text everywhere, so a spec that checks them requires
+  `keyed-identity`.
 - Specs never branch on the target (`currentTarget()`): every target runs the same checks.
 - Test names and scenario names are unique in the case; scenario names are kebab-case string
   literals; a scenario with an SSR twin mounts with `mountScenario`. The summary fails a target
@@ -375,8 +395,8 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   frame away. After each test it fails L9 with the steps no `expectParity` compared, and resets
   the input for the next test (`ufResetInput`: the mouse to the frame's corner, the keys
   released, the focus blurred and the frame focused again). It registers the matchers above.
-- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `angular`, `qwik`,
-  `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
+- **`@unframework.dev/testing/<target>`** (`react`, `vue`, `svelte`, `solid`, `solid2`, `angular`,
+  `qwik`, `astro`): registers `@unframework.dev/target-<target>/toolchain/client`'s mount adapter.
 
 ## Node (`@unframework.dev/testing/node`)
 
@@ -469,7 +489,8 @@ Only the named target's framework noise is removed (Angular's hosts only from An
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
 `q:template` elements, where its server render keeps a slot's unclaimed fallback, and its
 `<style q:style>` elements, where its server render writes a `useStyles$` sheet that its client
-writes in `<head>`, only from Qwik's, React's stale `checked` and `selected` attributes only from
+writes in `<head>`, and its empty `<script hidden>` with only its own attributes, where its server
+render writes the visible task of a component that renders no element, only from Qwik's, React's stale `checked` and `selected` attributes only from
 React's, and the space Playwright's ARIA snapshot puts at an Angular host only from Angular's
 snapshot); without a
 target nothing is noise. On every target, the markup of a control's initial state is left out

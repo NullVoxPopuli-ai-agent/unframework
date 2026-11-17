@@ -60,6 +60,11 @@ relative to its root, and packages as `pkg:<name>`, a package that is not instal
 sorted (ADR-0071). It also lists each shared `.ts` module the resolver read, and each `.uf.ts`
 module whose composables the source imports, one that is missing included, named as `filename` is.
 
+An oracle that answers `checkDirectiveValues`, as the tsgo adapter does, is asked once per module
+that applies a directive with a value (`directiveValueQueries`), and a value it says is of another
+type than the directive takes is UF6007 (ADR-0109). The files its answer read join
+`CompileResult.dependencies`, and the project graph keeps the answer in the module's key.
+
 **Source maps** (ADR-0074). With `sourceMap: true`, each output file has a `map`: version 3, whose
 `sources` name the source relative to the file and whose `sourcesContent` holds it. `compile()`
 anchors each file after the `output` hooks, from its own component's code, and carries the map
@@ -106,6 +111,10 @@ another `.uf.tsx` module. `compile()` asks it for each of the source's own compo
 reports UF1205 at the import that closes a cycle, which withholds the module from every target, as
 an analyser error does. An injection key, a type or a shared module imported back closes no cycle
 (UF2033's context pattern), and a component that imports itself is UF1203's.
+
+**Directives** (ADR-0099). A `.uf.ts` module may export directives beside its composables, and
+its API lists them by name. `compile()` emits each exported directive with its target's
+`emitDirective`, as it emits a composable, and reports UF1002 for a target without one.
 
 **Composables** (ADR-0069). The resolver gives a `.uf.ts` module's API too: its `composables`,
 each with its parameters' kinds and its members' kinds and flags, which a caller's `Use` item is
@@ -166,18 +175,18 @@ a Standard Schema may be. `origin` is what `loadConfig` returned: `directory`, w
 resolve against, and `file`, which diagnostics name. Each one has a default: the working directory,
 and `unframework.config.ts`.
 
-| Field                 | Default     | Checked                                                          |
-| --------------------- | ----------- | ---------------------------------------------------------------- |
-| `targets`             | all seven   | a list of at least one built-in name, none repeated              |
-| `srcDir`              | `src`       | a path that isn't empty, made absolute                           |
-| `outDir`              | `dist`      | a path that isn't empty, made absolute                           |
-| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema |
-| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                            |
-| `strict`              | `false`     | a boolean                                                        |
-| `package.targets`     | left out    | as `targets`, and each name also in `targets`                    |
-| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute          |
-| `vite`                | left out    | a function, kept as it is (ADR-0104)                             |
-| `liveFonts`           | `[]`        | a list of font family names that aren't empty (ADR-0105)         |
+| Field                 | Default     | Checked                                                                         |
+| --------------------- | ----------- | ------------------------------------------------------------------------------- |
+| `targets`             | all seven   | a list of at least one built-in selector, none repeated (`solid@2` is `solid2`) |
+| `srcDir`              | `src`       | a path that isn't empty, made absolute                                          |
+| `outDir`              | `dist`      | a path that isn't empty, made absolute                                          |
+| `targetOptions`       | `{}`        | each key a built-in name, each value through its target's schema                |
+| `typeOracle`          | `syntactic` | `syntactic` or `tsgo`                                                           |
+| `strict`              | `false`     | a boolean                                                                       |
+| `package.targets`     | left out    | as `targets`, and each name also in `targets`                                   |
+| `package.resolveFrom` | left out    | a path, or a path per built-in name, each made absolute                         |
+| `vite`                | left out    | a function, kept as it is (ADR-0104)                                            |
+| `liveFonts`           | `[]`        | a list of font family names that aren't empty (ADR-0105)                        |
 
 A field of the wrong shape, or one the config doesn't have, is UF7002. A name that isn't a built-in
 target is UF7003, with a did-you-mean where one is close. Options a target's schema rejects are

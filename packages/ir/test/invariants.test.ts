@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   checkInvariants,
   createBinding,
+  createDirective,
+  createDirectiveAttribute,
+  createDirectiveHook,
   createBoundAttribute,
   createBoundStyle,
   createBranch,
@@ -50,6 +53,9 @@ import {
   createNarrowedPath,
   createParameter,
   createParameterPattern,
+  createRawHtmlAttribute,
+  createTeleportNode,
+  createTransitionNode,
   createRefAttribute,
   createRefSource,
   createWriteReference,
@@ -388,6 +394,26 @@ describe("checkInvariants on M1's IR", () => {
   });
 
   it.each<[string, ElementNode | FragmentNode]>([
+    ["raw HTML on an element without children", node("div", [createRawHtmlAttribute(label(), at)])],
+    // A teleport around one element (ADR-0098).
+    ["a teleport", node("div", [], [createTeleportNode("body", [node("p", [], [text("a")])], at)])],
+    // A transition around one element, and around a conditional of elements (ADR-0100).
+    ["a transition", node("div", [], [createTransitionNode("v", true, [node("p")], at)])],
+    [
+      "a transition around a conditional",
+      node(
+        "div",
+        [],
+        [
+          createTransitionNode(
+            "fade",
+            false,
+            [createIf([branch([node("p")]), branch([]), branch([node("b")], false)], at)],
+            at,
+          ),
+        ],
+      ),
+    ],
     [
       "a bound attribute of each kind",
       node("button", [
@@ -701,6 +727,101 @@ describe("checkInvariants on M1's IR", () => {
       'must set "title" once',
     ],
     ["two styles", node("p", [style(), style()]), "/attributes/1", 'must set "style" once'],
+    // Teleports (ADR-0098).
+    [
+      "a teleport to an empty selector",
+      node("div", [], [createTeleportNode(" ", [node("p")], at)]),
+      "/children/0/to",
+      "must be a CSS selector",
+    ],
+    [
+      "a teleport around text",
+      node("div", [], [createTeleportNode("body", [text("a")], at)]),
+      "/children/0/children",
+      "must hold exactly one element",
+    ],
+    [
+      "a teleport around two elements",
+      node("div", [], [createTeleportNode("body", [node("p"), node("p")], at)]),
+      "/children/0/children",
+      "must hold exactly one element",
+    ],
+    [
+      "a teleport in SVG",
+      svg(createTeleportNode("body", [node("p")], at)),
+      "/children/0",
+      "must not be inside SVG",
+    ],
+    // Transitions (ADR-0100).
+    [
+      "a transition with an empty name",
+      node("div", [], [createTransitionNode("", false, [node("p")], at)]),
+      "/children/0/name",
+      "must be a class prefix",
+    ],
+    [
+      "a transition whose name holds a space",
+      node("div", [], [createTransitionNode("a b", false, [node("p")], at)]),
+      "/children/0/name",
+      "must be a class prefix",
+    ],
+    [
+      "a transition around text",
+      node("div", [], [createTransitionNode("v", false, [text("a")], at)]),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around two elements",
+      node("div", [], [createTransitionNode("v", false, [node("p"), node("p")], at)]),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around a conditional of text",
+      node(
+        "div",
+        [],
+        [createTransitionNode("v", false, [createIf([branch([text("a")])], at)], at)],
+      ),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    [
+      "a transition around a branch of two elements",
+      node(
+        "div",
+        [],
+        [createTransitionNode("v", false, [createIf([branch([node("p"), node("p")])], at)], at)],
+      ),
+      "/children/0/children",
+      "must hold exactly one element, or one conditional of elements",
+    ],
+    // Raw HTML (ADR-0097).
+    [
+      "raw HTML beside children",
+      node("div", [createRawHtmlAttribute(label(), at)], [interpolation()]),
+      "/attributes/0",
+      "without children",
+    ],
+    [
+      "raw HTML on a void element",
+      node("br", [createRawHtmlAttribute(label(), at)]),
+      "/attributes/0",
+      "a void element",
+    ],
+    [
+      "raw HTML on a textarea",
+      node("textarea", [createRawHtmlAttribute(label(), at)]),
+      "/attributes/0",
+      "its content is text",
+    ],
+    [
+      "raw HTML twice",
+      node("div", [createRawHtmlAttribute(label(), at), createRawHtmlAttribute(label(), at)]),
+      "/attributes/1",
+      'must set "innerHTML" once',
+    ],
     // Class parts.
     [
       "static class names that are not canonical",
@@ -3769,5 +3890,146 @@ describe("checkInvariants on styles (ADR-0063)", () => {
     const errors = checkInvariants(module);
     expect(errors, JSON.stringify(errors)).toHaveLength(1);
     expect(errors[0]!.message).toContain("must not read a pass-through import in an initial value");
+  });
+});
+
+// Directives (ADR-0099): a module's own, or one it imports, applied once on an element, in a
+// list's body too (ADR-0108), whose hooks read their own names, client globals and the module's
+// bindings.
+describe("checkInvariants on directives", () => {
+  /** `const vMark = defineDirective<string>({ mounted(el, value) { document.title = value; } })`. */
+  const directive = (
+    options: { name?: string; hooks?: Parameters<typeof createDirective>[2] } = {},
+  ) =>
+    createDirective(
+      options.name ?? "vMark",
+      createTypeText("string", span(0, 6)),
+      options.hooks ?? [
+        createDirectiveHook(
+          "mounted",
+          ["el", "value"],
+          createCode("{ document.title = value; }", span(100, 127), [
+            createGlobalReference("document", span(102, 110)),
+          ]),
+          span(90, 127),
+        ),
+      ],
+      span(80, 130),
+    );
+  const applied = (name = "vMark") => node("p", [createDirectiveAttribute(name, label(), at)]);
+  const withDirective = (render: ElementNode | FragmentNode, declared = directive()) => {
+    const module = moduleOf(render);
+    module.directives = [declared];
+    return module;
+  };
+
+  it("accepts a module's directive applied on an element", () => {
+    expect(checkInvariants(withDirective(applied()))).toEqual([]);
+  });
+
+  it("reports a directive the module neither declares nor imports", () => {
+    const errors = checkInvariants(withDirective(applied("vOther")));
+    expect(errors.map(({ message }) => message)).toEqual([
+      'must name a directive the module declares or imports, and "vOther" is not one',
+    ]);
+  });
+
+  it("reports a directive applied twice on one element, and accepts one in a list's body", () => {
+    const twice = node("p", [
+      createDirectiveAttribute("vMark", label(), at),
+      createDirectiveAttribute("vMark", label(), at),
+    ]);
+    expect(checkInvariants(withDirective(twice)).map(({ message }) => message)).toEqual([
+      'must set "v:vMark" once',
+    ]);
+    // A row's value reads the row, which each element passes (ADR-0108).
+    const row = node("li", [createDirectiveAttribute("vMark", item(), at)]);
+    const listed = withDirective(node("ul", [], [createFor(label(), ids.item, item(), row, at)]));
+    listed.components[0]!.bindings.push(createBinding("item", "loopVar", span(300, 301)));
+    expect(checkInvariants(listed)).toEqual([]);
+  });
+
+  it.each<[string, ReturnType<typeof directive>, string]>([
+    [
+      "a name that is not `v` and a capital",
+      directive({ name: "mark" }),
+      "must be `v` and an upper-case letter",
+    ],
+    ["no hook", directive({ hooks: [] }), "must declare at least one hook"],
+    [
+      "a hook declared twice",
+      directive({
+        hooks: [
+          createDirectiveHook("unmounted", ["el"], createCode("{}", span(100, 102)), span(90, 102)),
+          createDirectiveHook(
+            "unmounted",
+            ["el"],
+            createCode("{}", span(110, 112)),
+            span(104, 112),
+          ),
+        ],
+      }),
+      'must declare "unmounted" once',
+    ],
+    [
+      "a hook with too many parameters",
+      directive({
+        hooks: [
+          createDirectiveHook(
+            "unmounted",
+            ["el", "value"],
+            createCode("{}", span(100, 102)),
+            span(90, 102),
+          ),
+        ],
+      }),
+      "must take at most 1 parameter",
+    ],
+    [
+      "a global no client code reads",
+      directive({
+        hooks: [
+          createDirectiveHook(
+            "mounted",
+            ["el"],
+            createCode("{ eval(el); }", span(100, 113), [
+              createGlobalReference("eval", span(102, 106)),
+            ]),
+            span(90, 113),
+          ),
+        ],
+      }),
+      'must be a global client code may read, and "eval" is not one',
+    ],
+    [
+      "a binding the directive does not list",
+      directive({
+        hooks: [
+          createDirectiveHook(
+            "mounted",
+            ["el"],
+            createCode("{ el.title = LABEL; }", span(100, 121), [
+              createBindingReference("LABEL@3", span(113, 118)),
+            ]),
+            span(90, 121),
+          ),
+        ],
+      }),
+      'must name one of the directive\'s bindings, and "LABEL@3" is not one',
+    ],
+  ])("reports %s", (_name, declared, message) => {
+    const errors = checkInvariants(withDirective(applied(declared.name), declared));
+    expect(errors.map(({ message: each }) => each).join("\n")).toContain(message);
+  });
+
+  it("reports a directive's binding the module does not declare", () => {
+    const declared = {
+      ...directive(),
+      bindings: [createBinding("LABEL", "moduleConst", span(3, 8))],
+    };
+    const errors = checkInvariants(withDirective(applied(), declared));
+    expect(errors.map(({ message }) => message)).toEqual([
+      'must be a top-level `const` or a value import of the module, and "LABEL@3" is not one (ADR-0070)',
+    ]);
   });
 });
