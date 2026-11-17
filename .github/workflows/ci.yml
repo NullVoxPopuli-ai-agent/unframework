@@ -19,7 +19,6 @@ permissions:
 
 jobs:
   check:
-    if: ${{ false }} # throwaway: measurement M only
     name: Format, lint & types
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -70,9 +69,9 @@ jobs:
   # but the integration corpus and the targets, so a new package lands there; the target shards
   # name theirs. Together they run every package once.
   unit:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Unit tests (${{ matrix.group }})"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -113,9 +112,9 @@ jobs:
   # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
   # harness's own unit tests, the canaries' corruptions of every case among them.
   integration-compile:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: compile"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -154,9 +153,9 @@ jobs:
   # ESLint for the template languages) per target over every case. One job runs every target's
   # project: each takes seconds, and a job of its own spent most of its time on setup (ADR-0084).
   integration-toolchains:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: toolchain"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -193,9 +192,9 @@ jobs:
 
   # L6: each target's server renderer against the shared SSR expectations.
   integration-ssr:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: SSR"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -240,28 +239,20 @@ jobs:
   # (harness/summary.unit.test.ts). The tests' step has a limit under the job's, so a slow runner
   # fails the step and the job still uploads its results and names the runner (ADR-0112).
   integration-browser:
-    name: "X ${{ matrix.entry }}: ${{ matrix.target }}${{ matrix.shard && format(', {0}/2', matrix.shard) || '' }} rep ${{ matrix.rep || 1 }}"
+    name: "Integration: browser (${{ matrix.target }}${{ matrix.shard && format(', {0}/2', matrix.shard) || '' }})"
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.job_limit || 10 }} # throwaway X: F sets 2
+    timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     strategy:
       fail-fast: false
       matrix:
-        # Throwaway run X (plan v5): C, D, E, R, A and F.
+        target: [react, svelte, solid, angular, qwik, astro]
         include:
-          - { entry: C, target: vue, shard: 1, step_limit: 5, rep: 1, cpu_load: 5 }
-          - { entry: C, target: vue, shard: 2, step_limit: 5, rep: 1, cpu_load: 5 }
-          - { entry: C, target: vue, shard: 1, step_limit: 5, rep: 2, cpu_load: 5 }
-          - { entry: C, target: vue, shard: 2, step_limit: 5, rep: 2, cpu_load: 5 }
-          - { entry: D, target: vue, shard: 1, step_limit: 5, early_load: 5 }
-          - { entry: D, target: vue, shard: 2, step_limit: 5, early_load: 5 }
-          - { entry: E, target: vue, shard: 1, step_limit: 1, slow: 1 }
-          - { entry: R, target: react, cpu_load: 5 }
-          - { entry: A, target: angular, cpu_load: 5 }
-          - { entry: F, target: angular, job_limit: 2, slow: 1 }
+          - { target: vue, shard: 1, step_limit: 5 }
+          - { target: vue, shard: 2, step_limit: 5 }
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -277,18 +268,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      # Throwaway X, D: CPU and disk load from before the install until after the tests.
-      - name: Start the early load
-        if: ${{ matrix.early_load }}
-        shell: bash
-        run: |
-          printf 'while :; do :; done\n' > /tmp/uf-load-cpu.sh
-          printf 'f=$(mktemp /tmp/uf-load-disk.XXXXXX)\nwhile :; do dd if=/dev/zero of="$f" bs=1M count=256 conv=fdatasync status=none; rm -f "$f"; done\n' > /tmp/uf-load-disk.sh
-          for _ in $(seq 1 $(( ${{ matrix.early_load }} * $(nproc) ))); do nohup sh /tmp/uf-load-cpu.sh > /dev/null 2>&1 & done
-          for _ in $(seq 1 "$(nproc)"); do nohup sh /tmp/uf-load-disk.sh > /dev/null 2>&1 & done
-          sleep 2
-          echo "nproc=$(nproc), load processes: $(pgrep -fc uf-load || echo none)"
-
       # Timed for the slow-runner step below.
       - name: Install dependencies
         id: install
@@ -302,29 +281,13 @@ jobs:
       # a limit: angular, the slowest, passes on a runner up to about 3 times slower (ADR-0112).
       - name: Browser project
         timeout-minutes: ${{ matrix.step_limit || 8 }}
-        shell: bash
-        run: |
-          # Throwaway X: C, R and A start CPU load here, as M did.
-          pids=()
-          for _ in $(seq 1 $(( ${{ matrix.cpu_load || 0 }} * $(nproc) ))); do sh -c 'while :; do :; done' & pids+=("$!"); done
-          echo "nproc=$(nproc), busy loops started here: ${#pids[@]}, early load processes: $(pgrep -fc uf-load || echo 0)"
-          start=$SECONDS
-          set +e
-          pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"${{ matrix.shard && format(' --shard {0}/2', matrix.shard) || '' }}
-          rc=$?
-          echo "X tests seconds: $((SECONDS - start))"
-          [ "${#pids[@]}" -gt 0 ] && kill "${pids[@]}"
-          exit $rc
-
-      - name: Stop the early load
-        if: ${{ always() && matrix.early_load }}
-        run: pkill -f uf-load || true
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"${{ matrix.shard && format(' --shard {0}/2', matrix.shard) || '' }}
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: x-${{ matrix.entry }}-${{ matrix.target }}-${{ matrix.shard || 0 }}-${{ matrix.rep || 1 }}
+          name: parity-browser-${{ matrix.target }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
           path: tests/integration/.reports
           include-hidden-files: true
           if-no-files-found: error
@@ -335,7 +298,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: x-diffs-${{ matrix.entry }}-${{ matrix.target }}-${{ matrix.shard || 0 }}-${{ matrix.rep || 1 }}
+          name: visual-diffs-${{ matrix.target }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
           path: |
             tests/integration/.reports/diffs
             tests/integration/.reports/failures
@@ -353,7 +316,7 @@ jobs:
         if: ${{ always() }}
         env:
           INSTALL_SECONDS: ${{ steps.install.outputs.seconds }}
-          SLOW_INSTALL_SECONDS: ${{ matrix.slow || 45 }} # throwaway X: E and F set 1
+          SLOW_INSTALL_SECONDS: 45
         run: |
           if [ -z "$INSTALL_SECONDS" ]; then
             echo "Install dependencies did not finish, so the runner's speed is unknown."
@@ -375,9 +338,9 @@ jobs:
   # checkout, as the container does, so the job sets up neither pnpm nor Node. The artefact's
   # directory is under the checkout's .reports, which that copy leaves out.
   baselines:
-    if: ${{ false }} # throwaway: measurement M only
     name: Baselines
     needs: changes
+    if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -466,9 +429,9 @@ jobs:
   # such as L13-qwik-handler-throws. The harness's unit tests, which run on every change that isn't
   # documentation alone, and nightly.yml, which runs every canary, are the backstop.
   canaries:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
     needs: changes
+    if: ${{ needs.changes.outputs.canaries == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -571,9 +534,9 @@ jobs:
   # L15: each case's compile time and each target's output size against budgets.json (ADR-0078).
   # Not a required check. The default run leaves this project out, so this job alone reports it.
   bench:
-    if: ${{ false }} # throwaway: measurement M only
     name: Bench
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -612,7 +575,6 @@ jobs:
   # or any (case, target, live layer) cell, is missing or failing. It waits for every job that
   # runs harness projects; harness/summary.unit.test.ts reads them from this file.
   parity:
-    if: ${{ false }} # throwaway: measurement M only
     name: Parity matrix
     needs:
       [
@@ -623,6 +585,7 @@ jobs:
         integration-browser,
         bench,
       ]
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -670,9 +633,9 @@ jobs:
   # repository. This job builds and packs once, and the E2E job installs its copies from the
   # tarballs it uploads, so the seven apps run on the same packages. Not a required check.
   pack:
-    if: ${{ false }} # throwaway: measurement M only
     name: Pack
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -711,9 +674,9 @@ jobs:
   # spent most of its time on setup (ADR-0084). `prepare-apps` installs every app's copy, outside
   # the checkout as it requires, from the Pack job's tarballs. Not a required check.
   e2e:
-    if: ${{ false }} # throwaway: measurement M only
     name: E2E
     needs: [changes, pack]
+    if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -767,9 +730,9 @@ jobs:
   # minutes. The visual report uploads even on failure, since it shows what differed. Not a
   # required check.
   design-system:
-    if: ${{ false }} # throwaway: measurement M only
     name: Design system
     needs: [changes, pack]
+    if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -818,7 +781,6 @@ jobs:
           retention-days: 7
 
   build:
-    if: ${{ false }} # throwaway: measurement M only
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -862,7 +824,6 @@ jobs:
   # job of its own, a Lighthouse failure reads apart from a build failure, and
   # "Re-run failed jobs" retries only the audit against the same build.
   lighthouse:
-    if: ${{ false }} # throwaway: measurement M only
     name: Lighthouse
     needs: build
     runs-on: ubuntu-latest
