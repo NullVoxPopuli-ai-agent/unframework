@@ -20,7 +20,7 @@ import type { ViteUserConfig } from "vitest/config";
 import { findCanary } from "./harness/canaries.ts";
 import { caseConfigs, listCases } from "./harness/cases.ts";
 import { LOAD_FAILURES, LoadFailureReporter } from "./harness/load-failures.ts";
-import { CANARY_DIR, CASES_DIR, REPORTS_DIR, reportsDirOf, ROOT } from "./harness/paths.ts";
+import { CANARY_DIR, CASES_DIR, reportsDirOf, ROOT } from "./harness/paths.ts";
 import {
   harnessProjects,
   projectNames,
@@ -79,8 +79,6 @@ const config: ViteUserConfig = defineConfig({
             }),
           ]
         : []),
-      // Throwaway measurement M: each test's duration and error, beside the run's own reporters.
-      ["json", { outputFile: join(REPORTS_DIR, "m-vitest.json") }],
     ],
     projects: harnessProjects({
       harness,

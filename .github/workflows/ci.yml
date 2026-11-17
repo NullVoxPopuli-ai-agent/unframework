@@ -19,7 +19,6 @@ permissions:
 
 jobs:
   check:
-    if: ${{ false }} # throwaway: measurement M only
     name: Format, lint & types
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -70,9 +69,9 @@ jobs:
   # but the integration corpus and the targets, so a new package lands there; the target shards
   # name theirs. Together they run every package once.
   unit:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Unit tests (${{ matrix.group }})"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -113,9 +112,9 @@ jobs:
   # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
   # harness's own unit tests, the canaries' corruptions of every case among them.
   integration-compile:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: compile"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -154,9 +153,9 @@ jobs:
   # ESLint for the template languages) per target over every case. One job runs every target's
   # project: each takes seconds, and a job of its own spent most of its time on setup (ADR-0084).
   integration-toolchains:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: toolchain"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -193,9 +192,9 @@ jobs:
 
   # L6: each target's server renderer against the shared SSR expectations.
   integration-ssr:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Integration: SSR"
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -237,23 +236,17 @@ jobs:
   # the artefact's name: the reporter names each shard's matrix apart, and the parity job counts
   # a project as run in full once shards 1 to n all reported (harness/summary.unit.test.ts).
   integration-browser:
-    name: "M: ${{ matrix.target }} pages=${{ matrix.workers || 'default' }} load=${{ matrix.load }} rep=${{ matrix.rep }}"
+    name: "Integration: browser (${{ matrix.target }})"
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # throwaway: M lets a loaded run finish
+    timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
     strategy:
       fail-fast: false
       matrix:
-        target: [vue]
-        workers: [8, 4, 2]
-        load: ["0", "3"]
-        rep: [1, 2]
-        include:
-          - { target: react, load: "3", rep: 1 }
-          - { target: react, load: "3", rep: 2 }
+        target: [react, vue, svelte, solid, angular, qwik, astro]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -273,27 +266,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Browser project
-        shell: bash
-        run: |
-          # Throwaway measurement M: load L is LOAD x nproc busy loops for the length of the run.
-          echo "nproc=$(nproc)"
-          pids=()
-          n=$(( ${{ matrix.load }} * $(nproc) ))
-          for _ in $(seq 1 "$n"); do sh -c 'while :; do :; done' & pids+=("$!"); done
-          echo "busy loops: ${#pids[@]}"
-          start=$SECONDS
-          set +e
-          pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}" ${{ matrix.workers && format('--maxWorkers {0}', matrix.workers) || '' }}
-          rc=$?
-          echo "M wall seconds: $((SECONDS - start))"
-          [ "${#pids[@]}" -gt 0 ] && kill "${pids[@]}"
-          exit $rc
+        run: pnpm --filter @unframework.dev/integration exec vitest run --project "browser:${{ matrix.target }}"
 
       - name: Upload the parity results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: m-${{ matrix.target }}-${{ matrix.workers || 'default' }}-${{ matrix.load }}-${{ matrix.rep }}
+          name: parity-browser-${{ matrix.target }}
           path: tests/integration/.reports
           include-hidden-files: true
           if-no-files-found: error
@@ -304,7 +283,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: m-diffs-${{ matrix.target }}-${{ matrix.workers || 'default' }}-${{ matrix.load }}-${{ matrix.rep }}
+          name: visual-diffs-${{ matrix.target }}
           path: |
             tests/integration/.reports/diffs
             tests/integration/.reports/failures
@@ -324,9 +303,9 @@ jobs:
   # checkout, as the container does, so the job sets up neither pnpm nor Node. The artefact's
   # directory is under the checkout's .reports, which that copy leaves out.
   baselines:
-    if: ${{ false }} # throwaway: measurement M only
     name: Baselines
     needs: changes
+    if: ${{ !cancelled() && github.event_name != 'push' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -415,9 +394,9 @@ jobs:
   # such as L13-qwik-handler-throws. The harness's unit tests, which run on every change that isn't
   # documentation alone, and nightly.yml, which runs every canary, are the backstop.
   canaries:
-    if: ${{ false }} # throwaway: measurement M only
     name: "Canaries (${{ matrix.canaries }}${{ matrix.shard && format(', shard {0}', matrix.shard) || '' }})"
     needs: changes
+    if: ${{ needs.changes.outputs.canaries == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
@@ -520,9 +499,9 @@ jobs:
   # L15: each case's compile time and each target's output size against budgets.json (ADR-0078).
   # Not a required check. The default run leaves this project out, so this job alone reports it.
   bench:
-    if: ${{ false }} # throwaway: measurement M only
     name: Bench
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -561,7 +540,6 @@ jobs:
   # or any (case, target, live layer) cell, is missing or failing. It waits for every job that
   # runs harness projects; harness/summary.unit.test.ts reads them from this file.
   parity:
-    if: ${{ false }} # throwaway: measurement M only
     name: Parity matrix
     needs:
       [
@@ -572,6 +550,7 @@ jobs:
         integration-browser,
         bench,
       ]
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -619,9 +598,9 @@ jobs:
   # repository. This job builds and packs once, and the E2E job installs its copies from the
   # tarballs it uploads, so the seven apps run on the same packages. Not a required check.
   pack:
-    if: ${{ false }} # throwaway: measurement M only
     name: Pack
     needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -660,9 +639,9 @@ jobs:
   # spent most of its time on setup (ADR-0084). `prepare-apps` installs every app's copy, outside
   # the checkout as it requires, from the Pack job's tarballs. Not a required check.
   e2e:
-    if: ${{ false }} # throwaway: measurement M only
     name: E2E
     needs: [changes, pack]
+    if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -716,9 +695,9 @@ jobs:
   # minutes. The visual report uploads even on failure, since it shows what differed. Not a
   # required check.
   design-system:
-    if: ${{ false }} # throwaway: measurement M only
     name: Design system
     needs: [changes, pack]
+    if: ${{ !cancelled() && needs.pack.result == 'success' && needs.changes.outputs.tests != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     container:
@@ -767,7 +746,6 @@ jobs:
           retention-days: 7
 
   build:
-    if: ${{ false }} # throwaway: measurement M only
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -811,7 +789,6 @@ jobs:
   # job of its own, a Lighthouse failure reads apart from a build failure, and
   # "Re-run failed jobs" retries only the audit against the same build.
   lighthouse:
-    if: ${{ false }} # throwaway: measurement M only
     name: Lighthouse
     needs: build
     runs-on: ubuntu-latest
