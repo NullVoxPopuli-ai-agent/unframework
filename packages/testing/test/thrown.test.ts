@@ -53,14 +53,14 @@ describe("stackFrames", () => {
   });
 });
 
-describe("chooseThrown", () => {
-  /** An error as Playwright's provider rejects an action with, through a Vitest command. */
-  const timeout = () => {
-    const error = new Error("locator.click: Timeout 5000ms exceeded.");
-    error.name = "TimeoutError";
-    return error;
-  };
+/** An error as Playwright's provider rejects an action with, through a Vitest command. */
+function timeout(): Error {
+  const error = new Error("locator.click: Timeout 5000ms exceeded.");
+  error.name = "TimeoutError";
+  return error;
+}
 
+describe("chooseThrown", () => {
   it("takes the component's throw that the page raised", () => {
     const thrown = new Error("Charge failed");
     expect(chooseThrown({ thrown })).toEqual({ kind: "thrown", error: thrown });
@@ -76,9 +76,9 @@ describe("chooseThrown", () => {
   });
 
   it("names an action that failed, without its stack, when nothing threw", () => {
-    const failed = markFailedAction(timeout());
+    const failed = timeout();
+    expect(markFailedAction(failed)).toBe(failed);
     expect(isFailedAction(failed)).toBe(true);
-    if (!isFailedAction(failed)) throw new Error("unreachable");
     expect(chooseThrown({ failedAction: failed })).toEqual({
       kind: "failed-action",
       error: failed,
@@ -89,7 +89,8 @@ describe("chooseThrown", () => {
 
   it("keeps a throw the page saw over an action that failed after it", () => {
     const thrown = new Error("Charge failed");
-    const failed = markFailedAction(timeout()) as Error;
+    const failed = timeout();
+    markFailedAction(failed);
     expect(chooseThrown({ thrown, failedAction: failed })).toEqual({
       kind: "thrown",
       error: thrown,
