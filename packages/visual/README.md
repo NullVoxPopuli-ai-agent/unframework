@@ -47,6 +47,10 @@ keeps the derived value. The preview sorts the examples by `order`, those withou
 title, then by id. `unframework visual` never reads the comment, so it changes no capture and no
 report.
 
+`@layout` gives the example's `layout` in its frame (ADR-0114): `none`, or flex words like
+`column align-start gap`, where `gap` is `1rem` on a scale from `gap-xs` to `gap-xl`. A malformed value is UF7012 too, and the preview centres that
+example.
+
 `exampleBaselines(example)` gives the baselines beside it:
 `__screenshots__/<name>-chromium-linux.png` and `__expected__/geometry.<name>.json`, in the example's
 directory.
@@ -167,6 +171,11 @@ props }`, and each frame (`./frame`, `src/preview/frame.ts`) answers `ready` on 
   message listener and posts nothing. A failed render, an unknown id included, replaces the page
   with its message. Any `shell` parameter keeps the shell's path. Each frame's caption in the
   shell links the selected example's URL on its target (**Open**), and hides it for a component.
+- **Layouts** (ADR-0114): each target's frame module carries the `layouts` of the examples that
+  set one, by entry key, and the frame puts the entry's layout, or the centred default, on the
+  fresh mount container it makes for each new entry, as inline style (`layoutStyle` in
+  `src/preview/layout.ts`). The frame page sets `html, body { margin: 0; height: 100%; }`, so the
+  container fills the iframe.
 - **Controls** (`src/preview/controls.ts`, `propControls`): `boolean`, `string`, `number` and a
   union of string literals, as written or resolved from an alias (`ApiMember.literals`), with
   `| undefined` read as optional. Any other prop is listed as not controllable, with its type.
