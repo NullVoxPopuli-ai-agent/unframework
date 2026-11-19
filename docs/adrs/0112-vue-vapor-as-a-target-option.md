@@ -9,7 +9,9 @@
 
 Plan §5.7 promises "Vue 3.5 → 3.6 Vapor as an option", and ADR-0011 put it in M8. M8 deferred it
 until Vue 3.6 is npm's `latest`: on 2026-11-19 `latest` is 3.5.45, and the release candidate is
-3.6.0-rc.15. Vapor is a compile mode of Vue 3.6, not a framework of its own. A component marked
+3.6.0-rc.15.
+
+Vapor is a compile mode of Vue 3.6, not a framework of its own. A component marked
 `<script setup vapor>`, or `<template vapor>`, compiles to code that creates and updates the DOM
 without a virtual DOM, in the same `.vue` file, from the same `vue` package. Its runtime differs in
 places: a custom directive is a function of the element and a getter of its value
@@ -88,7 +90,7 @@ true } }`. The id names everything an id names: `__output__/vue-vapor/`,
 - A project gets Vue's Vapor components from the same source, and the corpus proves them at every
   live layer on Vue 3.6, beside Vue 3.5's.
 - An invalid target option fails wherever a compile starts, and a Vapor build on Vue 3.5 is loud.
-- A later option of any target reaches the same machinery: a schema, `capabilitiesFor`, and an
+- A later option of any target reaches the same machinery: a schema, `capabilitiesFor` and an
   option set if the corpus should run it.
 
 **Negative:**
