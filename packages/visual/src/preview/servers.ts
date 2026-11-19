@@ -21,6 +21,7 @@ import {
 import type { ProjectVite } from "@unframework.dev/testing/config";
 import type { InlineConfig, Plugin, ViteDevServer } from "vite";
 
+import type { SourceTransform } from "./instrument.ts";
 import { FRAME_PATH, RENDER_PATH, STATIC_FRAME_FILE } from "./protocol.ts";
 import type { PreviewLayout } from "./protocol.ts";
 
@@ -59,6 +60,11 @@ export interface TargetServerOptions {
    * and its other keys merge into the server's config. None by default.
    */
   vite?: ProjectVite;
+  /**
+   * What the unframework plugin compiles in place of a file's text (its `transformSource`): the
+   * preview binds its controls to an example's components this way (ADR-0113). None by default.
+   */
+  transformSource?: SourceTransform;
   /** The layout of each entry that sets one, by key (ADR-0114): the frame centres the others. */
   layouts?: Readonly<Record<string, PreviewLayout>>;
 }
@@ -329,7 +335,10 @@ export async function targetServerConfig(
         render,
         staticRenders,
       ),
-      ...unframework({ target }),
+      ...unframework({
+        target,
+        ...(options.transformSource ? { transformSource: options.transformSource } : {}),
+      }),
     ],
     // Vite's own TypeScript transform, set so it stays on: outside Vitest, Analog's Angular plugin
     // turns it off unless the configuration sets it (`config.oxc ?? false`), and then nothing

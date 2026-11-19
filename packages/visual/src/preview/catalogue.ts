@@ -1,6 +1,7 @@
 // What the preview lists (ADR-0088): the project's examples, as `unframework visual` finds them,
 // with the metadata their doc comments give (ADR-0110, ADR-0114), and its components, the default export of each `.uf.tsx` file under `srcDir`, with the
-// controls their props get. Read once, when the preview starts.
+// controls their props get, and each example's controls: one group for each component it renders
+// (ADR-0113). Read once, when the preview starts.
 import { globSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
@@ -17,6 +18,8 @@ import {
 import type { Example } from "../examples.ts";
 import { propControls } from "./controls.ts";
 import type { PropControls } from "./controls.ts";
+import { exampleControls } from "./instrument.ts";
+import type { ExampleControlGroup } from "./instrument.ts";
 import type { PreviewLayout } from "./protocol.ts";
 
 /** A component's file suffix. */
@@ -24,10 +27,14 @@ const COMPONENT_SUFFIX = ".uf.tsx";
 
 /** One entry the shell can select: an example, or a component with its controls. */
 export type PreviewEntry =
-  | ({ kind: "example"; key: string; id: string; file: string } & Pick<
-      Example,
-      "category" | "title" | "description" | "order" | "layout"
-    >)
+  | ({
+      kind: "example";
+      key: string;
+      id: string;
+      file: string;
+      /** The example's controls, by component: none for one the preview serves as written. */
+      controls: ExampleControlGroup[];
+    } & Pick<Example, "category" | "title" | "description" | "order" | "layout">)
   | ({ kind: "component"; key: string; id: string; file: string; name: string } & PropControls);
 
 /**
@@ -97,29 +104,6 @@ export function discoverComponentFiles(srcDir: string): string[] {
  */
 export async function readCatalogue(root: string, srcDir: string): Promise<PreviewCatalogue> {
   const metadata = await readExampleMetadata(root, discoverExamples({ root }));
-  const examples = metadata.examples
-    .toSorted(compareExamples)
-    .map(
-      ({
-        id,
-        file,
-        category,
-        title,
-        description,
-        order,
-        layout,
-      }): PreviewCatalogue["examples"][number] => ({
-        kind: "example",
-        key: entryKey("example", id),
-        id,
-        file,
-        category,
-        title,
-        ...(description === undefined ? {} : { description }),
-        ...(order === undefined ? {} : { order }),
-        ...(layout === undefined ? {} : { layout }),
-      }),
-    );
   // The syntactic oracle reads the types a prop imports, so an alias resolves to its literals.
   const typeOracle = createSyntacticOracle({ root, readFile: read });
   const resolver = createFileResolver({ root, readFile: read, typeOracle });
@@ -142,10 +126,37 @@ export async function readCatalogue(root: string, srcDir: string): Promise<Previ
         ...propControls(component.props),
       });
     }
+    const examples: PreviewCatalogue["examples"] = [];
+    for (const {
+      id,
+      file,
+      category,
+      title,
+      description,
+      order,
+      layout,
+    } of metadata.examples.toSorted(compareExamples)) {
+      const source = await read(file);
+      examples.push({
+        kind: "example",
+        key: entryKey("example", id),
+        id,
+        file,
+        controls:
+          source === undefined
+            ? []
+            : await exampleControls(source, file, root, resolver, components),
+        category,
+        title,
+        ...(description === undefined ? {} : { description }),
+        ...(order === undefined ? {} : { order }),
+        ...(layout === undefined ? {} : { layout }),
+      });
+    }
+    return { examples, components, diagnostics: metadata.diagnostics };
   } finally {
     await typeOracle.dispose();
   }
-  return { examples, components, diagnostics: metadata.diagnostics };
 }
 
 /** The layout of each example that sets one, by key, for the frames (ADR-0114). */

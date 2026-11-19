@@ -46,7 +46,7 @@ export const EXAMPLE_KEY_PREFIX = "example:";
 
 /** What a static preview's frame says when asked for a render the build did not make. */
 export const STATIC_RENDER_MESSAGE =
-  "The static preview renders this target with each entry's initial props only: run unframework preview to change them.";
+  "The static preview renders this target only as each entry first shows: run unframework preview to change its controls.";
 
 /**
  * A render made at build time: the props it was made with, and the HTML it gave or why it failed,

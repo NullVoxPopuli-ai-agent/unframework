@@ -12,6 +12,8 @@ import { toolchainDirOf } from "@unframework.dev/testing/config";
 import { VisualUsageError } from "../run.ts";
 import { entryLayouts, readCatalogue } from "./catalogue.ts";
 import { embedData, embedPage } from "./embed.ts";
+import { exampleTransform } from "./instrument.ts";
+import type { SourceTransform } from "./instrument.ts";
 import { FRAME_PATH } from "./protocol.ts";
 import type { PreviewLayout } from "./protocol.ts";
 import { startTargetServer } from "./servers.ts";
@@ -70,6 +72,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
   }
   const layouts = entryLayouts(catalogue);
 
+  const transformSource = exampleTransform(root, catalogue);
+
   const started: TargetServer[] = [];
   const closeAll = async (shell?: { close(): Promise<void> }) => {
     const results = await Promise.allSettled([
@@ -85,7 +89,15 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
     const servers = await Promise.allSettled(
       targets.map((target) =>
         startTargetServer(
-          targetServerOptions(root, config, target, entries, options.toolchainDirs, layouts),
+          targetServerOptions(
+            root,
+            config,
+            target,
+            entries,
+            options.toolchainDirs,
+            layouts,
+            transformSource,
+          ),
         ).then((server) => {
           started.push(server);
           return server;
@@ -128,8 +140,8 @@ export async function startPreview(options: PreviewOptions): Promise<Preview> {
 
 /**
  * What a target's server serves, from the project's configuration: the entries and their layouts
- * (ADR-0114), where the target's compiler stack resolves from, and the project's Vite config
- * (ADR-0104).
+ * (ADR-0114), where the target's compiler stack resolves from, the project's Vite config
+ * (ADR-0104), and the rewrite that binds the examples' controls (ADR-0113).
  */
 export function targetServerOptions(
   root: string,
@@ -138,6 +150,7 @@ export function targetServerOptions(
   entries: Readonly<Record<string, string>>,
   toolchainDirs?: PreviewOptions["toolchainDirs"],
   layouts?: Readonly<Record<string, PreviewLayout>>,
+  transformSource?: SourceTransform,
 ): TargetServerOptions {
   return {
     root,
@@ -146,6 +159,7 @@ export function targetServerOptions(
     entries,
     ...(config.vite ? { vite: config.vite } : {}),
     ...(layouts && Object.keys(layouts).length ? { layouts } : {}),
+    ...(transformSource ? { transformSource } : {}),
   };
 }
 
