@@ -482,10 +482,10 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   and keeps the IR valid; the harness's unit tests run each one on every case of the corpus it
   applies to. CI runs the
   canaries as a matrix, a layer or a canary per job, with at most one canary that runs the
-  browser projects in each. A canary whose browser specs run waits out a timeout at most of
-  their failures, so it runs in shards (`--shard 1/2`, ADR-0052): each holds a part of the cases,
-  runs its specs in the browser projects and every other project whole, and is judged on its
-  cases alone. A pull request runs the matrix only when it changes a path that can change a
+  browser projects in each. A canary whose specs run, in the browser or the hydrate projects,
+  waits out a timeout at most of their failures, so it runs in shards (`--shard 1/2`, ADR-0052,
+  ADR-0115): each holds a part of the cases, runs its specs in the browser and hydrate projects
+  and every other project whole, and is judged on its cases alone. A pull request runs the matrix only when it changes a path that can change a
   canary's answer: `CANARY_PATHS` in `scripts/canary-paths.ts` lists them, Markdown left out, and a
   skipped job counts as passed. A push to `main` runs none of it, `workflow_dispatch` runs all of
   it, and `nightly.yml` runs it whole every night, in Chromium (ADR-0073, ADR-0084). A pull request
