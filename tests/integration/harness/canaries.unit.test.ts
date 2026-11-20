@@ -306,7 +306,7 @@ describe("canaries", () => {
     expect(guardsGoldens("L6-golden-guard")).toBe(true);
   });
 
-  it("run in CI as a matrix: every canary once or in every shard, at most one browser canary per job, and shards for each whose browser specs run", () => {
+  it("run in CI as a matrix: every canary once or in every shard, at most one browser canary per job, and shards for each whose browser or hydrate specs run", () => {
     const job = workflowJob("ci.yml", "canaries");
     expect(job).toContain(CANARIES_RUN);
     expect(job).toMatch(/^ {4}timeout-minutes: 10$/m);
@@ -339,13 +339,17 @@ describe("canaries", () => {
     // L10-root-hidden's two shards passed within a minute of the ten, and a cold pnpm cache takes
     // about 40 s to save after the last step, so GitHub cancelled a job whose steps had passed.
     expect(runs.get("L10-root-hidden")).toHaveLength(3);
-    // A canary whose browser specs run waits out a timeout at most of their failures, on every
-    // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
-    // guard's specs fail to load, so they run no test and wait for nothing.
+    // One job of L12-unwired-listener's whole corpus took 470 to 540 s of the 600 (ADR-0115).
+    expect(runs.get("L12-unwired-listener")).toHaveLength(2);
+    // A canary whose specs run, in the browser or the hydrate projects, waits out a timeout at
+    // most of their failures, on every target: one job of the whole corpus outgrew the ten
+    // minutes (ADR-0052, ADR-0115). The golden guard's specs fail to load, so they run no test
+    // and wait for nothing.
     for (const { name, canaries, shard } of entries) {
       const browser = canaries.filter((canary) => canaryProjects(canary).includes("browser"));
       expect(browser.length, name).toBeLessThanOrEqual(1);
-      if (browser.some(({ evidence }) => "browser" in evidence)) {
+      // Over the entry's own canaries, since the browser list never holds a hydrate one.
+      if (canaries.some(({ evidence }) => "browser" in evidence || "hydrate" in evidence)) {
         expect(shard?.count ?? 1, name).toBeGreaterThanOrEqual(2);
       }
     }

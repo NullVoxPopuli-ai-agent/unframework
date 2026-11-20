@@ -381,10 +381,11 @@ jobs:
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
   # canaries passes (plan §7.7). Each entry's `canaries` is what `pnpm test:canaries` takes: a
   # layer's canaries, or one canary where a layer has two that run the browser projects. A
-  # canary whose browser specs run waits out a timeout at most of their failures, on every
-  # target, so it runs in shards, each on a part of the cases (ADR-0052).
+  # canary whose specs run, in the browser or the hydrate projects, waits out a timeout at most
+  # of their failures, on every target, so it runs in shards, each on a part of the cases
+  # (ADR-0052, ADR-0115).
   # harness/canaries.unit.test.ts holds the matrix to every canary, once or in every shard, at
-  # most one browser canary per job, and shards for each whose browser specs run.
+  # most one browser canary per job, and shards for each whose browser or hydrate specs run.
   # A pull request runs them only when it changes a path that can change a canary's answer: the
   # list is CANARY_PATHS in tests/integration/scripts/canary-paths.ts, Markdown left out. A
   # skipped job counts as passed. A push to main runs none, and workflow_dispatch runs them all
@@ -449,7 +450,13 @@ jobs:
           - canaries: L11
             shard: 2/2
           - canaries: L12-client-text
+            shard: 1/2
+          - canaries: L12-client-text
+            shard: 2/2
           - canaries: L12-unwired-listener
+            shard: 1/2
+          - canaries: L12-unwired-listener
+            shard: 2/2
           - canaries: L13-console-warn
             shard: 1/2
           - canaries: L13-console-warn
