@@ -259,10 +259,7 @@ function invalidate(ssr: RunnableDevEnvironment, id: string): void {
  * in the render queue would pay for it under a busy run. The first render awaits the same
  * server; a server that fails to start fails that render with its error, as a lazy start does.
  */
-export function startAstroRenderServer(
-  root: string,
-  plugins?: () => Promise<Plugin[]>,
-): void {
+export function startAstroRenderServer(root: string, plugins?: () => Promise<Plugin[]>): void {
   // Handled here so a failed start with no render yet is not an unhandled rejection: the render
   // that awaits the server still rejects with the error.
   renderServer(root, plugins).catch(() => undefined);

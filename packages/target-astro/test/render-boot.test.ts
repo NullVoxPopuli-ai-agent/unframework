@@ -88,9 +88,9 @@ describe("the render server's start", { timeout: 60_000 }, () => {
 
     const id = join(root, "Hello.uf.tsx.astro");
     compile(plugin, id, "<p>hello</p>\n");
-    await expect(
-      renderAstroComponent(root, { id, props: {} }, undefined, plugins),
-    ).rejects.toThrow("the styling engine's plugin cannot load");
+    await expect(renderAstroComponent(root, { id, props: {} }, undefined, plugins)).rejects.toThrow(
+      "the styling engine's plugin cannot load",
+    );
   });
 
   it("starts nothing for a plugin made without a context, until the first render", async () => {
