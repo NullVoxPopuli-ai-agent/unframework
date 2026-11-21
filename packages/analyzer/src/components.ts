@@ -24,6 +24,7 @@ import type {
   ComponentAttribute,
   ComponentNode,
   Handler,
+  Namespace,
   Parameter,
   SlotFill,
   SlotOutletNode,
@@ -32,12 +33,14 @@ import type {
 import type { AST } from "@unframework.dev/parser";
 
 import { keyName } from "./api.ts";
+import { canonicalName, isAttributeOf } from "./attribute-names.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { closest, literalOutsideUnion, renameFix } from "./cross-component.ts";
 import { directiveOnNonElement, isDirectiveAttribute } from "./directives.ts";
+import { ELEMENT_INTERFACES } from "./element-interfaces.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
-import { lowerComponentHandler, lowerRef } from "./listeners.ts";
+import { isElementEvent, listenerName, lowerComponentHandler, lowerRef } from "./listeners.ts";
 import { hasContent, lowerChildren, lowerContent, textPlacementProblem } from "./lower.ts";
 import type { Place } from "./lower.ts";
 import { CONTROL_MODEL, lowerModelBinding, namelessModel } from "./models.ts";
@@ -134,6 +137,15 @@ export function lowerComponentAs(
       seen.set(written, item);
     }
     if (item.type === "JSXSpreadAttribute") {
+      if (isRestSpread(item, render)) {
+        reporter.report(
+          "UF2001",
+          item,
+          `\`${render.restProps!.name}\` is spread on <${info.name}>, a component: the props' rest is spread on one element (ADR-0118).`,
+          { help: `Spread it on an element, \`<input {...${render.restProps!.name}} />\`.` },
+        );
+        continue;
+      }
       reporter.unsupported(
         item,
         "A spread on a component is not supported: a component takes each prop by its name.",
@@ -179,8 +191,16 @@ export function lowerComponentAs(
       continue;
     }
     if (/^on[A-Z]/.test(attribute)) {
+      if (passesListener(attribute, api)) {
+        fallthrough.push(item);
+        continue;
+      }
       const listener = lowerComponentListener(item, item.name, api, info, render, items);
       if (listener) attributes.push(listener);
+      continue;
+    }
+    if (passesAttribute(attribute, api)) {
+      fallthrough.push(item);
       continue;
     }
     const prop = lowerProp(item, item.name, api, info, render, items);
@@ -209,10 +229,27 @@ function componentRefProblem(
     return true;
   };
   if (!api.exposes.length) {
-    return report(
-      `\`${info.name}\` exposes nothing, so a ref on it holds nothing a parent can call.`,
-      `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, or remove the ref.`,
-    );
+    // A ref on a component that exposes nothing holds its root element (ADR-0118), typed as
+    // that element's DOM interface.
+    const element = api.refTag === undefined ? undefined : ELEMENT_INTERFACES.get(api.refTag);
+    if (element === undefined) {
+      return report(
+        `\`${info.name}\` exposes nothing and its root is not one element, so a ref on it holds nothing.`,
+        `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, give it one root element, or remove the ref.`,
+      );
+    }
+    const type = templateRefType(binding, render);
+    const written =
+      type?.type === "TSTypeReference" && type.typeName.type === "Identifier" && !type.typeArguments
+        ? type.typeName.name
+        : undefined;
+    if (written !== element) {
+      return report(
+        `A ref on \`${info.name}\` holds its root <${api.refTag}>, an \`${element}\`, and this template ref is ${type ? "typed as another type" : "not typed"}.`,
+        `Type it as the root element: \`useTemplateRef<${element}>()\`.`,
+      );
+    }
+    return false;
   }
   const exposed = api.exposes.map((name) => `\`${name}\``).join(", ");
   const type = templateRefType(binding, render);
@@ -344,7 +381,7 @@ function lowerProp(
     reporter.report(
       "UF3035",
       name,
-      `${info.name} declares no prop \`${name.name}\`: a component takes its props, \`class\`, \`style\`, \`key\`, \`ref\`, its events' listeners and its slots.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
+      `${info.name} declares no prop \`${name.name}\`, and it is no attribute of ${api.fallthroughTag === undefined ? "an element" : `<${api.fallthroughTag}>`}, where what ${info.name} does not declare lands: a component takes its props, \`key\`, \`ref\`, its events' listeners, its slots and, falling through, \`class\`, \`style\`, attributes and DOM listeners.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
       {
         help: `Pass a prop ${info.name} declares, or declare \`${name.name}\` in its props.`,
         ...(meant ? { fixes: renameFix(meant, meant, name, others) } : {}),
@@ -446,7 +483,7 @@ function lowerComponentListener(
     reporter.report(
       "UF3036",
       name,
-      `${info.name} declares no event \`${event}\`: a component passes no DOM listener through to its root, and \`${name.name}\` listens to an event the component emits.${listener ? ` Did you mean \`${listener}\`?` : ""}`,
+      `${info.name} declares no event \`${event}\`, and \`${event}\` is no DOM event: \`${name.name}\` listens to an event the component emits, or to a DOM event that falls through to its root.${listener ? ` Did you mean \`${listener}\`?` : ""}`,
       {
         help: `Listen to an event ${info.name} declares with \`defineEmits\`, or listen on an element inside it.`,
         ...(meant && listener ? { fixes: renameFix(meant, listener, name, others) } : {}),
@@ -466,8 +503,60 @@ function eventName(listener: string): string {
 }
 
 /**
- * A component's `class` and `style` (ADR-0054): lowered as an element's are, then merged into
- * the component's root, which UF3045 reports where the component renders neither.
+ * Whether a component takes what falls through (ADR-0118): it has a fallthrough element, or its
+ * root is a component whose API is not known, whose own compile reports it.
+ */
+function takesFallthrough(api: ComponentApi): boolean {
+  return api.fallthroughTag !== undefined;
+}
+
+/** The namespace of a fallthrough element's attributes: an `<svg>` root's are SVG's. */
+function namespaceOf(tag: string): Namespace {
+  return tag === "svg" ? "svg" : "html";
+}
+
+/**
+ * Whether an attribute a component does not declare falls through (ADR-0118): it names no prop,
+ * model or slot of the component, and it is an attribute of the element it lands on, or of any
+ * element where the component takes nothing, which UF3045 then reports.
+ */
+function passesAttribute(attribute: string, api: ComponentApi): boolean {
+  if (
+    api.props.some((each) => each.name === attribute) ||
+    api.models.some((each) => each.name === attribute) ||
+    api.slots.some((each) => each.name === attribute) ||
+    attribute.toLowerCase() === "innerhtml"
+  ) {
+    return false;
+  }
+  const tag = api.fallthroughTag ?? "div";
+  const namespace = namespaceOf(tag);
+  return isAttributeOf(tag, namespace, canonicalName(tag, namespace, attribute));
+}
+
+/**
+ * Whether a listener on a component is a native listener that falls through (ADR-0118): it
+ * listens to no event the component declares, with or without an option suffix, and to a DOM
+ * event.
+ */
+function passesListener(attribute: string, api: ComponentApi): boolean {
+  const event = eventName(attribute);
+  if (api.events.some((each) => each.name === event)) return false;
+  const suffix = OPTION_SUFFIXES.find((each) => attribute.endsWith(each));
+  if (
+    suffix &&
+    api.events.some((each) => each.name === eventName(attribute.slice(0, -suffix.length)))
+  ) {
+    return false;
+  }
+  const listener = listenerName(attribute);
+  return listener !== undefined && isElementEvent(listener.event);
+}
+
+/**
+ * What falls through a component (ADR-0054, ADR-0118): its `class`, its `style`, the attributes
+ * it does not declare and its native listeners, lowered as the fallthrough element's own would
+ * be, then passed to it. UF3045 reports them where the component takes nothing.
  */
 function lowerFallthrough(
   items: readonly AST.JSXAttribute[],
@@ -478,28 +567,29 @@ function lowerFallthrough(
 ): ComponentAttribute[] {
   if (!items.length) return [];
   const { reporter } = render;
-  const dropped =
-    api.inheritAttrs === false
-      ? `${info.name} sets \`inheritAttrs: false\`, so it renders no \`class\` or \`style\` passed to it`
-      : api.root === "other"
-        ? `${info.name}'s root is not one element or one component, so no target knows where a \`class\` or a \`style\` passed to it goes`
-        : undefined;
-  if (dropped) {
+  if (!takesFallthrough(api)) {
+    const dropped =
+      api.inheritAttrs === false
+        ? `${info.name} sets \`inheritAttrs: false\` and spreads no \`...rest\`, so it renders nothing passed to it that it does not declare`
+        : api.root === "component"
+          ? `${info.name}'s root component takes nothing it does not declare, so ${info.name} renders nothing passed to it that it does not declare`
+          : `${info.name}'s root is not one element or one component, so no target knows where what it does not declare goes`;
     for (const item of items) {
       reporter.report("UF3045", item.name, `${dropped}.`, {
         help:
           api.inheritAttrs === false
-            ? `Pass what ${info.name} declares, or remove \`defineOptions({ inheritAttrs: false })\`.`
-            : `Give ${info.name} one root element, or pass a prop it declares.`,
+            ? `Pass what ${info.name} declares, or spread the props' rest on one of its elements: \`<input {...rest} />\`.`
+            : `Give ${info.name} one root element, or pass what it declares.`,
       });
     }
     return [];
   }
+  const tag = api.fallthroughTag!;
   const lowered = lowerAttributes(
     { ...opening, attributes: [...items] },
     {
-      tag: api.rootTag ?? "div",
-      namespace: "html",
+      tag,
+      namespace: namespaceOf(tag),
       hasChildren: false,
       listBody: false,
       render,
@@ -509,9 +599,11 @@ function lowerFallthrough(
     switch (attribute.kind) {
       case "Class":
       case "Style":
+      case "Bound":
         return [attribute];
       // A static `class` lowers to a static attribute on an element, and is one class here.
       case "Static":
+        if (attribute.name !== "class") return [attribute];
         return attribute.value === true
           ? []
           : [
@@ -520,10 +612,27 @@ function lowerFallthrough(
                 attribute.span,
               ),
             ];
+      case "Event":
+        if (attribute.capture || attribute.once || attribute.passive) {
+          reporter.unsupported(
+            { start: attribute.span.start, end: attribute.span.end },
+            "A listener option on a listener that falls through to a component's root is not supported yet (ADR-0118).",
+            { help: "Listen without the option, or on an element inside the component." },
+          );
+          return [];
+        }
+        return [attribute];
       default:
         return [];
     }
   });
+}
+
+/** Whether a spread spreads the props' rest, `{...rest}` (ADR-0118). */
+function isRestSpread(item: AST.JSXSpreadAttribute, render: RenderContext): boolean {
+  if (item.argument.type !== "Identifier" || !render.restProps) return false;
+  const resolution = render.scopes.resolve(item.argument);
+  return resolution.kind === "parameter" && resolution.declaration === render.restProps.declaration;
 }
 
 /**

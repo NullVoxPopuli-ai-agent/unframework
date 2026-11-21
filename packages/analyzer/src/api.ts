@@ -85,7 +85,111 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   const root = rootOf(node, context);
   api.root = root.kind;
   if (root.tag !== undefined) api.rootTag = root.tag;
+  // Where what a consumer passes lands (ADR-0118): the root element, or with `inheritAttrs:
+  // false` the element that spreads the props' rest. A root component's is its own, which
+  // `fillRootComponents` reads once every component's API is known.
+  const fallthroughTag = api.inheritAttrs ? root.tag : restTag(node);
+  if (fallthroughTag !== undefined) api.fallthroughTag = fallthroughTag;
+  // A ref holds what the component exposes, or else its root element (ADR-0118).
+  if (!api.exposes.length && root.tag !== undefined) api.refTag = root.tag;
   return api;
+}
+
+/**
+ * Fills the fallthrough and ref tags of the components whose root is a component (ADR-0118):
+ * each takes its root component's own, through a chain of root components in the module, and
+ * from an imported one's API, which the resolver read with its own imports. `rootApi` gives the
+ * API of the component a root names, if it is known.
+ */
+export function fillRootComponents(
+  apis: readonly { node: ComponentFunction; api: ComponentApi }[],
+  rootApi: (name: AST.JSXIdentifier) => ComponentApi | undefined,
+): void {
+  const roots = apis.flatMap(({ node, api }) => {
+    if (api.root !== "component") return [];
+    const name = rootElementOf(node)?.openingElement.name;
+    return name?.type === "JSXIdentifier" ? [{ api, name }] : [];
+  });
+  // A chain in the module is as long as its components at most.
+  for (let round = 0; round <= roots.length; round++) {
+    let changed = false;
+    for (const { api, name } of roots) {
+      const child = rootApi(name);
+      if (!child) continue;
+      if (api.inheritAttrs && child.fallthroughTag !== undefined && !api.fallthroughTag) {
+        api.fallthroughTag = child.fallthroughTag;
+        changed = true;
+      }
+      if (!api.exposes.length && child.refTag !== undefined && !api.refTag) {
+        api.refTag = child.refTag;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+/** The JSX element a component returns, without parentheses. */
+function rootElementOf(node: ComponentFunction): AST.JSXElement | undefined {
+  const body = node.body;
+  const statements =
+    body?.type === "BlockStatement"
+      ? body.body.filter((statement) => statement.type !== "EmptyStatement")
+      : [];
+  const last = statements.at(-1);
+  let returned: AST.Expression | null | undefined =
+    body && body.type !== "BlockStatement"
+      ? body
+      : last?.type === "ReturnStatement"
+        ? last.argument
+        : undefined;
+  while (returned?.type === "ParenthesizedExpression") returned = returned.expression;
+  return returned?.type === "JSXElement" ? returned : undefined;
+}
+
+/**
+ * The tag of the element that spreads the props' rest, `<input {...rest} />` (ADR-0118): the
+ * first in source order, as the setup's checks allow one only.
+ */
+function restTag(node: ComponentFunction): string | undefined {
+  const [parameter] = node.params;
+  const pattern = parameter?.type === "ObjectPattern" ? parameter : undefined;
+  const rest = pattern?.properties.find((property) => property.type === "RestElement");
+  if (rest?.type !== "RestElement" || rest.argument.type !== "Identifier") return undefined;
+  const name = rest.argument.name;
+  const statements = node.body?.type === "BlockStatement" ? node.body.body : [];
+  const last = statements.at(-1);
+  const returned = node.body?.type === "BlockStatement" ? last : node.body;
+  let found: string | undefined;
+  const visit = (value: unknown): void => {
+    if (found !== undefined || !value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      for (const each of value) visit(each);
+      return;
+    }
+    const each = value as { type?: unknown };
+    if (each.type === "JSXOpeningElement") {
+      const opening = value as AST.JSXOpeningElement;
+      if (
+        opening.name.type === "JSXIdentifier" &&
+        !isComponentName(opening.name.name) &&
+        opening.attributes.some(
+          (item) =>
+            item.type === "JSXSpreadAttribute" &&
+            item.argument.type === "Identifier" &&
+            item.argument.name === name,
+        )
+      ) {
+        found = opening.name.name;
+        return;
+      }
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== "parent") visit(child);
+    }
+  };
+  visit(returned);
+  return found;
 }
 
 /** The authoring macro a top-level statement calls, as a statement or a `const`'s value. */
@@ -424,20 +528,8 @@ function rootOf(
   kind: ComponentApi["root"];
   tag?: string;
 } {
-  const body = node.body;
-  const statements =
-    body?.type === "BlockStatement"
-      ? body.body.filter((statement) => statement.type !== "EmptyStatement")
-      : [];
-  const last = statements.at(-1);
-  let returned: AST.Expression | null | undefined =
-    body && body.type !== "BlockStatement"
-      ? body
-      : last?.type === "ReturnStatement"
-        ? last.argument
-        : undefined;
-  while (returned?.type === "ParenthesizedExpression") returned = returned.expression;
-  if (returned?.type !== "JSXElement") return { kind: "other" };
+  const returned = rootElementOf(node);
+  if (!returned) return { kind: "other" };
   const name = returned.openingElement.name;
   if (name.type !== "JSXIdentifier") return { kind: "other" };
   const resolution = context.scopes.resolve(name as unknown as AST.IdentifierReference);

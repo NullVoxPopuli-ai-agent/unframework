@@ -143,12 +143,38 @@ export function createProject(options: ProjectOptions): Project {
   const compiled = new Map<string, Compiled>();
   const copies = new Map<string, string>();
 
+  /** The children being resolved, by file: an import cycle reads no API (UF1205). */
+  const resolving = new Set<string>();
   const resolveChild = async (request: ResolveRequest): Promise<Child | undefined> => {
     const path = joinPath(directoryOf(request.importer), request.specifier);
+    if (path !== undefined && resolving.has(path)) return undefined;
     const source = await readPath(path);
     if (path === undefined || source === undefined) return undefined;
+    resolving.add(path);
+    try {
+      return await analyseChild(path, source, request);
+    } finally {
+      resolving.delete(path);
+    }
+  };
+
+  const analyseChild = async (
+    path: string,
+    source: string,
+    request: ResolveRequest,
+  ): Promise<Child | undefined> => {
     const parsed = parseModule(path, source);
     const edges = new Set<string>();
+    // The child's own children, whose APIs give a root component's fallthrough and ref tags
+    // (ADR-0118): each is an edge, so an edit to it reaches the parent.
+    const imports = new Map<string, ModuleApi | undefined>();
+    for (const { specifier } of componentImportNames(parsed)) {
+      const child = await resolveChild({ specifier, importer: path });
+      imports.set(specifier, child?.api);
+      const file = joinPath(directoryOf(path), specifier);
+      if (file !== undefined) edges.add(file);
+      for (const edge of (file !== undefined && childEdges.get(file)) || []) edges.add(edge);
+    }
     const stylesheets = new Map<string, StylesheetSource | undefined>();
     for (const specifier of stylesheetImports(parsed)) {
       const sheet = joinPath(directoryOf(path), specifier);
@@ -169,11 +195,13 @@ export function createProject(options: ProjectOptions): Project {
       source,
       ...[...stylesheets.values()].map((sheet) => sheet?.source ?? null),
       ...shapes,
+      ...imports,
     ]);
     let cached = children.get(path);
     if (cached?.key !== key) {
       const analysis = analyze(parsed, {
         stylesheets,
+        imports,
         ...(typeOracle ? { shapes: (span) => shapes.get(`${span.start}:${span.end}`) } : {}),
       });
       cached = { key, child: { api: analysis.api, shapes: [...shapes] } };

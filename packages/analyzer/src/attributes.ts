@@ -8,6 +8,7 @@ import {
   canonicalNumber,
   CHILDLESS_ATTRIBUTES,
   createBoundAttribute,
+  createRestAttribute,
   createSpreadAttribute,
   createSpreadKey,
   createStaticAttribute,
@@ -313,6 +314,39 @@ export function lowerAttributes(
   )?.node;
   checkHandlers(opening, entries, element);
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
+}
+
+/**
+ * `{...rest}`, the props' rest spread on an element (ADR-0118): once, on an element that renders
+ * at most once, since what a consumer passes lands on one element. A rest the setup rejects
+ * (UF2001, without `inheritAttrs: false`) renders nothing more.
+ */
+function restSpread(item: AST.JSXSpreadAttribute, element: ElementContext): Attribute | undefined {
+  const { render } = element;
+  const rest = render.restProps!;
+  const report = (message: string, related?: { span: Span; message: string }) => {
+    render.reporter.report("UF2001", item, message, {
+      help: `Spread \`${rest.name}\` on one element outside any list.`,
+      ...(related ? { related: [related] } : {}),
+    });
+    return undefined;
+  };
+  if (render.enclosing.length) {
+    return report(
+      `\`${rest.name}\` is spread inside a list: what a consumer passes lands on one element, and a list renders many.`,
+    );
+  }
+  if (rest.spread) {
+    return report(
+      `\`${rest.name}\` is spread twice: what a consumer passes lands on one element.`,
+      {
+        span: rest.spread,
+        message: "First spread here",
+      },
+    );
+  }
+  rest.spread = span(item);
+  return rest.accepted ? createRestAttribute(span(item)) : undefined;
 }
 
 /**
@@ -638,6 +672,15 @@ function readSpread(
       (property) => property.type !== "Property" || !isStaticString(property.value),
     );
     return { node: item, binds, attribute: undefined, keys: [] };
+  }
+  if (argument.type === "Identifier" && render.restProps) {
+    const resolution = render.scopes.resolve(argument);
+    if (
+      resolution.kind === "parameter" &&
+      resolution.declaration === render.restProps.declaration
+    ) {
+      return { node: item, binds: true, attribute: restSpread(item, element), keys: [] };
+    }
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);

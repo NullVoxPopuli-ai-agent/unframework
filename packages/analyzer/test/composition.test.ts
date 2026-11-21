@@ -86,6 +86,8 @@ describe("the module's components", () => {
         inheritAttrs: true,
         root: "element",
         rootTag: "div",
+        // What a consumer passes lands on the root; a ref holds what it exposes (ADR-0118).
+        fallthroughTag: "div",
       },
       expect.objectContaining({ name: "Form", export: "named" }),
     ]);

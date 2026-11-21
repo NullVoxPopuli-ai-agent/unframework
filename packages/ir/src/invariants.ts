@@ -1735,6 +1735,9 @@ function checkComponentAttributes(
       case "Ref":
         checkRef(attribute, at, place, walk);
         break;
+      // What falls through is checked as the child's fallthrough element would check it, by
+      // the analyser, which has the child's API (ADR-0118); a tag candidate's are
+      // `checkDynamic`'s.
       case "Static":
       case "Bound":
       case "Spread":
@@ -1742,6 +1745,7 @@ function checkComponentAttributes(
       case "Model":
       case "RawHtml":
       case "Directive":
+      case "Rest":
         break;
       default:
         unreachable(attribute);
@@ -2536,6 +2540,9 @@ function checkAttributes(
         if (!isFunctionValue(attribute.value, walk)) {
           checkExpression(attribute.value, `${at}/value`, place.scope, walk, true);
         }
+        break;
+      case "Rest":
+        claim("...rest", at, false);
         break;
       default:
         unreachable(attribute);

@@ -488,6 +488,19 @@ export interface ComponentApi {
   root: "element" | "component" | "other";
   /** The root element's tag, when the root is an element. */
   rootTag?: string;
+  /**
+   * The tag of the element a consumer's undeclared attributes and listeners land on (ADR-0118):
+   * the root element's, the root component's own, or, with `inheritAttrs: false`, the element
+   * that spreads the props' rest. A parent checks what falls through against it. Absent where
+   * nothing but declared names may be passed.
+   */
+  fallthroughTag?: string;
+  /**
+   * The tag of the element a `ref` on the component holds, where the component exposes nothing
+   * (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no
+   * element.
+   */
+  refTag?: string;
   /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
   styles?: ComponentStylesApi;
   /**
@@ -625,7 +638,10 @@ export interface UfComponent {
   slots?: Slots;
   /** The local functions the component exposes with `defineExpose({ … })` (ADR-0054). */
   exposes?: Exposes;
-  /** Set by `defineOptions({ inheritAttrs: false })`: no `class` or `style` falls through. */
+  /**
+   * Set by `defineOptions({ inheritAttrs: false })`: nothing falls through to the root. What a
+   * consumer passes reaches the element that spreads the props' rest, if one does (ADR-0118).
+   */
   inheritAttrs?: false;
   /**
    * Every binding the component declares, by the start of its span: the props (each
@@ -1668,6 +1684,7 @@ export type Attribute =
   | ClassAttribute
   | StyleAttribute
   | SpreadAttribute
+  | RestAttribute
   | EventAttribute
   | RefAttribute
   | ModelAttribute
@@ -1675,8 +1692,10 @@ export type Attribute =
   | DirectiveAttribute;
 
 /**
- * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
- * declares, a model's binding, or a `class`, a `style` (fallthrough) or a `ref` (what it exposes).
+ * An attribute on a component (ADR-0053, ADR-0054, ADR-0118): a prop, a listener of an event the
+ * child declares, a model's binding, a `ref` (what it exposes, or its root element), or what
+ * falls through to the child's fallthrough element: a `class`, a `style`, an attribute of that
+ * element (`Static`, `Bound`) or a native listener (`Event`, with no option).
  */
 export type ComponentAttribute =
   | PropAttribute
@@ -1684,7 +1703,10 @@ export type ComponentAttribute =
   | ModelBindingAttribute
   | ClassAttribute
   | StyleAttribute
-  | RefAttribute;
+  | RefAttribute
+  | StaticAttribute
+  | BoundAttribute
+  | EventAttribute;
 
 /** A prop passed to a component, `label="Name"` or `label={name}`: a static value is a literal. */
 export interface PropAttribute {
@@ -1966,6 +1988,17 @@ export interface SpreadAttribute {
    * nullish is an error on Angular (NG8107), and one through `.` of an object that may be throws.
    */
   nullish: boolean;
+  span: Span;
+}
+
+/**
+ * `{...rest}`, the rest of a destructured props pattern, spread whole on one element of a
+ * component that sets `inheritAttrs: false` (ADR-0118): the element takes what its consumer
+ * passes that the component does not declare, its `class` and `style` included, as a root takes
+ * them where `inheritAttrs` is on.
+ */
+export interface RestAttribute {
+  kind: "Rest";
   span: Span;
 }
 
