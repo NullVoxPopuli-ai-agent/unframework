@@ -5,9 +5,6 @@
 // setup's values (`./setup.ts`), and each `<component is>` as a constant.
 import {
   addTypeImports,
-  astroDialect,
-  elementNamespace,
-  isBooleanAttribute,
   isIdentifier,
   js,
   keyImports,
@@ -25,11 +22,9 @@ import type { ChildImport, ImportSet } from "@unframework.dev/codegen";
 import { expressionsOf, walk } from "@unframework.dev/ir";
 import type {
   BindingId,
-  ElementNode,
   InjectItem,
   ModelItem,
   Prop,
-  StaticAttribute,
   TypeParameter,
   UfComponent,
   UfModule,
@@ -418,34 +413,16 @@ function propsRead(
   if (fallthrough) {
     const { className, style, own, attributes } = fallthrough;
     names.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
-    // The element's own attributes, which the consumer's override: a static one is the default.
+    // The element's own attributes, which the consumer's override wherever it passes them, an
+    // `undefined` included: the markup tests the key, so they take no default here.
     for (const { attribute, local } of own) {
       const key = isIdentifier(attribute.name) ? attribute.name : JSON.stringify(attribute.name);
-      const target = key === local ? local : `${key}: ${local}`;
-      names.push(
-        attribute.kind === "Static" && fallthrough.target.kind === "Element"
-          ? `${target} = ${staticValue(attribute, fallthrough.target)}`
-          : target,
-      );
+      names.push(key === local ? local : `${key}: ${local}`);
     }
     names.push(`...${attributes}`);
   }
   if (names.length) statements.push(`const { ${names.join(", ")} } = Astro.props;`);
   return statements;
-}
-
-/**
- * A static attribute's value as the default a consumer's overrides: its string, or for a bare one
- * what Astro's renderer writes bare, `true` for a boolean attribute it knows and `""` for any
- * other, which `true` would write as `="true"`.
- */
-function staticValue(attribute: StaticAttribute, element: ElementNode): string {
-  if (attribute.value !== true) return JSON.stringify(attribute.value);
-  const context = { element, namespace: elementNamespace(element.tag, "html") };
-  const known =
-    isBooleanAttribute(attribute.name) &&
-    astroDialect.boundAttribute(attribute.name, "on", context) === `${attribute.name}={on}`;
-  return known ? "true" : '""';
 }
 
 /** A model, read as the prop it is, with its default: `value = 0`, `open: expanded = false`. */

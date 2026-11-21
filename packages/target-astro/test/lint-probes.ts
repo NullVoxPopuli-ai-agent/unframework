@@ -219,7 +219,7 @@ const label = getLabel();
 ---
 
 <p
-  data-tier={dataTier ?? tier}
+  data-tier={"data-tier" in Astro.props ? dataTier : tier}
   class:list={[className]}
   style={style}
   {...attrs}

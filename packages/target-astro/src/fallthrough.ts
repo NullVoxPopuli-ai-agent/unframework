@@ -6,9 +6,10 @@
 //
 // Astro writes an element's attributes one after the other, a spread's included, so an attribute
 // the element writes itself and the consumer passes too would be written twice, and the browser
-// keeps the first. The element reads each of its own attributes from the props instead, with its
-// own value as the fallback (`type = "button"`), so the consumer's wins, as Vue's fallthrough
-// merges it. A listener needs `interactivity`, which Astro does not support: the capability check
+// keeps the first. The element reads each of its own attributes from the props instead wherever
+// the consumer passes the key, `type={"type" in Astro.props ? type : "button"}`, so the
+// consumer's wins, as Vue's fallthrough merges it, and its `undefined` removes the attribute, as
+// Vue's does. A listener needs `interactivity`, which Astro does not support: the capability check
 // reports it (UF4001, info) and nothing prints it.
 import { scopeRoots } from "@unframework.dev/codegen";
 import { RESERVED_PROP_NAMES, isIdentifier, walk } from "@unframework.dev/ir";
@@ -53,7 +54,7 @@ export interface Fallthrough {
    * rest sits on an element other than the root, which keeps them (ADR-0063).
    */
   scopeless?: string;
-  /** The target element's own attributes, each read from the props first. */
+  /** The target element's own attributes, each the consumer's wherever it passes the key. */
   own: OwnAttribute[];
   /**
    * The tag whose attributes a consumer may pass, which `Props` takes (`HTMLAttributes<"button">`):

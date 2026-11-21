@@ -4,12 +4,15 @@
 import {
   astroDialect,
   elementNamespace,
+  isBooleanAttribute,
   isIdentifier,
+  needsParentheses,
   operand,
   printMarkup,
   rewriteExpression,
 } from "@unframework.dev/codegen";
 import type {
+  AttributeContext,
   MarkupDialect,
   MarkupOptions,
   MarkupPiece,
@@ -23,11 +26,12 @@ import type {
   FragmentNode,
   SlotFill,
   Span,
+  StaticAttribute,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
 
-import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
+import { isRenderProp, isUnknownBoolean, SPREAD_STYLE } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
 import type { Fallthrough } from "./fallthrough.ts";
 import { unreachable } from "./spelling.ts";
@@ -142,9 +146,10 @@ export function printComponentMarkup(
 
 /**
  * The text of each of the fallthrough element's own attributes, which reads the consumer's value
- * first (`./fallthrough.ts`): `type={type}`, with the element's own the default the frontmatter
- * reads it with, or `aria-label={ariaLabel ?? label}` for a bound one, whose value the
- * frontmatter cannot read before the setup it names.
+ * wherever the consumer passes the key, an `undefined` included, so the attribute goes as Vue's
+ * fallthrough removes it (`./fallthrough.ts`): `type={"type" in Astro.props ? type : "button"}`,
+ * or `aria-label={"aria-label" in Astro.props ? ariaLabel : label}` for a bound one, whose value
+ * the frontmatter cannot read before the setup it names.
  */
 function ownAttributes(
   component: UfComponent,
@@ -156,20 +161,32 @@ function ownAttributes(
   const context = { element, namespace: elementNamespace(element.tag, "html") };
   for (const { attribute, local } of fallthrough.own) {
     const { name } = attribute;
-    let value = local;
-    if (attribute.kind === "Bound") {
-      const own = rewriteExpression(attribute.value, component, spelling.rules);
+    let own: string;
+    if (attribute.kind === "Static") own = staticValue(attribute, context);
+    else {
       // The dialect's value: a boolean attribute Astro's renderer does not know is `""` or
       // `undefined` already, as the consumer's is.
-      const printed = astroDialect.boundAttribute(name, own, context);
-      value = `${local} ?? ${operand(printed.slice(name.length + 2, -1))}`;
+      const code = rewriteExpression(attribute.value, component, spelling.rules);
+      own = astroDialect.boundAttribute(name, code, context).slice(name.length + 2, -1);
     }
+    const otherwise = needsParentheses(own, "argument") ? `(${own})` : own;
+    const value = `${JSON.stringify(name)} in Astro.props ? ${local} : ${otherwise}`;
     texts.set(
       attribute,
       isUntypedAttribute(element.tag, name) ? spread(name, value) : `${name}={${value}}`,
     );
   }
   return texts;
+}
+
+/**
+ * A static attribute's own value as code: its string, or for a bare one what Astro's renderer
+ * writes bare, `true` for a boolean attribute it knows and `""` for any other, which `true` would
+ * write as `="true"`.
+ */
+function staticValue({ name, value }: StaticAttribute, context: AttributeContext): string {
+  if (value !== true) return JSON.stringify(value);
+  return isBooleanAttribute(name) && !isUnknownBoolean(name, context) ? "true" : '""';
 }
 
 /** A span as a key. */

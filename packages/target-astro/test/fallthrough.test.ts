@@ -1,11 +1,14 @@
 // What falls through a component (ADR-0118, `src/fallthrough.ts`): the rest of `Astro.props`,
 // spread on the root or on the element that spreads the props' rest, with the element's own
-// attributes read from the props first, so the consumer's wins. The corpus checks the same shapes
+// attributes read from the props wherever the consumer passes them, so the consumer's wins. The corpus checks the same shapes
 // through every layer (`cases/fallthrough`); these pin each one, and render them.
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { afterAll, describe, expect, it } from "vitest";
 
 import { renderToString } from "../src/toolchain/server.ts";
-import { loadAstroComponent, scratchDirectory } from "./astro.ts";
+import { loadAstroComponent, scratchDirectory, writeAstroModule } from "./astro.ts";
 import { emitSource } from "./source.ts";
 
 const scratch = scratchDirectory("fallthrough");
@@ -14,6 +17,27 @@ afterAll(() => scratch.remove());
 /** Each file a source's components emit, as `emit` prints them, by path. */
 const outputs = (source: string, file = "Card.uf.tsx"): Record<string, string> =>
   Object.fromEntries(emitSource(source, file).map(({ path, contents }) => [path, contents]));
+
+/** Server-renders the component `main` of a source, its children written beside it. */
+async function renderComponents(
+  source: string,
+  main: string,
+  props: Record<string, unknown>,
+): Promise<string> {
+  const directory = join(scratch.path, `components-${++directories}`);
+  mkdirSync(directory, { recursive: true });
+  let file = "";
+  for (const [path, contents] of Object.entries(outputs(source, `${main}.uf.tsx`))) {
+    const name = path.replace(/\.astro$/, "");
+    const written = writeAstroModule(directory, contents.replace(/\.astro";/g, '.mjs";'), name);
+    if (name === main) file = written;
+  }
+  const module: { default: unknown } = await import(file);
+  return renderToString(module.default, { props });
+}
+
+/** How many directories `renderComponents` has written. */
+let directories = 0;
 
 /** Server-renders Astro source with props, as the `ssr:astro` project does. */
 async function render(source: string, props: Record<string, unknown>): Promise<string> {
@@ -44,7 +68,7 @@ const field = [
 ].join("\n");
 
 describe("fallthrough (ADR-0118)", () => {
-  it("spreads the rest of the props on the root, which reads its own attributes from them first", () => {
+  it("spreads the rest of the props on the root, which reads its own attributes from them where they are passed", () => {
     expect(outputs(button, "SaveButton.uf.tsx")["SaveButton.astro"]).toBe(
       [
         "---",
@@ -55,14 +79,14 @@ describe("fallthrough (ADR-0118)", () => {
         "  style?: Record<string, string | number | undefined>;",
         "}",
         "",
-        'const { title, class: className, style, type = "button", "aria-label": ariaLabel, disabled = true, ...attrs } = Astro.props;',
+        'const { title, class: className, style, type, "aria-label": ariaLabel, disabled, ...attrs } = Astro.props;',
         "---",
         "",
         "<button",
-        "  type={type}",
+        '  type={"type" in Astro.props ? type : "button"}',
         '  class:list={["button", className]}',
-        "  aria-label={ariaLabel ?? title}",
-        "  disabled={disabled}",
+        '  aria-label={"aria-label" in Astro.props ? ariaLabel : title}',
+        '  disabled={"disabled" in Astro.props ? disabled : true}',
         "  style={style}",
         "  {...attrs}",
         ">{title}</button>",
@@ -92,6 +116,54 @@ describe("fallthrough (ADR-0118)", () => {
     );
   });
 
+  it("removes the root's own attribute where the consumer passes it `undefined`, as Vue does", async () => {
+    const output = outputs(button, "SaveButton.uf.tsx")["SaveButton.astro"]!;
+    await expect(
+      render(output, { title: "Save", type: undefined, "aria-label": undefined }),
+    ).resolves.toBe('<button class="button" disabled>Save</button>');
+  });
+
+  it("lets a parent's `undefined` remove the root's attribute, and keeps it where the parent passes nothing", async () => {
+    const source = [
+      "function Btn({ label }: { label: string }) {",
+      '  return <button type="button" title={label}>{label}</button>;',
+      "}",
+      "",
+      'export default function Form({ kind }: { kind?: "submit" | "reset" }) {',
+      "  return (",
+      "    <form>",
+      '      <Btn label="Plain" />',
+      '      <Btn label="Kind" type={kind} title={kind} />',
+      "    </form>",
+      "  );",
+      "}",
+    ].join("\n");
+    await expect(renderComponents(source, "Form", {})).resolves.toBe(
+      '<form><button type="button" title="Plain">Plain</button><button>Kind</button></form>',
+    );
+    await expect(renderComponents(source, "Form", { kind: "reset" })).resolves.toBe(
+      '<form><button type="button" title="Plain">Plain</button><button type="reset" title="reset">Kind</button></form>',
+    );
+  });
+
+  it('passes a bare boolean attribute Astro\'s renderer does not know as `""`, which it writes bare', async () => {
+    const source = [
+      "function Pick({ label }: { label: string }) {",
+      "  return <select aria-label={label}><option>a</option></select>;",
+      "}",
+      "",
+      "export default function Form() {",
+      '  return <form><Pick label="Pick" multiple hidden /></form>;',
+      "}",
+    ].join("\n");
+    expect(outputs(source, "Form.uf.tsx")["Form.astro"]).toContain(
+      '<Pick label="Pick" multiple="" hidden />',
+    );
+    await expect(renderComponents(source, "Form", {})).resolves.toBe(
+      '<form><select aria-label="Pick" multiple hidden><option>a</option></select></form>',
+    );
+  });
+
   it("spreads the props' rest on its element, and keeps the scope attributes on the root", async () => {
     const output = outputs(field, "Field.uf.tsx")["Field.astro"]!;
     expect(output).toContain('interface Props extends Omit<HTMLAttributes<"input">, "label"> {');
@@ -103,7 +175,7 @@ describe("fallthrough (ADR-0118)", () => {
     );
     expect(output).toContain("{...scopeAttributes(Astro.props)}");
     expect(output).toContain(
-      "<input\n  {...withoutScope(attrs)}\n  name={name ?? label.toLowerCase()}\n  class:list={[className]}\n  style={style}\n/>",
+      '<input\n  {...withoutScope(attrs)}\n  name={"name" in Astro.props ? name : label.toLowerCase()}\n  class:list={[className]}\n  style={style}\n/>',
     );
     await expect(
       render(output, {

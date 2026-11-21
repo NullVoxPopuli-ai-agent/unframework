@@ -5,9 +5,11 @@
 // - each scoped fill, and each forwarded scoped slot, as a render prop named as the slot, since
 //   Astro's `<Fragment slot>` drops a slot's arguments; the fill stays in place, for what reads
 //   its bindings (a list's index), and the dialect writes no content for it;
-// - a `<textarea>`'s model as its text, and a `<select>`'s as `selected` on its options.
+// - a `<textarea>`'s model as its text, and a `<select>`'s as `selected` on its options;
+// - a bare attribute a component passes on as `""` where Astro would write `true` as `="true"`.
 // Astro renders once, on the server, so a model renders its initial state and nothing writes it.
-import { rewriteExpression, spreadStyleExpression } from "@unframework.dev/codegen";
+import { astroDialect, rewriteExpression, spreadStyleExpression } from "@unframework.dev/codegen";
+import type { AttributeContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -76,6 +78,14 @@ export function isRenderProp(fill: SlotFill, component: UfComponent): boolean {
   if (fill.parameter !== undefined) return true;
   if (fill.forward === undefined) return false;
   return component.slots?.slots.find((slot) => slot.name === fill.forward)?.props !== undefined;
+}
+
+/**
+ * Whether Astro's renderer writes `true` on an attribute as `="true"` though it is a boolean
+ * attribute (`multiple`, `ismap`): the dialect writes its value `""` or `undefined` (ADR-0037).
+ */
+export function isUnknownBoolean(name: string, context: AttributeContext): boolean {
+  return astroDialect.boundAttribute(name, "on", context) !== `${name}={on}`;
 }
 
 /** The names a component's props and models take, which its render props keep apart from. */
@@ -222,9 +232,28 @@ export function astroRender(
   function componentChild(each: ComponentNode): ComponentNode {
     const root = each === target && fallthrough ? withFallthrough(each, fallthrough) : each;
     const copied = fills(root.fills);
+    const context: AttributeContext = {
+      element: {
+        kind: "Element",
+        tag: root.component,
+        attributes: [],
+        children: [],
+        span: root.span,
+      },
+      namespace: "html",
+    };
+    // A bare boolean attribute that falls through, which Vue passes as `""`, so the element that
+    // takes it writes it bare.
+    const attributes = root.attributes.map((attribute) =>
+      attribute.kind === "Static" &&
+      attribute.value === true &&
+      isUnknownBoolean(attribute.name, context)
+        ? { ...attribute, value: "" }
+        : attribute,
+    );
     return {
       ...root,
-      attributes: [...root.attributes, ...renderProps(copied, childProps(module, root.component))],
+      attributes: [...attributes, ...renderProps(copied, childProps(module, root.component))],
       fills: copied,
     };
   }
