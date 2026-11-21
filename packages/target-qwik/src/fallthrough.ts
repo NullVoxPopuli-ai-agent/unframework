@@ -1,0 +1,214 @@
+// What falls through a component in its Qwik output (ADR-0118). A consumer's attributes and
+// listeners the component does not declare are its props' rest, `...attributes`, which its
+// fallthrough element spreads last, as Qwik's own components pass on what they do not declare:
+// the root element, the root component, which passes them on in turn, or with `inheritAttrs:
+// false` the element that spreads the source's `{...rest}`. So the props pattern names every
+// prop the component declares, an unread one as `_name`, and the props type takes the element's
+// own, `Omit<PropsOf<"button">, "title" | …>`. Spread last, the consumer's attribute wins over
+// the element's own; its `class` and `style` are props the element merges as before; and its
+// listener of an event the element listens to itself is a prop the element's listener runs
+// after its own, `onClick$={[$(…), onClick$]}`.
+// A ref on a component that exposes nothing holds its root element: Qwik's `ref` on an element
+// takes the signal, so it passes on in the rest, or where the root has a ref of its own, or the
+// rest spreads elsewhere, the root takes it beside its own, `ref={(element) => { … }}`.
+import { walk } from "@unframework.dev/ir";
+import type {
+  ComponentApi,
+  ComponentNode,
+  ElementNode,
+  Span,
+  UfComponent,
+  UfModule,
+} from "@unframework.dev/ir";
+
+import { qwikListenerProp } from "./events.ts";
+
+/** A name the output declares, claimed fresh (`OutputNames.fresh`). */
+type Fresh = (name: string) => string;
+
+/**
+ * What a component takes apart from its declared props (ADR-0118): see this file's header.
+ * Names are claimed as the render is printed, which comes before the props pattern.
+ */
+export class Passed {
+  readonly #fresh: Fresh;
+  /** The tag whose attributes the props take: `PropsOf<"button">`. */
+  readonly tag: string | undefined;
+  /** The span of the node that spreads the rest: the root, or the `{...rest}` element. */
+  readonly target: Span | undefined;
+  /** Whether the rest spreads on the root, which then takes the scope attributes in it. */
+  readonly onRoot: boolean;
+  /** The rest's local, `attributes`. */
+  readonly rest: string | undefined;
+  /** Whether a consumer's ref holds the component's root element (it exposes nothing). */
+  readonly rootRef: boolean;
+  /** The props the component declares, by the names a consumer passes them as. */
+  readonly declared: ReadonlySet<string>;
+  /** The consumer's listeners the target merges with its own, by prop: their locals. */
+  readonly listeners = new Map<string, string>();
+  #ref: string | undefined;
+
+  constructor(
+    component: UfComponent,
+    module: UfModule,
+    declared: ReadonlySet<string>,
+    fresh: Fresh,
+  ) {
+    this.#fresh = fresh;
+    this.declared = declared;
+    const root = singleRoot(component);
+    const element = restElement(component);
+    const target =
+      component.inheritAttrs === false
+        ? element
+        : root && (root.kind === "Element" || takesFallthrough(module, root.component))
+          ? root
+          : undefined;
+    this.target = target?.span;
+    this.onRoot = target !== undefined && target === root;
+    this.tag = fallthroughTag(component, module);
+    this.rest = target === undefined ? undefined : fresh("attributes");
+    this.rootRef =
+      component.exposes === undefined &&
+      root !== undefined &&
+      (root.kind === "Element" || holdsElement(module, root.component));
+  }
+
+  /** Whether `node` is the one that spreads the rest. */
+  isTarget(node: { span: Span }): boolean {
+    return this.target !== undefined && sameSpan(node.span, this.target);
+  }
+
+  /**
+   * The local of the consumer's listener of `event`, where `element` spreads the rest and the
+   * consumer's prop is no prop the component declares (an emit named like the event): the
+   * element runs it after its own.
+   */
+  listener(element: { span: Span }, event: string): string | undefined {
+    if (!this.isTarget(element)) return undefined;
+    const prop = qwikListenerProp(event);
+    if (this.declared.has(prop)) return undefined;
+    let local = this.listeners.get(prop);
+    if (local === undefined) {
+      local = this.#fresh(prop);
+      this.listeners.set(prop, local);
+    }
+    return local;
+  }
+
+  /** The consumer's ref, which the root takes apart from the rest. */
+  ref(): string {
+    this.#ref ??= this.#fresh("ref");
+    return this.#ref;
+  }
+
+  /** The consumer's ref's local, once the root takes it apart from the rest. */
+  get refLocal(): string | undefined {
+    return this.#ref;
+  }
+}
+
+/** Whether two spans are the same. */
+export function sameSpan(a: Span, b: Span): boolean {
+  return a.start === b.start && a.end === b.end;
+}
+
+/** The component's one root: its root element, or the one component its fragment holds. */
+export function singleRoot(component: UfComponent): ElementNode | ComponentNode | undefined {
+  const { render } = component;
+  if (render.kind === "Element") return render;
+  const [root, ...others] = render.children;
+  return root?.kind === "Component" && !others.length ? root : undefined;
+}
+
+/** The element that spreads the props' rest, `<input {...rest} />`: one at most (UF2001). */
+export function restElement(component: UfComponent): ElementNode | undefined {
+  let found: ElementNode | undefined;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element" || found) return;
+      if (node.attributes.some((attribute) => attribute.kind === "Rest")) found = node;
+    },
+  });
+  return found;
+}
+
+/**
+ * The tag a consumer's attributes and listeners land on (`ComponentApi.fallthroughTag`): the
+ * root element's, the root component's own, or with `inheritAttrs: false` the rest element's.
+ */
+export function fallthroughTag(
+  component: UfComponent,
+  module: UfModule,
+  seen: ReadonlySet<string> = new Set(),
+): string | undefined {
+  if (component.inheritAttrs === false) return restElement(component)?.tag;
+  const root = singleRoot(component);
+  if (root?.kind === "Element") return root.tag;
+  if (!root) return undefined;
+  return childTag(module, root.component, "fallthroughTag", new Set([...seen, component.name]));
+}
+
+/** Whether a component, by its local name, takes what falls through (it has a fallthrough tag). */
+export function takesFallthrough(module: UfModule, local: string): boolean {
+  return childTag(module, local, "fallthroughTag", new Set()) !== undefined;
+}
+
+/**
+ * The tag of the fallthrough element of the child a component element renders, by its local
+ * name: where a parent's attributes on it land, as the child's props type takes them.
+ */
+export function childFallthroughTag(module: UfModule, local: string): string | undefined {
+  return childTag(module, local, "fallthroughTag", new Set());
+}
+
+/** Whether a ref on a component, by its local name, holds an element (it exposes nothing). */
+function holdsElement(module: UfModule, local: string): boolean {
+  return childTag(module, local, "refTag", new Set()) !== undefined;
+}
+
+/**
+ * A child's fallthrough or ref tag: an imported child's API says, and one of the module's own
+ * components says through its render, followed down a chain of root components.
+ */
+function childTag(
+  module: UfModule,
+  local: string,
+  tag: "fallthroughTag" | "refTag",
+  seen: ReadonlySet<string>,
+): string | undefined {
+  const api = importedApi(module, local);
+  if (api !== null) return api?.[tag];
+  const own = module.components.find((each) => each.name === local);
+  if (!own || seen.has(own.name)) return undefined;
+  if (tag === "fallthroughTag") return fallthroughTag(own, module, seen);
+  if (own.exposes) return undefined;
+  const root = singleRoot(own);
+  if (root?.kind === "Element") return root.tag;
+  return root && childTag(module, root.component, tag, new Set([...seen, own.name]));
+}
+
+/** An imported child's API, by its local name: `null` where the module does not import it. */
+function importedApi(module: UfModule, local: string): ComponentApi | undefined | null {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    return entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+  }
+  return null;
+}
+
+/**
+ * `restAttributes`: what a consumer passes the component, but the scope attributes its styled
+ * parents pass its root (ADR-0063), for an element other than the root that spreads the rest.
+ */
+export function restAttributesHelper(name: string, type: string): string {
+  return `/** What the consumer passes, but the scope attributes its root keeps. */
+function ${name}(attributes: ${type}): ${type} {
+  return Object.fromEntries(Object.entries(attributes).filter(([key]) => !key.startsWith("data-uf-")));
+}`;
+}

@@ -141,7 +141,17 @@ export class Listeners {
       const found = modelListener(other, element, context, this.#plan);
       return found.event === attribute.event ? [found.handler] : [];
     })[0];
-    return this.#event(attribute.event, listeners, context, this.explicit.has(first), model);
+    // On the element that spreads the props' rest, the consumer's listener of the event runs
+    // last, after the element's own (./fallthrough.ts).
+    const passed = this.#plan.composition.passed?.listener(element, attribute.event);
+    return this.#event(
+      attribute.event,
+      listeners,
+      context,
+      this.explicit.has(first),
+      model,
+      passed,
+    );
   }
 
   #event(
@@ -150,6 +160,7 @@ export class Listeners {
     context: JsxContext,
     explicit: boolean,
     model?: string,
+    passed?: string,
   ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
@@ -186,6 +197,9 @@ export class Listeners {
         ...(sync ? [{ code: () => sync, inline: false }] : []),
         ...(model && scope === "element" ? [{ code: () => model, inline: true }] : []),
         ...(found?.handler ? [found.handler] : []),
+        ...(passed !== undefined && scope === "element"
+          ? [{ code: () => passed, inline: false }]
+          : []),
       ];
       if (!entries.length) continue;
       const value =

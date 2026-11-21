@@ -131,6 +131,12 @@ export interface ListenerPlan {
   readonly mixedPassive: ReadonlySet<string>;
   /** Each listener's group. */
   readonly groups: ReadonlyMap<EventAttribute, ListenerGroup>;
+  /**
+   * The components with native listeners, which fall through to their fallthrough element
+   * (ADR-0118), by `start:end` of their spans: each as an element of those listeners, which the
+   * listeners are grouped and printed on, as a prop of the component.
+   */
+  readonly components: ReadonlyMap<string, ElementNode>;
 }
 
 /** The names and imports of one output file, shared by the planner and the printers. */
@@ -353,7 +359,7 @@ function planEventFunctions(
   const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
         const split = splitHandler(attribute.handler.function, component, empty);
@@ -715,7 +721,7 @@ function planListeners(component: UfComponent): ListenerPlan {
   const passive = new Map<string, Set<boolean>>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       const phases = new Map<string, Set<boolean>>();
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
@@ -735,6 +741,7 @@ function planListeners(component: UfComponent): ListenerPlan {
     path: readonly ElementNode[];
   }
   const entries: Entry[] = [];
+  const components = new Map<string, ElementNode>();
   const visit = (node: RenderNode, path: readonly ElementNode[]): void => {
     switch (node.kind) {
       case "Element": {
@@ -775,10 +782,27 @@ function planListeners(component: UfComponent): ListenerPlan {
       case "Interpolation":
         return;
       // What a component's fills render sits in the child's elements, which the component cannot
-      // see: its listeners are ordered as the component's own around it.
-      case "Component":
-        for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+      // see: its listeners are ordered as the component's own around it. Its native listeners
+      // fall through to its fallthrough element (ADR-0118), which holds what the fills render.
+      case "Component": {
+        const passed = node.attributes.filter(
+          (attribute): attribute is EventAttribute => attribute.kind === "Event",
+        );
+        if (!passed.length) {
+          for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+          return;
+        }
+        const element: ElementNode = {
+          kind: "Element",
+          tag: node.component,
+          attributes: passed,
+          children: node.fills.flatMap((fill) => fill.children),
+          span: node.span,
+        };
+        components.set(`${node.span.start}:${node.span.end}`, element);
+        visit(element, path);
         return;
+      }
       case "SlotOutlet":
         for (const child of node.fallback) visit(child, path);
         return;
@@ -832,7 +856,7 @@ function planListeners(component: UfComponent): ListenerPlan {
   const mixedPassive = new Set(
     [...passive].flatMap(([event, kinds]) => (kinds.size === 2 ? [event] : [])),
   );
-  return { windowEvents, mixedPassive, groups };
+  return { windowEvents, mixedPassive, groups, components };
 }
 
 /**
@@ -1473,7 +1497,7 @@ function planFunctions(
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
         if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
@@ -1708,7 +1732,7 @@ function emittedEvents(component: UfComponent): Set<string> {
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);
