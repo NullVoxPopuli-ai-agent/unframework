@@ -20,6 +20,7 @@ describeTargets("fallthrough/listeners", () => {
     async () => {
       const view = await mount(Picker);
       await view.user.tab();
+      await view.expectParity("focused");
       await expect.element(view.getByRole("button", { name: "Ada" })).toHaveFocus();
       await view.user.keyboard("a");
       await view.user.click(view.getByRole("button", { name: "Ada" }));
