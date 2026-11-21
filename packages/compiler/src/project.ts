@@ -113,6 +113,41 @@ interface Child {
   shapes: [string, TypeShape][];
 }
 
+/** A child's analysis, and whether a cycle cut it short: a child of it read no API. */
+interface Analysed {
+  child: Child;
+  partial: boolean;
+}
+
+/** What an import back to a child being resolved on the same path reads: no API (UF1205). */
+const CYCLE = Symbol("cycle");
+
+/**
+ * A child's analysis in a project's session: its result once read, while `pending` reads it, and
+ * the children it waits on meanwhile, which tell a cycle from a child another path is reading.
+ */
+interface Analysis {
+  pending: Promise<Analysed | undefined>;
+  result?: Analysed | undefined;
+  waits: Set<string>;
+}
+
+/** Whether the analysis of `from` waits, through the ones it waits on, on the analysis of `file`. */
+function waitsOn(from: string, file: string, memo: ReadonlyMap<string, Analysis>): boolean {
+  const queue = [from];
+  const seen = new Set(queue);
+  for (let index = 0; index < queue.length; index++) {
+    const each = queue[index]!;
+    if (each === file) return true;
+    for (const next of memo.get(each)?.waits ?? []) {
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push(next);
+    }
+  }
+  return false;
+}
+
 /**
  * The project graph (ADR-0071) over the files `readFile` gives. A module's cache key is a hash of
  * its source and of everything it read through the project: its children's APIs and the shapes
@@ -143,35 +178,100 @@ export function createProject(options: ProjectOptions): Project {
   const compiled = new Map<string, Compiled>();
   const copies = new Map<string, string>();
 
-  /** The children being resolved, by file: an import cycle reads no API (UF1205). */
-  const resolving = new Set<string>();
+  /**
+   * The children analysed in the current session, by file (ADR-0118): a parent reads each child
+   * with its own children, so without it a child that many paths reach is read once per path.
+   * A session lasts while a compile, an update or a resolve is in flight, so it sees each file
+   * as it is then, and an update starts a fresh one.
+   */
+  let session: Map<string, Analysis> | undefined;
+  let active = 0;
+  const inSession = async <T>(run: () => Promise<T>, fresh = false): Promise<T> => {
+    if (fresh || !session) session = new Map();
+    active++;
+    try {
+      return await run();
+    } finally {
+      if (--active === 0) session = undefined;
+    }
+  };
+  const memoOf = () => session ?? new Map<string, Analysis>();
+
+  /** A child's API, with its own children's (ADR-0118), as the session reads it. */
   const resolveChild = async (request: ResolveRequest): Promise<Child | undefined> => {
     const path = joinPath(directoryOf(request.importer), request.specifier);
-    if (path !== undefined && resolving.has(path)) return undefined;
-    const source = await readPath(path);
-    if (path === undefined || source === undefined) return undefined;
-    resolving.add(path);
+    const analysed = path === undefined ? undefined : await analysisOf(path, [], memoOf());
+    if (!analysed || analysed === CYCLE) return undefined;
+    const { api } = analysed.child;
+    return {
+      api: api && { ...api, file: relativePath(directoryOf(request.importer), path!) },
+      shapes: analysed.child.shapes,
+    };
+  };
+
+  /**
+   * A child's analysis in the session `memo`: the one it holds, the one another path is reading,
+   * or a new one. `ancestors` are the children being analysed above it on this path, the nearest
+   * last. `CYCLE` where the child is one of them (UF1205), or where the analysis another path is
+   * reading waits on this path's, as a cycle reached from two places at once does: awaiting it
+   * would never end. A result that a cycle cut short is not kept, since another path reads the
+   * cycle from elsewhere.
+   */
+  const analysisOf = async (
+    path: string,
+    ancestors: readonly string[],
+    memo: Map<string, Analysis>,
+  ): Promise<Analysed | typeof CYCLE | undefined> => {
+    if (ancestors.includes(path)) return CYCLE;
+    const importer = ancestors.at(-1);
+    const waiting = importer === undefined ? undefined : memo.get(importer);
+    const known = memo.get(path);
+    if (known && "result" in known) return known.result;
+    if (known && importer !== undefined && waitsOn(path, importer, memo)) return CYCLE;
+    let entry = known;
+    if (!entry) {
+      const created: Analysis = {
+        waits: new Set(),
+        pending: readPath(path).then((source) =>
+          source === undefined ? undefined : analyseChild(path, source, [...ancestors, path], memo),
+        ),
+      };
+      entry = created;
+      memo.set(path, created);
+      const forget = () => {
+        if (memo.get(path) === created) memo.delete(path);
+      };
+      created.pending.then((result) => {
+        if (result?.partial) forget();
+        else created.result = result;
+      }, forget);
+    }
+    waiting?.waits.add(path);
     try {
-      return await analyseChild(path, source, request);
+      return await entry.pending;
     } finally {
-      resolving.delete(path);
+      waiting?.waits.delete(path);
     }
   };
 
   const analyseChild = async (
     path: string,
     source: string,
-    request: ResolveRequest,
-  ): Promise<Child | undefined> => {
+    ancestors: readonly string[],
+    memo: Map<string, Analysis>,
+  ): Promise<Analysed> => {
     const parsed = parseModule(path, source);
     const edges = new Set<string>();
+    let partial = false;
     // The child's own children, whose APIs give a root component's fallthrough and ref tags
     // (ADR-0118): each is an edge, so an edit to it reaches the parent.
     const imports = new Map<string, ModuleApi | undefined>();
     for (const { specifier } of componentImportNames(parsed)) {
-      const child = await resolveChild({ specifier, importer: path });
-      imports.set(specifier, child?.api);
       const file = joinPath(directoryOf(path), specifier);
+      const analysed = file === undefined ? undefined : await analysisOf(file, ancestors, memo);
+      if (analysed === CYCLE || analysed?.partial) partial = true;
+      const api = analysed && analysed !== CYCLE ? analysed.child.api : undefined;
+      imports.set(specifier, api && { ...api, file: relativePath(directoryOf(path), file!) });
       if (file !== undefined) edges.add(file);
       for (const edge of (file !== undefined && childEdges.get(file)) || []) edges.add(edge);
     }
@@ -207,11 +307,7 @@ export function createProject(options: ProjectOptions): Project {
       cached = { key, child: { api: analysis.api, shapes: [...shapes] } };
       children.set(path, cached);
     }
-    const { api } = cached.child;
-    return {
-      api: api && { ...api, file: relativePath(directoryOf(request.importer), path) },
-      shapes: cached.child.shapes,
-    };
+    return { child: cached.child, partial };
   };
 
   const readStylesheet = async (
@@ -321,11 +417,11 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   const resolve: Resolver = Object.assign(
-    async (request: ResolveRequest) => (await resolveChild(request))?.api,
+    (request: ResolveRequest) => inSession(async () => (await resolveChild(request))?.api),
     {
       stylesheet: readStylesheet,
       module: readModules,
-      cycle: async (request: ResolveRequest) => (await findCycle(request)).cycle,
+      cycle: (request: ResolveRequest) => inSession(async () => (await findCycle(request)).cycle),
     },
   );
 
@@ -481,9 +577,11 @@ export function createProject(options: ProjectOptions): Project {
     compile: async (file) => {
       const cached = compiled.get(file);
       if (cached) return cached.result;
-      const source = await readPath(file);
-      if (source === undefined) throw new Error(`The project has no file "${file}".`);
-      return build(file, source);
+      return inSession(async () => {
+        const source = await readPath(file);
+        if (source === undefined) throw new Error(`The project has no file "${file}".`);
+        return build(file, source);
+      });
     },
     copy: (file) => copies.get(file),
     copies: (file) =>
@@ -493,65 +591,72 @@ export function createProject(options: ProjectOptions): Project {
         return [{ path: relativePath(directoryOf(file), module), contents }];
       }),
     dependencies: (file) => [...edgesOf(file)].toSorted(),
-    update: async (files) => {
-      await typeOracle?.update({ files: [...files] });
-      const before = new Map(copies);
-      for (const file of files) {
-        if (!copies.has(file)) continue;
-        const source = await readPath(file);
-        if (source === undefined) copies.delete(file);
-        else copies.set(file, source);
-      }
-      // The reverse edges, from every module compiled or analysed as a child.
-      const dependents = new Map<string, Set<string>>();
-      for (const file of new Set([...compiled.keys(), ...childEdges.keys()])) {
-        for (const edge of edgesOf(file)) {
-          if (!dependents.has(edge)) dependents.set(edge, new Set());
-          dependents.get(edge)!.add(file);
-        }
-      }
-      const affected = new Set(files);
-      for (const file of affected) {
-        for (const dependent of dependents.get(file) ?? []) affected.add(dependent);
-      }
-      const recompiled: string[] = [];
-      for (const file of [...affected].toSorted()) {
-        const node = compiled.get(file);
-        if (!node) continue;
-        const source = await readPath(file);
-        if (source === undefined) {
-          compiled.delete(file);
-          continue;
-        }
-        const { key, edges } = await keyOf(source, node.calls);
-        if (key === node.key) {
-          // What it read is unchanged, but where it read it may not be (ADR-0071).
-          node.edges = new Set([...edges, ...node.result.dependencies]);
-          node.edges.delete(file);
-          continue;
-        }
-        await build(file, source);
-        recompiled.push(file);
-      }
-      // A copy no compiled module reaches any more goes with its last importer.
-      const live = new Set([...compiled.values()].flatMap((node) => [...node.copies]));
-      for (const file of copies.keys()) if (!live.has(file)) copies.delete(file);
-      const copied = [...new Set([...before.keys(), ...copies.keys()])].filter(
-        (file) => before.get(file) !== copies.get(file),
-      );
-      return { compiled: recompiled, copied: copied.toSorted() };
-    },
+    update: (files) => inSession(() => updateFiles(files), true),
   };
+
+  /**
+   * Routes changed files through the project (`Project.update`), in a fresh session: what it
+   * reads of a child is the child as it is now.
+   */
+  async function updateFiles(files: readonly string[]): Promise<ProjectUpdate> {
+    await typeOracle?.update({ files: [...files] });
+    const before = new Map(copies);
+    for (const file of files) {
+      if (!copies.has(file)) continue;
+      const source = await readPath(file);
+      if (source === undefined) copies.delete(file);
+      else copies.set(file, source);
+    }
+    // The reverse edges, from every module compiled or analysed as a child.
+    const dependents = new Map<string, Set<string>>();
+    for (const file of new Set([...compiled.keys(), ...childEdges.keys()])) {
+      for (const edge of edgesOf(file)) {
+        if (!dependents.has(edge)) dependents.set(edge, new Set());
+        dependents.get(edge)!.add(file);
+      }
+    }
+    const affected = new Set(files);
+    for (const file of affected) {
+      for (const dependent of dependents.get(file) ?? []) affected.add(dependent);
+    }
+    const recompiled: string[] = [];
+    for (const file of [...affected].toSorted()) {
+      const node = compiled.get(file);
+      if (!node) continue;
+      const source = await readPath(file);
+      if (source === undefined) {
+        compiled.delete(file);
+        continue;
+      }
+      const { key, edges } = await keyOf(source, node.calls);
+      if (key === node.key) {
+        // What it read is unchanged, but where it read it may not be (ADR-0071).
+        node.edges = new Set([...edges, ...node.result.dependencies]);
+        node.edges.delete(file);
+        continue;
+      }
+      await build(file, source);
+      recompiled.push(file);
+    }
+    // A copy no compiled module reaches any more goes with its last importer.
+    const live = new Set([...compiled.values()].flatMap((node) => [...node.copies]));
+    for (const file of copies.keys()) if (!live.has(file)) copies.delete(file);
+    const copied = [...new Set([...before.keys(), ...copies.keys()])].filter(
+      (file) => before.get(file) !== copies.get(file),
+    );
+    return { compiled: recompiled, copied: copied.toSorted() };
+  }
 }
 
 /**
  * A resolver over files (ADR-0053): a project's (ADR-0071), which reads the imported file,
  * analyses it up to its declarations, its types read through the type oracle (ADR-0067), and
  * gives its API with its `file` relative to the importer. The analysis is cached by the contents
- * of the file, its stylesheets and its shapes, so an edit that leaves the API alone resolves to
- * the same API, and the parent compiles to the same bytes. A child's API is read from its
- * declarations alone, never from its own `.uf.tsx` imports, so a cycle cannot make it loop: only
- * `cycle` resolves those, for their APIs.
+ * of the file, its stylesheets, its shapes and its own children's APIs, so an edit that leaves
+ * the API alone resolves to the same API, and the parent compiles to the same bytes. A child's
+ * API is read from its declarations and its own children's APIs, which give a root component's
+ * tags (ADR-0118), each child read once while a resolve is in flight: an import back to a child
+ * being read on the same path reads no API, and only `cycle` reports it.
  * Its stylesheets are read, for the scope id its API carries (ADR-0063). It reads a stylesheet for
  * `stylesheet` too, and for `module` a shared `.ts` module, a specifier without an extension
  * naming its `.ts`, and follows its relative imports through every `.ts` module they reach, each

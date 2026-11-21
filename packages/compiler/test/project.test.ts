@@ -632,3 +632,101 @@ describe("a directive's value checked by the oracle (ADR-0109)", () => {
     expect(project.dependencies("Panel.uf.tsx")).not.toContain("tone.ts");
   });
 });
+
+/**
+ * A layered graph: `depth` layers of two components, each importing and rendering both of
+ * the next layer's, whose last layer renders a `<button>`, and a parent of the first layer.
+ */
+function layered(depth: number): Record<string, string> {
+  const files: Record<string, string> = {};
+  for (let layer = 0; layer < depth; layer++) {
+    for (const name of [`X${layer}`, `Y${layer}`]) {
+      const [x, y] = [`X${layer + 1}`, `Y${layer + 1}`];
+      files[`${name}.uf.tsx`] =
+        layer === depth - 1
+          ? `export default function ${name}() {\n  return <button type="button">${name}</button>;\n}\n`
+          : `import ${x} from "./${x}.uf.tsx";\nimport ${y} from "./${y}.uf.tsx";\nexport default function ${name}() {\n  return <div><${x} /><${y} /></div>;\n}\n`;
+    }
+  }
+  files["Page.uf.tsx"] =
+    'import X0 from "./X0.uf.tsx";\nimport Y0 from "./Y0.uf.tsx";\nexport default function Page() {\n  return <main><X0 /><Y0 /></main>;\n}\n';
+  return files;
+}
+
+/** A project over `initial` that counts the files it reads. */
+function counted(initial: Record<string, string>) {
+  const files = new Map(Object.entries(initial).map(([path, text]) => [`/project/${path}`, text]));
+  const reads = { count: 0 };
+  const readFile = (path: string) => {
+    reads.count++;
+    return Promise.resolve(files.get(path));
+  };
+  const project = createProject({ root: "/project", readFile, targets: ["vue"] });
+  return { project, reads, files };
+}
+
+describe("a child's own children (ADR-0118)", () => {
+  it("reads each child about once per compile and update, however many paths reach it", async () => {
+    for (const depth of [4, 12]) {
+      const initial = layered(depth);
+      const { project, reads, files } = counted(initial);
+      const total = Object.keys(initial).length;
+      expect((await project.compile("Page.uf.tsx")).diagnostics).toEqual([]);
+      // Each file is read as a child, then again by the two imports' cycle searches.
+      expect(reads.count).toBeLessThanOrEqual(4 * total);
+      reads.count = 0;
+      const last = `Y${depth - 1}.uf.tsx`;
+      files.set(`/project/${last}`, initial[last]!.replace("<button", '<button title="t"'));
+      await project.update([last]);
+      expect(reads.count).toBeLessThanOrEqual(4 * total);
+    }
+  });
+
+  it("gives a resolve of a child that another resolve is reading its root component's tags", async () => {
+    const files = new Map([
+      [
+        "/project/Base.uf.tsx",
+        'export default function Base() {\n  return <button type="button">Go</button>;\n}\n',
+      ],
+      [
+        "/project/Wrap.uf.tsx",
+        'import Base from "./Base.uf.tsx";\nexport default function Wrap() {\n  return <Base />;\n}\n',
+      ],
+    ]);
+    // Base reads once the second resolve has started, while the first is reading Wrap's children.
+    let open!: () => void;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    let reached!: () => void;
+    const reading = new Promise<void>((resolve) => (reached = resolve));
+    const readFile = async (path: string) => {
+      if (path.endsWith("/Base.uf.tsx")) {
+        reached();
+        await gate;
+      }
+      return files.get(path);
+    };
+    const project = createProject({ root: "/project", readFile, targets: ["vue"] });
+    const first = project.resolve({ specifier: "./Wrap.uf.tsx", importer: "A.uf.tsx" });
+    await reading;
+    const second = project.resolve({ specifier: "../Wrap.uf.tsx", importer: "nested/B.uf.tsx" });
+    open();
+    const apis = await Promise.all([first, second]);
+    expect(apis.map((api) => api?.components[0]?.fallthroughTag)).toEqual(["button", "button"]);
+    expect(apis.map((api) => api?.file)).toEqual(["Wrap.uf.tsx", "../Wrap.uf.tsx"]);
+  });
+
+  it("ends a cycle that concurrent resolves enter from both of its ends", async () => {
+    const { project } = counted({
+      "Ping.uf.tsx":
+        'import Pong from "./Pong.uf.tsx";\nexport default function Ping() {\n  return <Pong />;\n}\n',
+      "Pong.uf.tsx":
+        'import Ping from "./Ping.uf.tsx";\nexport default function Pong() {\n  return <Ping />;\n}\n',
+    });
+    const apis = await Promise.all(
+      ["./Ping.uf.tsx", "./Pong.uf.tsx"].map((specifier) =>
+        project.resolve({ specifier, importer: "Page.uf.tsx" }),
+      ),
+    );
+    expect(apis.map((api) => api?.components[0]?.name)).toEqual(["Ping", "Pong"]);
+  });
+});
