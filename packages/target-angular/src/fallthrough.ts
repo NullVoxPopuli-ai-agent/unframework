@@ -227,9 +227,12 @@ function restElement(
  * the type of the listeners' record. Angular has no attribute spread, so it emulates Vue's
  * `$attrs`: as the record changes it sets each attribute through `Renderer2`, removes one that
  * is `null` or `undefined` as `[attr.name]` does, and so overrides the element's own attribute
- * of the name, the consumer's winning, on the server and in the browser; in the browser it
- * listens to each event with `Renderer2.listen`, again on a new handler, and stops with the
- * element. Its inputs are set after the element's own listeners are added, so those run first.
+ * of the name, the consumer's winning, on the server and in the browser. It writes only as the
+ * record changes, so an attribute the element binds itself binds the consumer's value where the
+ * record has its name (`consumerFirst` in ./template.ts), or Angular would write the element's
+ * own over it each time that binding changes. In the browser it listens to each event with
+ * `Renderer2.listen`, again on a new handler, and stops with the element. Its inputs are set
+ * after the element's own listeners are added, so those run first.
  */
 export function fallthroughDirectiveCode(
   names: { listeners: string; directive?: string },

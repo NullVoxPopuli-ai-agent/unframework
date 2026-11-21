@@ -211,6 +211,14 @@ export function template(
         text: `[${FALLTHROUGH_ATTRIBUTE}]="{ attributes: ${CONSUMER_ATTRIBUTES}, listeners: ${CONSUMER_LISTENERS} }"`,
       },
     ],
+    // The element that takes the consumer's attributes, which binds the directive (its `Rest`),
+    // binds its own of a name the consumer passes to the consumer's value (ADR-0118): the
+    // directive writes the record only as it changes, and Angular writes the element's own
+    // binding each time its value does, which would otherwise override the consumer's.
+    boundAttribute: (name, code, context) =>
+      context.element.attributes.some((attribute) => attribute.kind === "Rest")
+        ? consumerFirst(name, code, context)
+        : angularDialect.boundAttribute(name, code, context),
     // What a child does not declare goes into its records (ADR-0118), on the host, which so
     // carries no attribute and is unwrapped (ADR-0010).
     fallthroughAttributes: (passed, context) =>
@@ -487,6 +495,28 @@ function fallthroughRecords(
   record(ATTRIBUTES_INPUT, attributes, CONSUMER_ATTRIBUTES);
   record(LISTENERS_INPUT, listeners, CONSUMER_LISTENERS);
   return printed;
+}
+
+/**
+ * An attribute the element that takes the consumer's binds itself, merged as Vue merges `$attrs`
+ * on each render (ADR-0118): the consumer's value where its record has the name, even a nullish
+ * one, which removes the attribute, and the element's own otherwise,
+ * `[attr.type]="'type' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['type'] : kind"`.
+ * The record holds a boolean attribute's value as `[attr.name]` binds it already
+ * (`fallthroughRecords`), so only the element's own is tested.
+ */
+function consumerFirst(
+  name: string,
+  code: string,
+  { namespace }: Parameters<MarkupDialect["boundAttribute"]>[2],
+): string {
+  const own =
+    namespace === "html" && BINDABLE_BOOLEAN_ATTRIBUTES.has(name)
+      ? `${test(code)} ? "" : null`
+      : code;
+  const key = JSON.stringify(name);
+  const merged = `${key} in (${CONSUMER_ATTRIBUTES} ?? {}) ? ${CONSUMER_ATTRIBUTES}?.[${key}] : ${own}`;
+  return `[attr.${name}]="${angularCode(merged, "attribute")}"`;
 }
 
 /** A record's key: the name itself where it is an identifier, quoted otherwise. */

@@ -488,7 +488,8 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "    @let tone = this.tone();",
         "    @let count = this.count();",
         "    <p",
-        '      [attr.data-tone]="tone"',
+        // The root's own attribute, unless the consumer passes it (ADR-0118).
+        "      [attr.data-tone]=\"'data-tone' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-tone'] : tone\"",
         '      [class]="this.class()"',
         '      [style]="this.style()"',
         `      ${PASSED}`,
@@ -1033,7 +1034,7 @@ export default function Match({ label, on }: MatchProps) {
       "@let label = this.label();",
       "@let on = this.on();",
       "<div",
-      "[attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
+      "[attr.title]=\"'title' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['title'] : /\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
       '[class]="this.class()"',
       '[style]="this.style()"',
       PASSED,

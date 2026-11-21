@@ -98,7 +98,60 @@ export default function Page() {
 }
 `;
 
+/** A root and a rest's element that bind attributes a consumer may pass too. */
+const OWN_BINDINGS = `import { defineOptions, ref } from "@uxfront/unframework";
+
+function Btn({ label }: { label: string }) {
+  const kind = ref<"button" | "reset">("button");
+  return (
+    <button
+      type={kind.value}
+      disabled={kind.value === "reset"}
+      onClick={() => (kind.value = kind.value === "button" ? "reset" : "button")}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Field({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const hint = ref("email");
+  return (
+    <label>
+      {label} <input {...rest} placeholder={hint.value} />
+    </label>
+  );
+}
+
+export default function Page() {
+  return (
+    <div>
+      <Btn label="x" type="submit" />
+      <Field label="Email" placeholder="you@example.com" />
+    </div>
+  );
+}
+`;
+
 describe("what falls through a component (ADR-0118)", () => {
+  it("binds the consumer's value of an attribute the element that takes it binds itself", async () => {
+    const files = filesOf(OWN_BINDINGS);
+    expect(files.get("btn.ts")).toContain(
+      `[attr.type]="'type' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['type'] : kind"`,
+    );
+    // The record holds a boolean attribute's value as bound, so only the element's own is tested.
+    expect(files.get("btn.ts")).toContain(
+      `[attr.disabled]="'disabled' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['disabled'] : kind === 'reset' ? '' : null"`,
+    );
+    expect(files.get("field.ts")).toContain(
+      `[attr.placeholder]="'placeholder' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['placeholder'] : hint"`,
+    );
+    // An element that takes nothing binds its own as written.
+    expect(files.get("page.ts")).not.toContain("' in (");
+    expect(await l3Errors(OWN_BINDINGS)).toEqual([]);
+  }, 120_000);
+
   it("gives a root element the directive, the inputs and the element a ref holds", () => {
     const base = filesOf(FORWARDING).get("base.ts")!;
     expect(base).toContain('@Directive({ selector: "[ufFallthrough]" })');
