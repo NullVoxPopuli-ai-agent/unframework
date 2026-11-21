@@ -2126,6 +2126,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     comments: parsed.comments,
     authoring,
     component: fn,
+    components: module.components,
     props,
     statements: body.slice(0, -1),
     returned: returned ?? undefined,

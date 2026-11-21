@@ -207,6 +207,9 @@ export function lowerComponentAs(
     if (prop) attributes.push(prop);
   }
   attributes.push(...lowerFallthrough(fallthrough, node.openingElement, api, info, render));
+  // In source order, as written: what falls through is lowered apart, and the first construct a
+  // target lacks is reported where the source first writes it (UF4001).
+  attributes.sort((a, b) => a.span.start - b.span.start);
   const fills = lowerFills(node, api, info, render, items !== undefined);
   if (!fills || reporter.hasErrorsSince(mark)) return { node: undefined, key };
   return { node: createComponentNode(info.name, attributes, fills, span(node)), key };
@@ -539,7 +542,7 @@ function passesAttribute(attribute: string, api: ComponentApi): boolean {
  * listens to no event the component declares, with or without an option suffix, and to a DOM
  * event.
  */
-function passesListener(attribute: string, api: ComponentApi): boolean {
+export function passesListener(attribute: string, api: ComponentApi): boolean {
   const event = eventName(attribute);
   if (api.events.some((each) => each.name === event)) return false;
   const suffix = OPTION_SUFFIXES.find((each) => attribute.endsWith(each));
