@@ -1,4 +1,5 @@
 ---
+import Bio from "./Bio.astro";
 import NameField from "./NameField.astro";
 import type { HTMLAttributes } from "astro/types";
 
@@ -13,4 +14,6 @@ const { class: className, style, "aria-label": ariaLabel = "Profile", ...attrs }
 <form aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
   <NameField label="Name" />
   <button type="button">Edit name</button>
+  <Bio label="Bio" />
+  <button type="button">Edit bio</button>
 </form>
