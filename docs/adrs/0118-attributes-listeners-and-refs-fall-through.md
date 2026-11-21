@@ -31,7 +31,9 @@ Vue's rule, for components with one root:
   which places it by the same rule. The parent checks it as an attribute of that element, the
   **fallthrough element**, so the element rules hold (canonical names, enumerated values, ARIA).
   A name that is no attribute of it stays UF3035. The consumer's value wins over the root's own.
-  `class` and `style` keep ADR-0054's merge. `key` is no attribute, and `ref` follows D4.
+  `class` and `style` keep ADR-0054's merge. `key` is no attribute, and `ref` follows D4. A
+  name a root component declares, a prop, a model or an event, is UF1002 where it would fall
+  through to it, since Vue would give it to that declaration and the others to the element.
 - **Listeners (D2).** An `onX` of a DOM event the component does not declare is a native
   listener on the fallthrough element, lowered as that element's own listener would be. An `onX`
   that is neither is UF3036. Where the root has its own listener of the same event, both run, the
@@ -51,9 +53,12 @@ Vue's rule, for components with one root:
   the element too: one ref has one value of one type, and merging functions onto an element
   collides with its members (`focus`). A component that wants both exposes a function that acts
   on its element. UF3046 reports a ref whose type is not the root's interface, and one on a
-  component whose root is not one element.
-- **The API (D5).** `ComponentApi` gains `fallthroughTag` and `refTag`. The resolver reads a
-  child with its own children's APIs, so a root component's tags reach a parent in another file.
+  component whose root is not one element. It also reports a ref through a root component that
+  exposes, which would hold that component's functions and no element.
+- **The API (D5).** `ComponentApi` gains `fallthroughTag` and `refTag`, with
+  `fallthroughNamespace`, `rootDeclarations` and `exposingRoot` for the checks above. The
+  resolver reads a child with its own children's APIs, each once per compile, so a root
+  component's tags reach a parent in another file.
 - **IR.** A component element takes `Static`, `Bound` and `Event` attributes, which fall through.
   An element takes `Rest`, `{...rest}`. No new diagnostic code and no new capability: the
   `fallthrough` and `expose` cells widen.
