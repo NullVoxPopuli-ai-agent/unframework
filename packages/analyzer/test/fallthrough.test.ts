@@ -239,3 +239,156 @@ describe("the props' rest", () => {
     expect(problems(source, run(source).diagnostics)).toEqual(["UF2001 {...rest}"]);
   });
 });
+
+describe("what a parent cannot pass, and how it is told", () => {
+  const module = (body: string) =>
+    `import { defineEmits, defineExpose, defineOptions, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";\n${body}`;
+  const apiOf = (result: ReturnType<typeof run>, name: string) =>
+    result.api!.components.find((each) => each.name === name)!;
+
+  it("reports an attribute whose camel case is a prop, on every target alike", () => {
+    const source = module(
+      'function Tag({ ariaLabel, dataId }: { ariaLabel?: string; dataId?: string }) {\n  return <span>{ariaLabel ?? dataId}</span>;\n}\nexport function Page() {\n  return <div><Tag aria-label="hi" /><Tag data-id="x" /></div>;\n}\n',
+    );
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3035 aria-label", "UF3035 data-id"]);
+    expect(diagnostics[0]!.message).toContain("prop `ariaLabel`");
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      '<Tag ariaLabel="hi" /><Tag dataId="x" />',
+    );
+  });
+
+  it("reports the props' rest spread inside a slot's fill, scoped or not", () => {
+    for (const fill of [
+      "{{ item: ({ item }) => <b {...rest}>{item}</b> }}",
+      "<b {...rest}>{items[0]}</b>",
+    ]) {
+      const source = module(
+        `function List({ items }: { items: string[] }) {\n  const slots = defineSlots<{ default?(): any; item?(props: { item: string }): any }>();\n  return <ul>{items.map((item) => <li key={item}>{slots.item?.({ item })}{slots.default?.()}</li>)}</ul>;\n}\nexport function Box({ items, ...rest }: { items: string[] }) {\n  defineOptions({ inheritAttrs: false });\n  return <List items={items}>${fill}</List>;\n}\n`,
+      );
+      const { diagnostics } = run(source);
+      expect(problems(source, diagnostics)).toEqual(["UF2001 {...rest}"]);
+      expect(diagnostics[0]!.message).toContain("slot's fill");
+    }
+  });
+
+  it("suggests the fallthrough element's attributes and DOM events for a misspelt name", () => {
+    const { source, diagnostics } = parent(
+      '<Save title="Save" tpye="submit" aria-pressd="true" onClik={() => {}} />',
+    );
+    expect(problems(source, diagnostics)).toEqual([
+      "UF3035 tpye",
+      "UF3035 aria-pressd",
+      "UF3036 onClik",
+    ]);
+    expect(diagnostics.map((each) => each.message.match(/Did you mean `([^`]+)`/)?.[1])).toEqual([
+      "type",
+      "aria-pressed",
+      "onClick",
+    ]);
+    expect(diagnostics[0]!.help).toContain("an attribute of <button>");
+    // Never an attribute the element would reject by its name alone.
+    const later = parent('<Save title="Save" autofocs />');
+    expect(later.diagnostics.map((each) => each.message)).not.toContainEqual(
+      expect.stringContaining("Did you mean"),
+    );
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      '<Save title="Save" type="submit" aria-pressed="true" onClick={() => {}} />',
+    );
+  });
+
+  it("reports a ref on a component whose root component exposes, saying why", () => {
+    const source = module(
+      "function SearchField() {\n  const input = useTemplateRef<HTMLInputElement>();\n  function focus() {\n    input.value?.focus();\n  }\n  defineExpose({ focus });\n  return <label>Search <input ref={input} /></label>;\n}\nfunction Wrap() {\n  return <SearchField />;\n}\nexport function Page() {\n  const wrap = useTemplateRef<HTMLLabelElement>();\n  return <Wrap ref={wrap} />;\n}\n",
+    );
+    const result = run(source);
+    expect(apiOf(result, "Wrap").exposingRoot).toBe("SearchField");
+    expect(codes(result.diagnostics)).toEqual(["UF3046"]);
+    expect(result.diagnostics[0]!.message).toBe(
+      "`Wrap`'s root, `SearchField`, exposes functions, so a ref on `Wrap` holds neither its element nor those functions.",
+    );
+  });
+
+  it("checks what falls through to an SVG element as SVG's", () => {
+    const source = module(
+      'function G({ label, ...rest }: { label: string }) {\n  defineOptions({ inheritAttrs: false });\n  return <svg aria-label={label}><circle {...rest} r="1" /></svg>;\n}\nfunction Outer({ label }: { label: string }) {\n  return <G label={label} />;\n}\nexport function Page() {\n  return <div><G label="x" cx="1" stroke-width="2" /><Outer label="y" cy="2" /></div>;\n}\n',
+    );
+    const result = run(source);
+    expect(result.diagnostics).toEqual([]);
+    expect([
+      apiOf(result, "G").fallthroughNamespace,
+      apiOf(result, "Outer").fallthroughNamespace,
+    ]).toEqual(["svg", "svg"]);
+    expect(
+      componentNode(result.module).attributes.flatMap((each) =>
+        each.kind === "Static" ? [each.name] : [],
+      ),
+    ).toEqual(["cx", "stroke-width"]);
+  });
+
+  it("reports what reaches a root component's own declarations through the root", () => {
+    const source = module(
+      'function Base({ text, tone }: { text: string; tone?: string }) {\n  const emit = defineEmits<{ click: [n: number] }>();\n  return <button type="button" title={tone} onClick={() => emit("click", 42)}>{text}</button>;\n}\nfunction Primary({ text }: { text: string }) {\n  return <Base text={text} />;\n}\nfunction Outer({ text }: { text: string }) {\n  return <Primary text={text} />;\n}\nexport function Page() {\n  const out = ref("");\n  return <div><Primary text="go" onClick={(event) => (out.value = String(event.clientX))} /><Outer text="go" title="t" onClick={() => {}} /><p>{out.value}</p></div>;\n}\n',
+    );
+    const result = run(source);
+    expect(apiOf(result, "Outer").rootDeclarations).toEqual([
+      { name: "text", kind: "prop", component: "Primary" },
+      { name: "text", kind: "prop", component: "Base" },
+      { name: "tone", kind: "prop", component: "Base" },
+      { name: "click", kind: "event", component: "Base" },
+    ]);
+    expect(problems(source, result.diagnostics)).toEqual(["UF1002 onClick", "UF1002 onClick"]);
+    expect(result.diagnostics[0]!.message).toBe(
+      "`onClick` reaches Base's own `click` event through Primary's root, and what falls through to a root component's own declarations is not supported yet (ADR-0118).",
+    );
+    // A prop's name, in kebab case too.
+    const prop = module(
+      'function Base({ dataNote }: { dataNote?: string }) {\n  return <button type="button">{dataNote}</button>;\n}\nfunction Primary() {\n  return <Base />;\n}\nexport function Page() {\n  return <Primary id="p" data-note="n" />;\n}\n',
+    );
+    expect(problems(prop, run(prop).diagnostics)).toEqual(["UF1002 data-note"]);
+  });
+
+  it("leaves a fallthrough listener's accessibility to the root's own compile", () => {
+    const source = module(
+      'function Box({ label }: { label: string }) {\n  return <div role="button" tabindex="0" aria-label={label}>x</div>;\n}\nexport function Page() {\n  return <Box label="x" onDblclick={() => {}} />;\n}\n',
+    );
+    expect(run(source).diagnostics).toEqual([]);
+  });
+
+  it("names a slot passed as an attribute a slot", () => {
+    const source = module(
+      'function Card() {\n  const slots = defineSlots<{ title?(): any }>();\n  return <button type="button">{slots.title?.()}</button>;\n}\nexport function Page() {\n  return <Card title="x" />;\n}\n',
+    );
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF3035 title"]);
+    expect(diagnostics[0]!.message).toContain("is a slot of Card");
+  });
+
+  it("rejects the props' rest on <component is> once", () => {
+    const source = module(
+      'export function Box({ tag, ...rest }: { tag: "h2" | "h3" }) {\n  defineOptions({ inheritAttrs: false });\n  return <component is={tag} {...rest}>x</component>;\n}\n',
+    );
+    const result = run(source);
+    expect(problems(source, result.diagnostics)).toEqual(["UF2001 {...rest}"]);
+    expect(apiOf(result, "Box").fallthroughTag).toBeUndefined();
+  });
+
+  it("adds defineOptions to the import once for two components", () => {
+    const source = `import { ref } from "@uxfront/unframework";\nexport function A({ label, ...rest }: { label: string }) {\n  const on = ref(false);\n  return <p {...rest} class={on.value ? "on" : "off"}>{label}</p>;\n}\nexport function B({ label, ...rest }: { label: string }) {\n  const on = ref(true);\n  return <p {...rest} class={on.value ? "on" : "off"}>{label}</p>;\n}\n`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF2001", "UF2001"]);
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      'import { ref, defineOptions } from "@uxfront/unframework";',
+    );
+  });
+});
+
+describe("<component is> with component candidates", () => {
+  it("passes them class and style, and reports the rest of what would fall through", () => {
+    const { source, diagnostics } = parent(
+      '<component is={on.value ? Save : Wrapped} title="Save" class="a" id="x" onClick={() => {}} />',
+      "const on = ref(false);",
+    );
+    expect(problems(source, diagnostics)).toEqual(["UF1002 id", "UF1002 onClick"]);
+  });
+});

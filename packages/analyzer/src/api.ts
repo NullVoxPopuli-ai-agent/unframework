@@ -5,7 +5,13 @@
 // child or resolving the child's own children. The declarations' rules are the setup's and the
 // props' to check (`./setup.ts`, `./props.ts`): a child whose API is wrong fails its own compile.
 
-import type { ApiEvent, ApiMember, ApiSlot, ComponentApi } from "@unframework.dev/ir";
+import type {
+  ApiEvent,
+  ApiMember,
+  ApiRootDeclaration,
+  ApiSlot,
+  ComponentApi,
+} from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 import { isComponentName, parseModule } from "@unframework.dev/parser";
 import { printShape } from "@unframework.dev/type-oracle";
@@ -88,8 +94,15 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   // Where what a consumer passes lands (ADR-0118): the root element, or with `inheritAttrs:
   // false` the element that spreads the props' rest. A root component's is its own, which
   // `fillRootComponents` reads once every component's API is known.
-  const fallthroughTag = api.inheritAttrs ? root.tag : restTag(node);
-  if (fallthroughTag !== undefined) api.fallthroughTag = fallthroughTag;
+  const fallthrough = api.inheritAttrs
+    ? root.tag === undefined
+      ? undefined
+      : { tag: root.tag, svg: root.tag === "svg" }
+    : restElement(node);
+  if (fallthrough) {
+    api.fallthroughTag = fallthrough.tag;
+    if (fallthrough.svg) api.fallthroughNamespace = "svg";
+  }
   // A ref holds what the component exposes, or else its root element (ADR-0118).
   if (!api.exposes.length && root.tag !== undefined) api.refTag = root.tag;
   return api;
@@ -98,8 +111,10 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
 /**
  * Fills the fallthrough and ref tags of the components whose root is a component (ADR-0118):
  * each takes its root component's own, through a chain of root components in the module, and
- * from an imported one's API, which the resolver read with its own imports. `rootApi` gives the
- * API of the component a root names, if it is known.
+ * from an imported one's API, which the resolver read with its own imports. With them, what a
+ * parent cannot pass through such a root: the names the chain declares, and the root component
+ * that exposes, which a ref cannot reach through. `rootApi` gives the API of the component a
+ * root names, if it is known.
  */
 export function fillRootComponents(
   apis: readonly { node: ComponentFunction; api: ComponentApi }[],
@@ -118,15 +133,45 @@ export function fillRootComponents(
       if (!child) continue;
       if (api.inheritAttrs && child.fallthroughTag !== undefined && !api.fallthroughTag) {
         api.fallthroughTag = child.fallthroughTag;
+        if (child.fallthroughNamespace) api.fallthroughNamespace = child.fallthroughNamespace;
         changed = true;
       }
       if (!api.exposes.length && child.refTag !== undefined && !api.refTag) {
         api.refTag = child.refTag;
         changed = true;
       }
+      // What a consumer passes reaches the root component, whose declarations take it first.
+      const declarations = api.inheritAttrs ? declarationsOf(child) : [];
+      if (declarations.length !== (api.rootDeclarations?.length ?? 0)) {
+        api.rootDeclarations = declarations;
+        changed = true;
+      }
+      const exposing = api.exposes.length
+        ? undefined
+        : child.exposes.length
+          ? child.name
+          : child.exposingRoot;
+      if (exposing !== undefined && api.exposingRoot !== exposing) {
+        api.exposingRoot = exposing;
+        changed = true;
+      }
     }
     if (!changed) break;
   }
+}
+
+/**
+ * What a root component declares (ADR-0118), its own names then its own root's, through which
+ * the names a consumer passes to the component that renders it would fall through.
+ */
+function declarationsOf(child: ComponentApi): ApiRootDeclaration[] {
+  const component = child.name;
+  return [
+    ...child.props.map(({ name }) => ({ name, kind: "prop" as const, component })),
+    ...child.models.map(({ name }) => ({ name, kind: "model" as const, component })),
+    ...child.events.map(({ name }) => ({ name, kind: "event" as const, component })),
+    ...(child.rootDeclarations ?? []),
+  ];
 }
 
 /** The JSX element a component returns, without parentheses. */
@@ -148,10 +193,11 @@ function rootElementOf(node: ComponentFunction): AST.JSXElement | undefined {
 }
 
 /**
- * The tag of the element that spreads the props' rest, `<input {...rest} />` (ADR-0118): the
- * first in source order, as the setup's checks allow one only.
+ * The element that spreads the props' rest, `<input {...rest} />` (ADR-0118): the first in
+ * source order, as the setup's checks allow one only, with whether it is an SVG element, inside
+ * an `<svg>` as the analyser places it. `<component is>` is none: its rest is UF2001.
  */
-function restTag(node: ComponentFunction): string | undefined {
+function restElement(node: ComponentFunction): { tag: string; svg: boolean } | undefined {
   const [parameter] = node.params;
   const pattern = parameter?.type === "ObjectPattern" ? parameter : undefined;
   const rest = pattern?.properties.find((property) => property.type === "RestElement");
@@ -160,14 +206,19 @@ function restTag(node: ComponentFunction): string | undefined {
   const statements = node.body?.type === "BlockStatement" ? node.body.body : [];
   const last = statements.at(-1);
   const returned = node.body?.type === "BlockStatement" ? last : node.body;
-  let found: string | undefined;
-  const visit = (value: unknown): void => {
+  let found: { tag: string; svg: boolean } | undefined;
+  const visit = (value: unknown, svg: boolean): void => {
     if (found !== undefined || !value || typeof value !== "object") return;
     if (Array.isArray(value)) {
-      for (const each of value) visit(each);
+      for (const each of value) visit(each, svg);
       return;
     }
     const each = value as { type?: unknown };
+    let inside = svg;
+    if (each.type === "JSXElement") {
+      const tag = (value as AST.JSXElement).openingElement.name;
+      if (tag.type === "JSXIdentifier" && tag.name === "svg") inside = true;
+    }
     if (each.type === "JSXOpeningElement") {
       const opening = value as AST.JSXOpeningElement;
       if (
@@ -180,15 +231,15 @@ function restTag(node: ComponentFunction): string | undefined {
             item.argument.name === name,
         )
       ) {
-        found = opening.name.name;
+        if (opening.name.name !== "component") found = { tag: opening.name.name, svg };
         return;
       }
     }
     for (const [key, child] of Object.entries(value)) {
-      if (key !== "parent") visit(child);
+      if (key !== "parent") visit(child, inside);
     }
   };
-  visit(returned);
+  visit(returned, false);
   return found;
 }
 

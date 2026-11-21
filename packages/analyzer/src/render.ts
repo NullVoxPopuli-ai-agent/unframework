@@ -200,6 +200,11 @@ export interface RenderContext {
   readonly loopVariables: Map<object, LoopVariable>;
   /** The loop variables of the lists around the node being lowered, outermost first. */
   readonly enclosing: LoopVariable[];
+  /**
+   * Set while a slot's fill is lowered (ADR-0054): a function the child may call many times, so
+   * what renders once cannot be in it, as in a list.
+   */
+  readonly fill?: true;
   /** What the setup declares. */
   readonly setup: SetupScope;
   /** The `ref` attribute that attaches each template ref, by the identifier that declares it. */

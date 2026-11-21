@@ -496,6 +496,25 @@ export interface ComponentApi {
    */
   fallthroughTag?: string;
   /**
+   * `svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element
+   * inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent
+   * for an HTML element.
+   */
+  fallthroughNamespace?: "svg";
+  /**
+   * What the components the root renders declare, through a chain of root components, nearest
+   * first (ADR-0118): a name a consumer passes that would fall through reaches that component's
+   * own prop, model or event instead, which the targets do not pass alike, so a parent reports
+   * it (UF1002). Absent where the root is no component, or nothing falls through to it.
+   */
+  rootDeclarations?: ApiRootDeclaration[];
+  /**
+   * The root component that exposes functions (ADR-0118), through a chain of root components
+   * that expose nothing, where this component exposes nothing either: a ref on it holds neither
+   * an element nor those functions, so a parent reports it (UF3046). Absent otherwise.
+   */
+  exposingRoot?: string;
+  /**
    * The tag of the element a `ref` on the component holds, where the component exposes nothing
    * (ADR-0118): its root element's, or its root component's own. Absent where a ref holds no
    * element.
@@ -524,6 +543,15 @@ export interface ComponentStylesApi {
   /** @pattern ^[0-9a-f]{8}$ */
   scopeId: string;
   slotted: boolean;
+}
+
+/** A prop, a model or an event that a component's root component declares (ADR-0118). */
+export interface ApiRootDeclaration {
+  /** The prop's or the model's name, or the event's, as `defineEmits` declares it (`click`). */
+  name: string;
+  kind: "prop" | "model" | "event";
+  /** The root component that declares it. */
+  component: string;
 }
 
 /** A prop or a model of a child's API: its name, its optionality and its type as written. */

@@ -79,6 +79,11 @@ export interface ElementContext {
   /** Whether the element is the one a list's `.map` renders: its `key` is the list's. */
   listBody: boolean;
   render: RenderContext;
+  /**
+   * Set where the attributes fall through a component to its fallthrough element (ADR-0118),
+   * whose own attributes only its own compile sees.
+   */
+  fallthrough?: true;
 }
 
 /** An element's attributes, lowered. */
@@ -312,7 +317,9 @@ export function lowerAttributes(
       entry.form.kind === "static" &&
       (entry.form.value?.includes("{{") ?? false),
   )?.node;
-  checkHandlers(opening, entries, element);
+  // The root's own compile checks its element's handlers. A parent cannot see the root's own
+  // attributes, such as its `role` or `tabindex`, so it would report a handler that is fine.
+  if (!element.fallthrough) checkHandlers(opening, entries, element);
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
 }
 
@@ -334,6 +341,11 @@ function restSpread(item: AST.JSXSpreadAttribute, element: ElementContext): Attr
   if (render.enclosing.length) {
     return report(
       `\`${rest.name}\` is spread inside a list: what a consumer passes lands on one element, and a list renders many.`,
+    );
+  }
+  if (render.fill) {
+    return report(
+      `\`${rest.name}\` is spread inside a slot's fill: what a consumer passes lands on one element, and the child may render a fill many times.`,
     );
   }
   if (rest.spread) {
