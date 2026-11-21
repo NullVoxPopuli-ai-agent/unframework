@@ -23,7 +23,7 @@ in the source, and each target's native spread, `splitProps`, host or helper dir
 
 ## Decision
 
-Vue's rule, for components with one root.
+Vue's rule, for components with one root:
 
 - **Attributes (D1).** A component that keeps `inheritAttrs` takes every attribute its consumer
   passes that it does not declare. "Declares" means a prop, a model, a slot or an event from

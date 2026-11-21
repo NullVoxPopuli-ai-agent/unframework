@@ -45,7 +45,7 @@ export class Passed {
   /** The props the component declares, by the names a consumer passes them as. */
   readonly declared: ReadonlySet<string>;
   /** The consumer's listeners the target merges with its own, by prop: their locals. */
-  readonly listeners = new Map<string, string>();
+  readonly listeners: Map<string, string> = new Map();
   #ref: string | undefined;
 
   constructor(

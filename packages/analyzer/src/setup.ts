@@ -69,13 +69,13 @@ import { parseModule, visitorKeys } from "@unframework.dev/parser";
 
 import { inheritAttrsOption, withReferences } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
+import { passesListener } from "./components.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { misplacedDirective } from "./directives.ts";
 import { checkCode, checkDirectives, lowerFunction, span } from "./expressions.ts";
 import { annotatedInterface, listenerName } from "./listeners.ts";
-import { passesListener } from "./components.ts";
 import { isStatic } from "./props.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type {

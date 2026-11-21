@@ -227,7 +227,7 @@ export const qwik: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+      note: "A child cannot know the scope attributes its styled parents pass. A root that spreads the props' rest takes them with it, and elsewhere an inline helper picks them out of its props by name and spreads them on the root, while a rest spread on another element leaves them out through `restAttributes` (ADR-0118).",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a

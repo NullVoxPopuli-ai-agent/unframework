@@ -1065,8 +1065,10 @@ const entries: CatalogueEntry[] = [
     severity: "error",
     title: "`defineOptions` takes a static `{ inheritAttrs: false }`",
     description: [
-      "`defineOptions({ inheritAttrs: false })` stops a parent's `class` and `style` from falling",
-      "through to the component's root. It is the one option every target can honour, and the",
+      "`defineOptions({ inheritAttrs: false })` stops what a parent passes that the component does",
+      "not declare (its `class`, `style`, attributes and DOM listeners) from falling through to the",
+      "component's root, so that a `...rest` in the props pattern takes it instead (ADR-0118). It is",
+      "the one option every target can honour, and the",
       "compiler must know it when the component compiles, so the argument is that object literal and",
       "nothing else.",
       "",
