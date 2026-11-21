@@ -58,6 +58,8 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
   "raw-html-component": "UF3035",
   // `innerHTML` on `<component is>`, which Vue writes as a component (ADR-0097).
   "raw-html-dynamic": "UF1002",
+  // The props' rest without `inheritAttrs: false` (ADR-0118).
+  "rest-props": "UF2001",
 };
 
 /**

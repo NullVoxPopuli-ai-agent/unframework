@@ -122,16 +122,17 @@ describe("component elements", () => {
     expect(diagnostics).toEqual([]);
     const node = componentNode(module!.components[1]!.render);
     expect(node.component).toBe("Field");
+    // In source order, what falls through among the rest (ADR-0118).
     expect(node.attributes.map((attribute) => attribute.kind)).toEqual([
       "Ref",
       "Prop",
       "Prop",
-      "Listener",
       "Class",
       "Style",
+      "Listener",
     ]);
     expect(node.attributes[1]).toMatchObject({ name: "label", value: { code: '"Name"' } });
-    expect(node.attributes[3]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
+    expect(node.attributes[5]).toMatchObject({ event: "clear", handler: { kind: "Inline" } });
   });
 
   it("reports what the component does not declare, with the name it may mean", () => {
