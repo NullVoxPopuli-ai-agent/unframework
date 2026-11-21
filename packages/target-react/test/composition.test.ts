@@ -455,6 +455,36 @@ export default function Page() {
     </div>
   );
 }`,
+  // A ref on components that turn fallthrough off and spread no rest (ADR-0118): it holds the
+  // root element still, beside the root's own template ref, and through a props object.
+  refWithoutFallthrough: `import { defineOptions, onMounted, useTemplateRef } from "@uxfront/unframework";
+function Bio({ label }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  return <input name="bio" aria-label={label} />;
+}
+function Note({ label }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const field = useTemplateRef<HTMLTextAreaElement>();
+  onMounted(() => field.value?.select());
+  return <textarea ref={field} aria-label={label} />;
+}
+function Card(props: { heading: string }) {
+  defineOptions({ inheritAttrs: false });
+  return <article>{props.heading}</article>;
+}
+export default function Page() {
+  const bio = useTemplateRef<HTMLInputElement>();
+  const note = useTemplateRef<HTMLTextAreaElement>();
+  const card = useTemplateRef<HTMLElement>();
+  return (
+    <div>
+      <Bio ref={bio} label="Bio" />
+      <Note ref={note} label="Note" />
+      <Card ref={card} heading="Hi" />
+      <button type="button" onClick={() => { bio.value?.focus(); note.value?.focus(); card.value?.focus(); }}>Focus</button>
+    </div>
+  );
+}`,
 };
 
 describe("react composition beyond the corpus", () => {
@@ -530,6 +560,25 @@ describe("react composition beyond the corpus", () => {
     expect(card).toMatch(
       /const \{ className, style, heading: _heading, note: _note, \.\.\.attributes \} = props;/,
     );
+  });
+
+  it("gives a ref the root element of a component that turns fallthrough off", () => {
+    const probe = emitted.get("refWithoutFallthrough")!;
+    const bio = probe.get("Bio")!;
+    expect(bio).toContain(
+      'export type BioAttributes = Pick<ComponentPropsWithRef<"input">, "ref">;',
+    );
+    expect(bio).toContain("({ label, ref }: { label: string } & BioAttributes)");
+    expect(bio).toContain('<input name="bio" aria-label={label} ref={ref} />');
+    const note = probe.get("Note")!;
+    expect(note).toMatch(
+      /const rootRef = useMemo\(\(\) => mergeRefs\w*\(field, ref\), \[field, ref\]\);/,
+    );
+    expect(note).toContain("<textarea ref={rootRef}");
+    const card = probe.get("Card")!;
+    expect(card).toContain('Pick<ComponentPropsWithRef<"article">, "ref">');
+    expect(card).toContain("const { ref } = props;");
+    expect(card).toContain("<article ref={ref}>");
   });
 
   it("spells what a parent passes as the child's fallthrough element takes it", () => {

@@ -88,6 +88,8 @@ export class ReactComposer {
   /** The fallthrough node, by span, until it spreads the rest; and the root a `ref` holds. */
   #target: string | undefined;
   readonly #refRoot: string | undefined;
+  /** Whether the root takes the consumer's `ref` where it prints none of its own. */
+  readonly #takesRef: boolean;
   /** Whether the root printed a `ref` of its own. */
   #ownRef = false;
 
@@ -95,13 +97,14 @@ export class ReactComposer {
     this.#plan = plan;
     this.#code = code;
     this.#scopeRoots = new Set(plan.composition.scope?.roots);
-    const { passing } = plan.composition;
-    if (passing) {
-      this.#target = spanKey(passing.target.span);
-      const { render } = plan.owner;
-      const [only] = render.kind === "Element" ? [render] : render.children;
-      if (passing.refTag !== undefined && only) this.#refRoot = spanKey(only.span);
-    }
+    const { passing, refTag } = plan.composition;
+    if (passing) this.#target = spanKey(passing.target.span);
+    const { render } = plan.owner;
+    const [only] = render.kind === "Element" ? [render] : render.children;
+    if ((passing?.refTag ?? refTag) !== undefined && only) this.#refRoot = spanKey(only.span);
+    // The root takes the consumer's `ref` apart from the rest where the rest is elsewhere, or
+    // nothing else passes through (ADR-0118).
+    this.#takesRef = passing ? passing.inner : refTag !== undefined;
   }
 
   /**
@@ -206,15 +209,15 @@ export class ReactComposer {
    */
   #passed(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
     const { passing } = this.#plan.composition;
-    if (!passing) return [];
     const key = spanKey(element.span);
     const items: JsxAttributeItem[] = [];
-    if (passing.inner && key === this.#refRoot && !this.#ownRef) {
+    if (this.#takesRef && key === this.#refRoot && !this.#ownRef) {
       this.#ownRef = true;
       items.push(
         js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(this.#consumerRef()))),
       );
     }
+    if (!passing) return items;
     if (key === this.#target) {
       this.#target = undefined;
       const rest = passing.inner

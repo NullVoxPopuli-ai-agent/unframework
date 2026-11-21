@@ -352,39 +352,40 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
   });
 
   // An unused binding fails L5 (oxlint's no-unused-vars), and so does an empty pattern. Each
-  // component takes no `class` or `style` (ADR-0054), so its own props are all it reads.
+  // component takes no `class` or `style` (ADR-0054), and a ref on it holds nothing of its root,
+  // a fragment (ADR-0118), so its own props are all it reads.
   it("leaves out the props nothing reads, defaults included", async () => {
     const props = `import { defineOptions } from "@uxfront/unframework";
 export interface P { label: string; count?: number; tone?: string }\n`;
     expect(
       await output(`${props}export default function A({ label, count = 0, tone }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p title={tone}>Hi</p>;
+  return <><p title={tone}>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A({ tone }: P) {");
     expect(
       await output(`${props}export default function A({ label, count = 0 }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(props: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
     expect(
       await output(`${props}export default function A(_props: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(_: P) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function A(__: P) {");
   });
@@ -671,28 +672,30 @@ export default function A({ cx, CSSProperties }: P) {
     expect(contents).toContain('style={{ "--x": CSSProperties, ...style } as CSSProperties_1}');
     expect(contents).toContain(cxHelper("cx_1"));
     // A type declaration is a name the source declares too. B takes no `class` or `style`
-    // (ADR-0054), so it reads no prop.
+    // (ADR-0054), and no `ref` of its fragment root (ADR-0118), so it reads no
+    // prop.
     expect(
       await output(`import { defineOptions } from "@uxfront/unframework";
 interface _props { label?: string }
 export default function B({ label }: _props) {
   defineOptions({ inheritAttrs: false });
-  return <p>Hi</p>;
+  return <><p>Hi</p><hr /></>;
 }`),
     ).toContain("export default function B(_props_1: _props) {");
   });
 
   it("writes a style as an object, typed as CSSProperties when it sets a custom property", async () => {
-    // Neither takes a consumer's \`style\` (ADR-0054): its own is the subject.
+    // Neither takes a consumer's \`style\` (ADR-0054), nor a \`ref\` of its fragment root (ADR-0118):
+    // its own style is the subject.
     const source = `import { defineOptions } from "@uxfront/unframework";
 export interface P { gap?: string; size: number }
 export function Plain({ gap }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p style="color: red; margin-top: 4px" />;
+  return <><p style="color: red; margin-top: 4px" /><hr /></>;
 }
 export function Bound({ gap, size }: P) {
   defineOptions({ inheritAttrs: false });
-  return <p style={{ marginTop: gap, lineHeight: size, "--gap": gap }} />;
+  return <><p style={{ marginTop: gap, lineHeight: size, "--gap": gap }} /><hr /></>;
 }`;
     const module = lower(source);
     const plain = (await formattedFile(emitComponent(module, "Plain"))).contents;
@@ -737,7 +740,7 @@ export default function Note() {
   defineOptions({ inheritAttrs: false });
   return <textarea name="note">{"  Hello,\\n  world  "}</textarea>;
 }`),
-    ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} />');
+    ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} ref={ref} />');
   });
 });
 

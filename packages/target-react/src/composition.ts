@@ -151,6 +151,11 @@ export interface CompositionPlan {
   readonly fallthrough?: FallthroughPlan;
   /** What passes through to the fallthrough node, where its tag is known (ADR-0118). */
   readonly passing?: PassingPlan;
+  /**
+   * The tag of the root element a consumer's `ref` holds where nothing passes through: fallthrough
+   * is off, no element spreads the props' rest, and the component exposes nothing (ADR-0118).
+   */
+  readonly refTag?: string;
   readonly scope?: ScopePlan;
   /** The `ref` prop's local and the handle's interface, where the component exposes functions. */
   readonly expose?: { ref: string; handle: string };
@@ -318,6 +323,10 @@ export function planComposition(
           ...(component.exposes ? {} : refTagOf(component, module)),
         }
       : undefined;
+  // With fallthrough off and no rest, nothing passes through, but a ref on the component still
+  // holds its root element (ADR-0118).
+  const refRoot: { refTag?: string } =
+    passing || component.exposes ? {} : refTagOf(component, module);
   const expose = component.exposes && {
     ref: propLocal("ref"),
     handle: names.claim(`${component.name}Handle`),
@@ -377,7 +386,9 @@ export function planComposition(
   const interfaces: CompositionPlan["interfaces"] = {};
   if (slots.size) interfaces.slots = names.claim(`${component.name}Slots`);
   if (models.size) interfaces.models = names.claim(`${component.name}Models`);
-  if (fallthrough || expose) interfaces.attributes = names.claim(`${component.name}Attributes`);
+  if (fallthrough || expose || refRoot.refTag !== undefined) {
+    interfaces.attributes = names.claim(`${component.name}Attributes`);
+  }
 
   // The slots each child declares: its module's own components, or the resolver's API.
   const childSlots = new Map<string, Set<string>>();
@@ -403,6 +414,7 @@ export function planComposition(
     models,
     ...(fallthrough ? { fallthrough } : {}),
     ...(passing ? { passing } : {}),
+    ...refRoot,
     ...(scope ? { scope } : {}),
     ...(expose ? { expose } : {}),
     provided,

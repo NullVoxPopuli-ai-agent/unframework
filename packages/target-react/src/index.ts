@@ -765,6 +765,19 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
       code: `type ${interfaces.attributes}${parameters} = ${parts.join(" & ")};`,
       span: component.span,
     });
+  } else if (
+    interfaces.attributes &&
+    !composition.fallthrough &&
+    composition.refTag !== undefined
+  ) {
+    // Nothing passes through, but a ref holds the root element (ADR-0118).
+    const props = type("ComponentPropsWithRef");
+    declarations.push({
+      name: interfaces.attributes,
+      exported: true,
+      code: `type ${interfaces.attributes} = Pick<${props}<${JSON.stringify(composition.refTag)}>, "ref">;`,
+      span: component.span,
+    });
   } else if (interfaces.attributes) {
     const members: string[] = [];
     if (composition.fallthrough) {
@@ -773,6 +786,8 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
     if (composition.expose) {
       const handle = `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
       members.push(`ref?: ${type("Ref")}<${handle}>;`);
+    } else if (composition.refTag !== undefined) {
+      members.push(`ref?: ${type("Ref")}<${elementInterface(composition.refTag)}>;`);
     }
     // The handle is the attributes' one member a type parameter may type.
     declare(interfaces.attributes, members, generic.expose?.declared);
@@ -994,6 +1009,8 @@ function propsParameters(
   if (fallthrough)
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
   if (expose) composed.push(["ref", expose.ref]);
+  // The consumer's `ref` the root takes where nothing passes through (ADR-0118).
+  if (!passing && composer.consumerRef !== undefined) composed.push(["ref", composer.consumerRef]);
   if (passing && parameter?.form !== "object") {
     const taken = new Set([
       ...read.map((prop) => prop.name),
@@ -1102,7 +1119,15 @@ function mergedRefDeclaration(plan: ReactPlan, composer: ReactComposer): string 
 function passedDeclaration(plan: ReactPlan, composer: ReactComposer): string | undefined {
   const { passing, fallthrough, expose } = plan.composition;
   const parameter = plan.owner.propsParameter;
-  if (!passing || parameter?.form !== "object") return undefined;
+  if (parameter?.form !== "object") return undefined;
+  // Where nothing else passes, the consumer's `ref` alone: React Compiler reads `props.ref` as
+  // a ref's value read during render.
+  if (!passing) {
+    const ref = composer.consumerRef;
+    return ref === undefined
+      ? undefined
+      : `const { ${ref === "ref" ? ref : `ref: ${ref}`} } = ${parameter.name!};`;
+  }
   const entries: [string, string][] = [
     ...(fallthrough
       ? ([
