@@ -19,6 +19,7 @@ import {
   spreadStyleExpression,
   typeExportsCode,
   typeNames,
+  tagAttributes,
 } from "@unframework.dev/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework.dev/codegen";
 import type {
@@ -508,6 +509,15 @@ function withFallthrough(
   const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
   if (target.kind === "Element") {
     return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
+  }
+  if (target.kind === "Dynamic") {
+    // Over tags, its attributes are an element's (ADR-0119).
+    const attributes = fallthroughAttributes(
+      { attributes: tagAttributes(target), span: target.span },
+      consumer,
+      composer,
+    );
+    return { ...root, children: [{ ...target, attributes }] };
   }
   const attributes = fallthroughAttributes(target, consumer, composer);
   return { ...root, children: [{ ...target, attributes }] };
