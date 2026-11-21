@@ -99,7 +99,7 @@ export default function Frame() {
     expect(box).toContain('{children ?? "Empty"}');
     expect(box).toContain("{renderItem?.({ n: 1 })}");
     expect(files.get("Frame")).toContain(
-      "<Box\n      className={className}\n      style={style}\n      {...scopeAttributes_1(attributes)}\n      renderItem={({ n }) => <b>{n}</b>}\n    >\n      {children}\n    </Box>",
+      "<Box className={className} style={style} {...attributes} renderItem={({ n }) => <b>{n}</b>}>\n      {children}\n    </Box>",
     );
   });
 
@@ -152,11 +152,13 @@ export default function Page() {
   return <span class="tag" style="color: red">{label}</span>;
 }`);
     const tag = files.get("Tag")!;
+    // The root's own attributes, then what else the consumer passes, which wins (ADR-0118).
     expect(tag).toContain(
-      "export interface TagAttributes {\n  className?: string;\n  style?: CSSProperties;\n}",
+      'export type TagAttributes = Omit<ComponentPropsWithRef<"span">, "label" | "children">;',
     );
-    expect(tag).toContain('className={cx("tag", className)}');
-    expect(tag).toContain('style={{ color: "red", ...style }}');
+    expect(tag).toContain(
+      '<span className={cx("tag", className)} style={{ color: "red", ...style }} {...attributes}>',
+    );
   });
 
   it("names each component's helpers apart where a source's components are joined", async () => {
@@ -168,6 +170,36 @@ export function Pill({ on }: { on: boolean }) {
 }`);
     expect(files.get("Badge")).toContain("function cx(");
     expect(files.get("Pill")).toContain("function cx_1(");
+  });
+
+  // A listener that falls through is the child's React prop (ADR-0118): where that prop would not
+  // keep the DOM's semantics on the child's element, the parent reports it rather than run it at
+  // other times than the source means.
+  it.each([
+    ["change", "<input aria-label={label} />", "onChange"],
+    ["focusin", "<div>{label}</div>", "onFocusin"],
+  ])("reports a %s listener that falls through as UF1002", (event, root, listener) => {
+    const { module } = analyze(
+      parseModule(
+        "Fixture.uf.tsx",
+        `function Child({ label }: { label: string }) {
+  return ${root};
+}
+export default function Parent() {
+  return <Child label="x" ${listener}={() => undefined} />;
+}`,
+      ),
+    );
+    const reported: { code: string; message: string }[] = [];
+    const parent = module!.components.find((component) => component.name === "Parent")!;
+    const files = target.emit(parent, {
+      module: module!,
+      options: undefined,
+      report: (diagnostic) => void reported.push(diagnostic),
+    });
+    expect(files).toEqual([]);
+    expect(reported.map(({ code }) => code)).toEqual(["UF1002"]);
+    expect(reported[0]!.message).toContain(`\`${event}\` listener`);
   });
 });
 
@@ -341,6 +373,88 @@ export default function Kinds() {
     </button>
   );
 }`,
+  // What falls through (ADR-0118) to roots that already hold what it adds: a template ref and a
+  // native listener beside a synthetic one, a declared prop and event named like an attribute
+  // and a DOM event, a `v-model`, and a props object.
+  fallthroughOwn: `import { defineEmits, ref, useTemplateRef } from "@uxfront/unframework";
+function Action({ label }: { label: string }) {
+  const button = useTemplateRef<HTMLButtonElement>();
+  const clicks = ref(0);
+  return (
+    <button ref={button} type="button" onClick={(event: MouseEvent) => { clicks.value++; event.preventDefault(); }} onFocusin={() => clicks.value--}>
+      {label} {clicks.value}
+    </button>
+  );
+}
+function Toggle({ title, hidden }: { title: string; hidden?: boolean }) {
+  const emit = defineEmits<{ click: [count: number] }>();
+  return <button type="button" onClick={() => emit("click", 1)}>{hidden ? "" : title}</button>;
+}
+function Choice({ label }: { label: string }) {
+  const size = ref("m");
+  return (
+    <select aria-label={label} v-model={size.value}>
+      <option value="s">S</option>
+      <option value="m">M</option>
+    </select>
+  );
+}
+function Card(props: { heading: string; note?: string }) {
+  return <article class="card">{props.heading}</article>;
+}
+export default function Form() {
+  const action = useTemplateRef<HTMLButtonElement>();
+  const log = ref<string[]>([]);
+  return (
+    <form>
+      <Action ref={action} label="Go" id="go" onClick={() => (log.value = [...log.value, "go"])} />
+      <Toggle title="Show" hidden={false} onClick={(count) => (log.value = [...log.value, String(count)])} aria-label="Toggle" />
+      <Choice label="Size" onChange={() => (log.value = [...log.value, "size"])} />
+      <Card heading="Hi" id="card" data-kind="note" />
+      <output>{log.value.join(",")}</output>
+    </form>
+  );
+}`,
+  // What falls through (ADR-0118) to an <svg> root, through a root component that listens to
+  // the same event, and to the props' rest beside a root with a template ref of its own.
+  fallthroughShapes: `import { defineOptions, onMounted, ref, useTemplateRef } from "@uxfront/unframework";
+function Icon({ size }: { size: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} class="icon">
+      <path d="M0 0h24v24H0z" />
+    </svg>
+  );
+}
+function Base({ text }: { text: string }) {
+  return <button type="button">{text}</button>;
+}
+function Primary({ text }: { text: string }) {
+  const presses = ref(0);
+  return <Base text={text} class="primary" onClick={() => presses.value++} />;
+}
+function Field({ label, ...rest }: { label: string }) {
+  defineOptions({ inheritAttrs: false });
+  const root = useTemplateRef<HTMLLabelElement>();
+  onMounted(() => root.value?.setAttribute("data-ready", ""));
+  return (
+    <label ref={root} class="field">
+      {label} <input {...rest} />
+    </label>
+  );
+}
+export default function Page() {
+  const icon = useTemplateRef<SVGSVGElement>();
+  const field = useTemplateRef<HTMLLabelElement>();
+  const clicks = ref(0);
+  return (
+    <div>
+      <Icon ref={icon} size={16} aria-label="Logo" tabindex="0" class="big" />
+      <Primary text="Go" onClick={() => clicks.value++} />
+      <Field ref={field} label="Name" autocomplete="off" maxlength="4" readonly onKeydown={() => clicks.value++} />
+      <output>{clicks.value}</output>
+    </div>
+  );
+}`,
 };
 
 describe("react composition beyond the corpus", () => {
@@ -387,6 +501,53 @@ describe("react composition beyond the corpus", () => {
     expect(picker).toContain("cityField.onBlur();");
     expect(picker).toContain("cityField.onFocus();");
     expect(picker).toContain('value={note ?? ""}');
+  });
+
+  it("runs a consumer's listener after the root's own of the same prop, and joins their refs", () => {
+    const action = emitted.get("fallthroughOwn")!.get("Action")!;
+    expect(action).toContain(
+      'export type ActionAttributes = Omit<ComponentPropsWithRef<"button">, "label" | "children">;',
+    );
+    expect(action).toMatch(/\bonClick,\n\s*ref,\n\s*\.\.\.attributes\n/);
+    expect(action).toContain(
+      "const rootRef = useMemo(() => mergeRefs(buttonListeners, ref), [buttonListeners, ref]);",
+    );
+    expect(action).toMatch(
+      /onClick=\{\(event: MouseEvent<HTMLButtonElement>\) => \{[^}]*event\.preventDefault\(\);\n\s*onClick\?\.\(event\);\n\s*\}\}/,
+    );
+    // The consumer's attributes come after the root's own, so theirs win.
+    expect(action).toMatch(/ref=\{rootRef\}\n\s*type="button"[\s\S]*\{\.\.\.attributes\}\n\s*>/);
+    const choice = emitted.get("fallthroughOwn")!.get("Choice")!;
+    expect(choice).toContain("value: _value,");
+    expect(choice).toMatch(/setSize\(event\.target\.value\);\n\s*onChange\?\.\(event\);/);
+  });
+
+  it("keeps a declared prop or event named like an attribute or a DOM event out of what passes", () => {
+    const toggle = emitted.get("fallthroughOwn")!.get("Toggle")!;
+    expect(toggle).toContain('"title" | "hidden" | "onClick" | "children"');
+    expect(toggle).toContain("onClick={() => onClick?.(1)}");
+    const card = emitted.get("fallthroughOwn")!.get("Card")!;
+    expect(card).toMatch(
+      /const \{ className, style, heading: _heading, note: _note, \.\.\.attributes \} = props;/,
+    );
+  });
+
+  it("spells what a parent passes as the child's fallthrough element takes it", () => {
+    const page = emitted.get("fallthroughShapes")!.get("Page")!;
+    expect(page).toContain(
+      '<Icon ref={icon} size={16} className="big" aria-label="Logo" tabIndex={0} />',
+    );
+    expect(page).toMatch(/autoComplete="off"\n\s*maxLength=\{4\}\n\s*readOnly\n\s*onKeyDown=/);
+    const primary = emitted.get("fallthroughShapes")!.get("Primary")!;
+    expect(primary).toMatch(/setPresses\(pressesRef\.current\);\n\s*onClick\?\.\(event\);/);
+    const field = emitted.get("fallthroughShapes")!.get("Field")!;
+    expect(field).toContain("ref?: Ref<HTMLLabelElement>;");
+    expect(field).toMatch(
+      /<label ref=\{rootRef\} className="field" \{\.\.\.scopeAttributes\w*\(attributes\)\}>/,
+    );
+    expect(field).toMatch(
+      /<input className=\{className\} style=\{style\} \{\.\.\.restAttributes\w*\(attributes\)\} \/>/,
+    );
   });
 
   it("passes a scoped slot's fill as a render prop, with a parameter or without", () => {
@@ -454,7 +615,9 @@ describe("react types and generics", () => {
   it("gives a handle that a type parameter types the parameter, where the ref is typed too", async () => {
     const picker = (await outputs(PROBES.genericExpose!)).get("Picker")!;
     expect(picker).toContain("export interface PickerHandle<T> {");
-    expect(picker).toContain("export interface PickerAttributes<T> {");
+    expect(picker).toContain(
+      'export type PickerAttributes<T> = Omit<ComponentPropsWithoutRef<"p">, "items" | "children"> & {',
+    );
     expect(picker).toContain("ref?: Ref<PickerHandle<T>>;");
     expect(picker).toContain("}: { items: T[] } & PickerAttributes<T>) {");
   });

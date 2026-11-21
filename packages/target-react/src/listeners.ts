@@ -23,15 +23,20 @@ import {
 import type { JsxContext } from "@unframework.dev/codegen";
 import type {
   Attribute,
+  BoundAttribute,
+  ComponentNode,
   DirectiveAttribute,
   ElementNode,
   EventAttribute,
   FunctionCode,
   ModelAttribute,
   RefAttribute,
+  StaticAttribute,
 } from "@unframework.dev/ir";
 
 import type { ReactComposer } from "./compose.ts";
+import { componentFallthroughTag } from "./composition.ts";
+import { elementInterface } from "./elements.ts";
 import { reactProp, targetGuarded } from "./events.ts";
 import { listenHelper, onceHelper } from "./helpers.ts";
 import type { ListenerMode, ReactPlan } from "./plan.ts";
@@ -196,6 +201,25 @@ export class ReactListeners {
     return statements;
   }
 
+  /**
+   * The element what a parent passes a child lands on (ADR-0118), of the child's fallthrough
+   * tag, holding all of it: the one its listeners are planned on, which groups them.
+   */
+  fallthroughElement(
+    node: ComponentNode,
+    attributes: readonly (StaticAttribute | BoundAttribute | EventAttribute)[],
+  ): ElementNode {
+    const listened = attributes.find((attribute) => attribute.kind === "Event");
+    if (listened) return this.#plan.listeners.get(listened)!.element;
+    return {
+      kind: "Element",
+      tag: componentFallthroughTag(this.#plan.module, node) ?? "",
+      attributes: [...attributes],
+      children: [],
+      span: node.span,
+    };
+  }
+
   /** A listener's attributes: its prop, or the element's ref, or nothing (merged). */
   event(attribute: EventAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
     const listeners = this.#of(element);
@@ -205,7 +229,14 @@ export class ReactListeners {
     const prop = propOf(attribute, element);
     const group = listeners.props.get(prop)!;
     if (group[0] !== attribute) return [];
-    const handler = this.#synthetic(group, element, this.modelHeads(element, context).get(prop));
+    // A consumer's listener of the prop runs after the fallthrough node's own (ADR-0118).
+    const consumer = this.#composer!.consumerListener(prop, element.span);
+    const handler = this.#synthetic(
+      group,
+      element,
+      this.modelHeads(element, context).get(prop),
+      consumer,
+    );
     return [
       js.jsxAttribute(prop, js.jsxExpressionContainer(context.placeholders.expression(handler))),
     ];
@@ -287,26 +318,33 @@ export class ReactListeners {
 
   /**
    * The handler of one synthetic prop: its listeners, guarded, in attribute order, after what a
-   * `v-model` on the element writes there (`model`).
+   * `v-model` on the element writes there (`model`), and before the consumer's listener of the
+   * prop, its local `consumer`, where the element is the fallthrough node (ADR-0118).
    */
   #synthetic(
     group: EventAttribute[],
     element: ElementNode,
     model?: (event: string) => string[],
+    consumer?: string,
   ): string {
     const [first] = group;
     const guarded = targetGuarded(first!, element);
-    if (group.length === 1 && !first!.once && !guarded && !model) {
+    if (group.length === 1 && !first!.once && !guarded && !model && consumer === undefined) {
       return this.#handler(first!, "synthetic");
     }
     // A listener of an event that does not bubble runs, as in the DOM, only at its target.
-    return this.#wrapped(group, "synthetic", (event) => {
-      const lines = [
-        ...(guarded ? [`if (${event}.target !== ${event}.currentTarget) return;`] : []),
-        ...(model ? model(event).map((line) => `${line};`) : []),
-      ];
-      return lines.length ? lines.join("\n") : undefined;
-    });
+    return this.#wrapped(
+      group,
+      "synthetic",
+      (event) => {
+        const lines = [
+          ...(guarded ? [`if (${event}.target !== ${event}.currentTarget) return;`] : []),
+          ...(model ? model(event).map((line) => `${line};`) : []),
+        ];
+        return lines.length ? lines.join("\n") : undefined;
+      },
+      consumer === undefined ? undefined : { local: consumer, element },
+    );
   }
 
   /**
@@ -320,6 +358,7 @@ export class ReactListeners {
     group: EventAttribute[],
     mode: ListenerMode,
     head: (event: string) => string | undefined,
+    target?: { local: string; element: ElementNode },
   ): string {
     const typed = group.map((listener) =>
       listener.handler.kind === "Inline"
@@ -328,14 +367,18 @@ export class ReactListeners {
     );
     const named = typed.find((fn) => fn?.parameters[0]?.name)?.parameters[0];
     const handlers = group.map((listener) => this.#handler(listener, mode));
-    const event = named?.name ?? locals(handlers, ["event"]).event;
-    const single = group.length === 1;
+    const consumer = target?.local;
+    const event =
+      named?.name ??
+      locals(consumer === undefined ? handlers : [...handlers, consumer], ["event"]).event;
+    // A consumer's listener runs last, so no early return of the node's own may skip it.
+    const single = group.length === 1 && consumer === undefined;
     const lines = [head(event)].filter((line) => line !== undefined);
     const taken = [...handlers, event];
     let awaits = false;
     for (const [index, listener] of group.entries()) {
       const fn = typed[index];
-      const later = handlers.slice(index + 1);
+      const later = [...handlers.slice(index + 1), ...(consumer === undefined ? [] : [consumer])];
       const statements =
         single && fn
           ? this.#body(fn)
@@ -346,12 +389,19 @@ export class ReactListeners {
       else if (single) lines.push(`if (!${this.#once(listener)}(${event})) return;`, statements);
       else lines.push(`if (${this.#once(listener)}(${event})) {\n${statements}\n}`);
     }
+    if (consumer !== undefined) lines.push(`${consumer}?.(${event});`);
     const async = awaits ? "async " : "";
     // A handler whose code never reads its event takes none (an unused parameter fails L5).
     const reads = new RegExp(`(?<![\\w$.])${event.replace(/\$/g, "\\$")}(?![\\w$])`).test(
       lines.join("\n"),
     );
-    const parameter = named ? parameterText(named) : reads ? event : "";
+    const parameter = named
+      ? target === undefined
+        ? parameterText(named)
+        : ofElement(parameterText(named), target.element)
+      : reads
+        ? event
+        : "";
     return `${async}(${parameter}) => {\n${lines.join("\n")}\n}`;
   }
 
@@ -513,6 +563,19 @@ function propOf(attribute: EventAttribute, element: ElementNode): string {
       (other.control === "text" || other.control === "textarea" || other.control === "number"),
   );
   return text ? "onChange" : prop;
+}
+
+/**
+ * A handler's parameter as the consumer's listener it passes its event to takes it (ADR-0118):
+ * React's event type of the element's own interface, `event: MouseEvent<HTMLButtonElement>`,
+ * where the source names a bare one (`MouseEvent`, whose element is any `Element`, which the
+ * consumer's handler of the element's events does not take); without its type otherwise, which
+ * the prop's own gives it.
+ */
+function ofElement(parameter: string, element: ElementNode): string {
+  const match = /^([\w$]+)(\??): ([\w$]+)$/.exec(parameter);
+  if (!match) return parameter.replace(/^([\w$]+\??)[\s\S]*$/, "$1");
+  return `${match[1]}${match[2]}: ${match[3]}<${elementInterface(element.tag)}>`;
 }
 
 /** The helpers the listeners of a planned component need, after it is printed. */
