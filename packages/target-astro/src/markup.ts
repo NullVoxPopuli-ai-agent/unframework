@@ -3,6 +3,7 @@
 // Astro's shape (`./composition.ts`): render props, fallthrough, models and `<component is>`.
 import {
   astroDialect,
+  elementNamespace,
   isIdentifier,
   operand,
   printMarkup,
@@ -28,6 +29,7 @@ import type {
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
+import type { Fallthrough } from "./fallthrough.ts";
 import { unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
@@ -89,6 +91,8 @@ export interface ComposedMarkup {
   scope?: { helper: string; roots: readonly Span[] };
   /** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
   styleObject?: string;
+  /** What the component takes from its consumer beside its props, and where (ADR-0118). */
+  fallthrough?: Fallthrough;
 }
 
 /**
@@ -105,8 +109,11 @@ export function printComponentMarkup(
   if (!composed) {
     return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
   }
-  const { scope } = composed;
-  const roots = new Set(scope?.roots.map(({ start, end }) => `${start}:${end}`));
+  const { scope, fallthrough } = composed;
+  const roots = new Set(scope?.roots.map(key));
+  // The root that takes what falls through spreads it, the scope attributes included.
+  const root = fallthrough && !fallthrough.rest ? key(fallthrough.target.span) : undefined;
+  const own = ownAttributes(component, composed);
   // A scoped fill is printed with these (`renderFunction`): it is the parent's content, not its
   // root.
   const options: MarkupOptions = {
@@ -114,24 +121,64 @@ export function printComponentMarkup(
     module: composed.module,
     rewrite: composed.spelling.rules,
     componentTag: (name) => composed.tags.get(name),
+    ...(own.size ? { attribute: (attribute: Attribute) => own.get(attribute) } : {}),
   };
   const composedDialect = composition(component, composed, options);
   return printMarkup(composed.render.render, composedDialect, {
     ...options,
     // Each node Vue's fallthrough reaches, a branch per set of forwarded slots included.
-    ...(scope
+    ...(scope || root
       ? {
           scopeRootAttributes: ({ span }: ElementNode) =>
-            roots.has(`${span.start}:${span.end}`) ? [`{...${scope.helper}(Astro.props)}`] : [],
+            key(span) === root
+              ? [`{...${fallthrough!.attributes}}`]
+              : roots.has(key(span))
+                ? [`{...${scope!.helper}(Astro.props)}`]
+                : [],
         }
       : {}),
   });
 }
 
+/**
+ * The text of each of the fallthrough element's own attributes, which reads the consumer's value
+ * first (`./fallthrough.ts`): `type={type}`, with the element's own the default the frontmatter
+ * reads it with, or `aria-label={ariaLabel ?? label}` for a bound one, whose value the
+ * frontmatter cannot read before the setup it names.
+ */
+function ownAttributes(
+  component: UfComponent,
+  { fallthrough, spelling }: ComposedMarkup,
+): Map<Attribute, string> {
+  const texts = new Map<Attribute, string>();
+  if (!fallthrough || fallthrough.target.kind !== "Element") return texts;
+  const element = fallthrough.target;
+  const context = { element, namespace: elementNamespace(element.tag, "html") };
+  for (const { attribute, local } of fallthrough.own) {
+    const { name } = attribute;
+    let value = local;
+    if (attribute.kind === "Bound") {
+      const own = rewriteExpression(attribute.value, component, spelling.rules);
+      // The dialect's value: a boolean attribute Astro's renderer does not know is `""` or
+      // `undefined` already, as the consumer's is.
+      const printed = astroDialect.boundAttribute(name, own, context);
+      value = `${local} ?? ${operand(printed.slice(name.length + 2, -1))}`;
+    }
+    texts.set(
+      attribute,
+      isUntypedAttribute(element.tag, name) ? spread(name, value) : `${name}={${value}}`,
+    );
+  }
+  return texts;
+}
+
+/** A span as a key. */
+const key = ({ start, end }: Span): string => `${start}:${end}`;
+
 /** The dialect, with what composition needs of the component and its spelling. */
 function composition(
   component: UfComponent,
-  { spelling, render, tags, styleObject }: ComposedMarkup,
+  { spelling, render, tags, styleObject, fallthrough }: ComposedMarkup,
   options: MarkupOptions,
 ): MarkupDialect {
   const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
@@ -148,6 +195,12 @@ function composition(
   };
   const composed: MarkupDialect = {
     ...dialect,
+    // The props' rest (ADR-0118): what the consumer passes that the component does not declare,
+    // but the scope attributes, which the root keeps where the rest is on another element.
+    restAttribute: () => {
+      const { attributes, scopeless } = fallthrough!;
+      return [{ name: "", text: `{...${scopeless ? `${scopeless}(${attributes})` : attributes}}` }];
+    },
     // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
     propAttribute(prop, context) {
       const fill = context.component.fills.find((each) =>

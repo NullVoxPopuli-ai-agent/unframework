@@ -1,6 +1,7 @@
 // Composition in Astro's shape (ADR-0054): what the markup printer cannot write from the IR as it
 // stands, because Astro writes it elsewhere than the source. The render tree is copied with:
-// - the consumer's `class` and `style` merged into the root (fallthrough), read from the props;
+// - the consumer's `class` and `style` merged into the root, or into the element that spreads
+//   the props' rest (fallthrough, `./fallthrough.ts`), read from the props;
 // - each scoped fill, and each forwarded scoped slot, as a render prop named as the slot, since
 //   Astro's `<Fragment slot>` drops a slot's arguments; the fill stays in place, for what reads
 //   its bindings (a list's index), and the dialect writes no content for it;
@@ -24,6 +25,7 @@ import type {
   UfModule,
 } from "@unframework.dev/ir";
 
+import type { Fallthrough } from "./fallthrough.ts";
 import { renderPropName, unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
@@ -33,16 +35,13 @@ import type { Spelling } from "./spelling.ts";
  */
 export const SPREAD_STYLE = "...";
 
-/** The names the frontmatter reads the consumer's `class` and `style` under. */
-export interface Fallthrough {
-  className: string;
-  style: string;
-}
-
 /** A component's render tree in Astro's shape, with the names the frontmatter declares for it. */
 export interface AstroRender {
   render: ElementNode | FragmentNode;
-  /** Present where the root takes the consumer's `class` and `style` (ADR-0054). */
+  /**
+   * Present where the root, or the element that spreads the props' rest, takes what the consumer
+   * passes beside the props (ADR-0054, ADR-0118).
+   */
   fallthrough?: Fallthrough;
   /** Each `<component is>` of the copy, with the constant it is declared as. */
   dynamics: Map<DynamicNode, DynamicTag>;
@@ -70,19 +69,6 @@ export interface DynamicTag {
 }
 
 /**
- * Whether a component's root takes a consumer's `class` and `style`: one element, or one
- * component, unless `inheritAttrs` is off (the analyser's `ComponentApi.root`).
- */
-export function takesFallthrough(component: UfComponent): boolean {
-  if (component.inheritAttrs === false) return false;
-  const { render } = component;
-  return (
-    render.kind === "Element" ||
-    (render.children.length === 1 && render.children[0]!.kind === "Component")
-  );
-}
-
-/**
  * Whether a fill is passed as a render prop: a scoped one, or a forwarded slot that takes props
  * (`slots` are the component's own declared slots).
  */
@@ -104,7 +90,7 @@ export function ownProps(component: UfComponent): Set<string> {
  * The props and models of a component a template renders, by its local name, from its API: one
  * of the module's own, or an imported one's, as the resolver gave it (ADR-0053).
  */
-function childProps(module: UfModule, local: string): Set<string> {
+export function childProps(module: UfModule, local: string): Set<string> {
   for (const entry of module.imports ?? []) {
     const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
     if (!imported) continue;
@@ -140,9 +126,8 @@ export function astroRender(
   };
   const code = (expression: Expression) => rewriteExpression(expression, component, rules);
 
-  // A root component takes the fallthrough before it branches (`withFallthrough`).
-  const rootComponent =
-    component.render.kind === "Fragment" ? component.render.children[0] : undefined;
+  // The node that takes the fallthrough: a root component takes it before it branches.
+  const target = fallthrough?.target;
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
   const fills = (each: readonly SlotFill[]): SlotFill[] =>
     each.map((fill) => ({ ...fill, children: nested(() => nodes(fill.children)) }));
@@ -235,7 +220,7 @@ export function astroRender(
   }
 
   function componentChild(each: ComponentNode): ComponentNode {
-    const root = each === rootComponent && fallthrough ? withFallthrough(each, fallthrough) : each;
+    const root = each === target && fallthrough ? withFallthrough(each, fallthrough) : each;
     const copied = fills(root.fills);
     return {
       ...root,
@@ -280,6 +265,11 @@ export function astroRender(
   }
 
   function element(each: ElementNode): ElementNode {
+    const copy = elementCopy(each);
+    return each === target && fallthrough ? withFallthrough(copy, fallthrough) : copy;
+  }
+
+  function elementCopy(each: ElementNode): ElementNode {
     const model = each.attributes.find(
       (attribute): attribute is ModelAttribute => attribute.kind === "Model",
     );
@@ -330,19 +320,19 @@ export function astroRender(
     component.render.kind === "Element"
       ? element(component.render)
       : { ...component.render, children: nodes(component.render.children) };
-  if (!fallthrough) return { render, dynamics, renderProps: renderPropNames };
   return {
-    render: render.kind === "Element" ? withFallthrough(render, fallthrough) : render,
-    fallthrough,
+    render,
+    ...(fallthrough ? { fallthrough } : {}),
     dynamics,
     renderProps: renderPropNames,
   };
 }
 
 /**
- * The root with the consumer's `class` merged into its own, and the consumer's `style` spread
- * after its own declarations: Astro passes a component's `class` (`class:list` resolved) and
- * `style` as props.
+ * The node that takes the fallthrough, with the consumer's `class` merged into its own, and the
+ * consumer's `style` spread after its own declarations: Astro passes a component's `class`
+ * (`class:list` resolved) and `style` as props. The rest of what the consumer passes is spread
+ * on it by the markup (`./markup.ts`).
  */
 function withFallthrough<T extends ElementNode | ComponentNode>(root: T, names: Fallthrough): T {
   const attributes = [...root.attributes] as (Attribute | ComponentAttribute)[];
