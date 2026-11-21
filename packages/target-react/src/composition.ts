@@ -573,6 +573,29 @@ function declaredProps(component: UfComponent): string[] {
   return [...names];
 }
 
+/**
+ * The props a root component's element sets on it itself (ADR-0118): the props it declares, its
+ * events' and models' callbacks, and its slots' fills. They are not the consumer's to pass, and
+ * the component's own value has a type of its own (`value: number`), which no attribute's is. The
+ * attributes and listeners that fall through to its root are the consumer's still: theirs win.
+ */
+export function rootComponentProps(
+  node: ComponentNode,
+  scoped: (child: string, slot: string) => boolean,
+): string[] {
+  const names = new Set<string>();
+  for (const attribute of node.attributes) {
+    if (attribute.kind === "Prop") names.add(attribute.name);
+    else if (attribute.kind === "Listener") names.add(`on${pascalCase(attribute.event)}`);
+    else if (attribute.kind === "ModelBinding") {
+      names.add(attribute.model);
+      names.add(`on${pascalCase(attribute.model)}Change`);
+    }
+  }
+  for (const fill of node.fills) names.add(slotProp(fill.slot, scoped(node.component, fill.slot)));
+  return [...names];
+}
+
 /** The authoring type of the ref a key holds, by the local name the setup uses. */
 export function keyRef(module: UfModule, local: string): RefType | undefined {
   const own = module.keys?.find((key) => key.name === local);

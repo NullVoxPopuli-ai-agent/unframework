@@ -59,7 +59,13 @@ import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
 import { emitComposable } from "./composable.ts";
 import { ReactComposer } from "./compose.ts";
-import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
+import {
+  exposedType,
+  refValueType,
+  rootComponentProps,
+  SCOPE_HELPER,
+  slotProp,
+} from "./composition.ts";
 import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
 import { emitDirective, hooksCode, mergeRefsHelper, useDirectiveHelper } from "./directive.ts";
@@ -745,17 +751,31 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
   const { passing } = composition;
   if (interfaces.attributes && passing) {
     // The fallthrough element's own props but those the component declares (ADR-0118), with
-    // the `ref` its root element or its handle takes where that is another's.
+    // the `ref` its root element or its handle takes where that is another's. A root component's
+    // own props type it (`ComponentProps<typeof Base>`), which hold its root's attributes, but
+    // those its element sets itself: one it declares (`value: number`) is no attribute.
     const handle =
       composition.expose && `${composition.expose.handle}${generic.expose?.passed ?? ""}`;
     const own = handle === undefined && passing.refTag === passing.tag;
     const props = type(own ? "ComponentPropsWithRef" : "ComponentPropsWithoutRef");
-    const omitted = passing.declared.map((name) => JSON.stringify(name)).join(" | ");
+    const { target } = passing;
+    const rootComponent = target.kind === "Component" && !passing.inner;
+    const omitted = [
+      ...new Set([
+        ...passing.declared,
+        ...(rootComponent
+          ? rootComponentProps(target, (child, slot) => composition.scoped(child, slot))
+          : []),
+      ]),
+    ]
+      .map((name) => JSON.stringify(name))
+      .join(" | ");
     const ref =
       handle ??
       (passing.refTag === undefined || own ? undefined : elementInterface(passing.refTag));
+    const base = rootComponent ? `typeof ${target.component}` : JSON.stringify(passing.tag);
     const parts = [
-      `Omit<${props}<${JSON.stringify(passing.tag)}>, ${omitted}>`,
+      `Omit<${props}<${base}>, ${omitted}>`,
       ...(ref === undefined ? [] : [`{ ref?: ${type("Ref")}<${ref}> }`]),
     ];
     const parameters = generic.expose?.declared ?? "";

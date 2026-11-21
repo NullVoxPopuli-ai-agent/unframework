@@ -485,6 +485,83 @@ export default function Page() {
     </div>
   );
 }`,
+  // What falls through (ADR-0118) to a root component that sets props of its own, typed by
+  // that component's props, not by its root element's attributes: a prop named like one of them
+  // (`value: number`, `type`), an event's listener, a slot's fill, and a listener of its own.
+  rootComponentProps: `import { defineEmits, defineSlots, ref, useTemplateRef } from "@uxfront/unframework";
+import type { Element } from "@uxfront/unframework";
+function Base({ value, type }: { value: number; type: "primary" | "secondary" }) {
+  const emit = defineEmits<{ pick: [value: number] }>();
+  const slots = defineSlots<{ icon?(): Element }>();
+  return <button class={type} onClick={() => emit("pick", value)}>{slots.icon?.()}{value}</button>;
+}
+function Primary({ text }: { text: string }) {
+  return <Base value={1} type="primary" class={text} />;
+}
+function Secondary({ text }: { text: string }) {
+  const picks = ref(0);
+  return (
+    <Base value={picks.value} type="secondary" class={text} onPick={() => picks.value++} onFocus={() => picks.value--}>
+      {{ icon: () => <i>*</i> }}
+    </Base>
+  );
+}
+export default function Toolbar() {
+  const button = useTemplateRef<HTMLButtonElement>();
+  const clicks = ref(0);
+  return (
+    <div>
+      <Primary ref={button} text="Go" id="go" aria-label="Go" onClick={() => clicks.value++} />
+      <Secondary text="Back" title="Back" onFocus={() => clicks.value++} />
+      <output>{clicks.value}</output>
+    </div>
+  );
+}`,
+  // A root's own listener that calls the consumer's after it (ADR-0118), with a parameter the
+  // source annotates with a DOM interface wider than the event React gives the prop (`Event`
+  // where `onInput` gives an `InputEvent`), without one, by a function's name, two of one
+  // prop, and listeners React's prop would not keep, which `listen` adds natively.
+  forwardedListeners: `import { ref } from "@uxfront/unframework";
+function Search({ label }: { label: string }) {
+  const last = ref("");
+  return <input aria-label={label} onInput={(event: Event) => (last.value = event.type)} />;
+}
+function Plain({ label }: { label: string }) {
+  const last = ref("");
+  return <input aria-label={label} onInput={(event) => (last.value = event.type)} />;
+}
+function Named({ label }: { label: string }) {
+  const last = ref("");
+  function record(event: Event) {
+    last.value = event.type;
+  }
+  return <input aria-label={label} onInput={record} />;
+}
+function Twice({ label }: { label: string }) {
+  const last = ref("");
+  return (
+    <button type="button" onClick={(event: UIEvent) => (last.value = event.type)} onClickOnce={(other: Event) => (last.value += other.type)}>
+      {label}
+    </button>
+  );
+}
+function Native({ label }: { label: string }) {
+  const last = ref("");
+  return <input aria-label={label} onChange={(event: Event) => (last.value = event.type)} onFocusin={(event: FocusEvent) => (last.value = event.type)} />;
+}
+export default function Page() {
+  const log = ref("");
+  return (
+    <div>
+      <Search label="a" onInput={(event) => (log.value = event.type)} />
+      <Plain label="b" />
+      <Named label="c" onInput={() => (log.value = "c")} />
+      <Twice label="d" onClick={() => (log.value = "d")} />
+      <Native label="e" onFocus={() => (log.value = "e")} />
+      <output>{log.value}</output>
+    </div>
+  );
+}`,
 };
 
 describe("react composition beyond the corpus", () => {
@@ -542,14 +619,39 @@ describe("react composition beyond the corpus", () => {
     expect(action).toContain(
       "const rootRef = useMemo(() => mergeRefs(buttonListeners, ref), [buttonListeners, ref]);",
     );
+    // The handler takes the event React gives the prop, which the consumer's listener takes.
     expect(action).toMatch(
-      /onClick=\{\(event: MouseEvent<HTMLButtonElement>\) => \{[^}]*event\.preventDefault\(\);\n\s*onClick\?\.\(event\);\n\s*\}\}/,
+      /onClick=\{\(event\) => \{[^}]*event\.preventDefault\(\);\n\s*onClick\?\.\(event\);\n\s*\}\}/,
     );
     // The consumer's attributes come after the root's own, so theirs win.
     expect(action).toMatch(/ref=\{rootRef\}\n\s*type="button"[\s\S]*\{\.\.\.attributes\}\n\s*>/);
     const choice = emitted.get("fallthroughOwn")!.get("Choice")!;
     expect(choice).toContain("value: _value,");
     expect(choice).toMatch(/setSize\(event\.target\.value\);\n\s*onChange\?\.\(event\);/);
+  });
+
+  it("types what passes to a root component by its props, but those the root sets itself", () => {
+    const probe = emitted.get("rootComponentProps")!;
+    expect(probe.get("Primary")).toContain(
+      'Omit<\n  ComponentPropsWithRef<typeof Base>,\n  "text" | "children" | "value" | "type"\n>',
+    );
+    expect(probe.get("Secondary")).toContain(
+      'Omit<\n  ComponentPropsWithRef<typeof Base>,\n  "text" | "children" | "value" | "type" | "onPick" | "icon"\n>',
+    );
+  });
+
+  it("calls the consumer's listener with the event React gives the prop, whatever the source annotates", () => {
+    const probe = emitted.get("forwardedListeners")!;
+    for (const name of ["Search", "Plain"]) {
+      const search = probe.get(name)!;
+      expect(search).toMatch(/onInput=\{\(event\) => \{[^}]*onInput\?\.\(event\);\n\s*\}\}/);
+      expect(search).not.toContain("SyntheticEvent");
+    }
+    expect(probe.get("Named")).toMatch(/onInput=\{\(event\) => \{\n\s*record\(event\);/);
+    const twice = probe.get("Twice")!;
+    expect(twice).toContain("onClick={(event) => {");
+    expect(twice).toContain("(other: typeof event) => {");
+    expect(twice).not.toMatch(/\b(SyntheticEvent|UIEvent)\b/);
   });
 
   it("keeps a declared prop or event named like an attribute or a DOM event out of what passes", () => {
