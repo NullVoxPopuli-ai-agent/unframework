@@ -117,7 +117,6 @@ export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
 
-/** A listener, with its handler as code. */
 /**
  * What a component element passes through to the child's fallthrough element (ADR-0118): an
  * attribute it does not declare, static or bound, or a native listener.
@@ -127,6 +126,7 @@ export type PrintedFallthrough =
   | { kind: "Bound"; attribute: BoundAttribute; code: string }
   | { kind: "Event"; event: PrintedEvent };
 
+/** A listener, with its handler as code. */
 export interface PrintedEvent {
   /** The listener: its DOM event's name, its option and its handler. */
   attribute: EventAttribute;
