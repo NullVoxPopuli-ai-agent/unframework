@@ -1,0 +1,227 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/root-ref/Profile.uf.tsx",
+  "components": [
+    {
+      "name": "Profile",
+      "span": {
+        "start": 101,
+        "end": 392
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@145",
+          "name": "name",
+          "kind": "templateRef",
+          "span": {
+            "start": 145,
+            "end": 149
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "name@145",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 167,
+              "end": 183
+            }
+          },
+          "span": {
+            "start": 139,
+            "end": 187
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Profile",
+            "span": {
+              "start": 209,
+              "end": 229
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "NameField",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "name@145",
+                "span": {
+                  "start": 248,
+                  "end": 258
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Name\"",
+                  "span": {
+                    "start": 265,
+                    "end": 271
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 259,
+                  "end": 271
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 237,
+              "end": 274
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 289,
+                  "end": 302
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "name.value?.focus()",
+                      "span": {
+                        "start": 318,
+                        "end": 337
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "name@145",
+                          "span": {
+                            "start": 318,
+                            "end": 328
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 312,
+                      "end": 337
+                    }
+                  },
+                  "span": {
+                    "start": 312,
+                    "end": 337
+                  }
+                },
+                "span": {
+                  "start": 303,
+                  "end": 338
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Edit name",
+                "span": {
+                  "start": 339,
+                  "end": 364
+                }
+              }
+            ],
+            "span": {
+              "start": 281,
+              "end": 373
+            }
+          }
+        ],
+        "span": {
+          "start": 203,
+          "end": 385
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Profile",
+      "span": {
+        "start": 101,
+        "end": 392
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./NameField.uf.tsx",
+      "file": "NameField.uf.tsx",
+      "api": {
+        "file": "NameField.uf.tsx",
+        "components": [
+          {
+            "name": "NameField",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "input",
+            "fallthroughTag": "input",
+            "refTag": "input"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "NameField",
+          "span": {
+            "start": 63,
+            "end": 72
+          }
+        }
+      ],
+      "span": {
+        "start": 56,
+        "end": 99
+      }
+    }
+  ]
+}

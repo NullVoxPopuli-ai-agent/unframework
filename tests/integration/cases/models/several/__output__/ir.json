@@ -364,7 +364,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "fieldset"
+            "rootTag": "fieldset",
+            "fallthroughTag": "fieldset",
+            "refTag": "fieldset"
           }
         ],
         "keys": []

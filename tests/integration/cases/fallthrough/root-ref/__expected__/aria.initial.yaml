@@ -1,0 +1,3 @@
+- form "Profile":
+  - textbox "Name"
+  - button "Edit name"

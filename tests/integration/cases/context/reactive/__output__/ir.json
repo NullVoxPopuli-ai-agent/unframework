@@ -205,7 +205,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "output"
+            "rootTag": "output",
+            "fallthroughTag": "output",
+            "refTag": "output"
           }
         ],
         "keys": []

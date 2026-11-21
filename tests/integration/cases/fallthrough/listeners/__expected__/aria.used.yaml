@@ -1,0 +1,7 @@
+- region "Picker":
+  - button "Ada"
+  - list "Log":
+    - listitem: focus
+    - listitem: keydown a
+    - listitem: pick Ada
+    - listitem: click

@@ -122,7 +122,9 @@
             "slots": [],
             "exposes": [],
             "inheritAttrs": true,
-            "root": "component"
+            "root": "component",
+            "fallthroughTag": "button",
+            "refTag": "button"
           }
         ],
         "keys": []

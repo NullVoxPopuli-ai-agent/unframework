@@ -392,6 +392,8 @@
             "inheritAttrs": true,
             "root": "element",
             "rootTag": "figure",
+            "fallthroughTag": "figure",
+            "refTag": "figure",
             "styles": {
               "scopeId": "9dc516fd",
               "slotted": true
@@ -438,6 +440,8 @@
             "inheritAttrs": true,
             "root": "element",
             "rootTag": "div",
+            "fallthroughTag": "div",
+            "refTag": "div",
             "styles": {
               "scopeId": "09929c4a",
               "slotted": true

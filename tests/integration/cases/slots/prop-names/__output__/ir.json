@@ -318,7 +318,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ol"
+            "rootTag": "ol",
+            "fallthroughTag": "ol",
+            "refTag": "ol"
           }
         ],
         "keys": []

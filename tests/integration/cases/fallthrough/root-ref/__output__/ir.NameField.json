@@ -1,0 +1,240 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/root-ref/NameField.uf.tsx",
+  "components": [
+    {
+      "name": "NameField",
+      "span": {
+        "start": 215,
+        "end": 506
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 269,
+              "end": 275
+            }
+          },
+          "binding": "label@251",
+          "span": {
+            "start": 262,
+            "end": 275
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 260,
+            "end": 277
+          }
+        },
+        "span": {
+          "start": 249,
+          "end": 277
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@251",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 251,
+            "end": 256
+          }
+        },
+        {
+          "id": "input@289",
+          "name": "input",
+          "kind": "templateRef",
+          "span": {
+            "start": 289,
+            "end": 294
+          }
+        },
+        {
+          "id": "fill@344",
+          "name": "fill",
+          "kind": "localFn",
+          "span": {
+            "start": 344,
+            "end": 348
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "input@289",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 312,
+              "end": 328
+            }
+          },
+          "span": {
+            "start": 283,
+            "end": 332
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "fill@344",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    if (input.value && !input.value.value) input.value.value = \"Ada\";\n  }",
+              "span": {
+                "start": 351,
+                "end": 426
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "input@289",
+                  "span": {
+                    "start": 361,
+                    "end": 372
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "input@289",
+                  "span": {
+                    "start": 377,
+                    "end": 388
+                  },
+                  "narrowed": [
+                    {
+                      "span": {
+                        "start": 377,
+                        "end": 388
+                      },
+                      "scope": "local"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "input@289",
+                  "span": {
+                    "start": 396,
+                    "end": 407
+                  },
+                  "narrowed": [
+                    {
+                      "span": {
+                        "start": 396,
+                        "end": 407
+                      },
+                      "scope": "local"
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 348,
+              "end": 426
+            }
+          },
+          "span": {
+            "start": 335,
+            "end": 426
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "input",
+        "attributes": [
+          {
+            "kind": "Ref",
+            "binding": "input@289",
+            "span": {
+              "start": 443,
+              "end": 454
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "name",
+            "value": "name",
+            "span": {
+              "start": 455,
+              "end": 466
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 479,
+                "end": 484
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@251",
+                  "span": {
+                    "start": 479,
+                    "end": 484
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 467,
+              "end": 485
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "focus",
+            "handler": {
+              "kind": "Function",
+              "binding": "fill@344",
+              "span": {
+                "start": 495,
+                "end": 499
+              }
+            },
+            "span": {
+              "start": 486,
+              "end": 500
+            }
+          }
+        ],
+        "children": [],
+        "span": {
+          "start": 436,
+          "end": 503
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NameField",
+      "span": {
+        "start": 215,
+        "end": 506
+      }
+    }
+  ],
+  "types": []
+}

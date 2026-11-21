@@ -1,28 +1,18 @@
 ---
-interface Props {
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const { class: className, style, "aria-label": ariaLabel = "Comment", ...attrs } = Astro.props;
 
 const text = "" as string;
 const liked = false as boolean;
 ---
 
-<section
-  class:list={["comment-card", className]}
-  aria-label="Comment"
-  style={style}
-  {...scopeAttributes(Astro.props)}
->
+<section class:list={["comment-card", className]} aria-label={ariaLabel} style={style} {...attrs}>
   <label>Comment<textarea name="comment" rows="2"></textarea></label>
   <div class="meter" role="presentation">
     <div class="fill" style={{ width: `${Math.min(text.length, 100)}%` }}></div>

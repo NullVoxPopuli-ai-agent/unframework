@@ -151,7 +151,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "refTag": "p"
           }
         ],
         "keys": []
@@ -199,7 +201,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "refTag": "div"
           }
         ],
         "keys": [

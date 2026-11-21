@@ -141,7 +141,9 @@
             "typeParameters": [
               "T"
             ],
-            "rootTag": "ul"
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "refTag": "ul"
           }
         ],
         "keys": []

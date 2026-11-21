@@ -219,7 +219,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ul"
+            "rootTag": "ul",
+            "fallthroughTag": "ul",
+            "refTag": "ul"
           }
         ],
         "keys": []

@@ -1,0 +1,3 @@
+- form "Profile":
+  - textbox "Name": Ada
+  - button "Edit name"

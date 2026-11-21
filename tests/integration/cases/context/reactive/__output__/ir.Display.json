@@ -148,7 +148,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "refTag": "section"
           }
         ],
         "keys": [

@@ -1,21 +1,22 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export interface SyncDeskProps {
   files: string[];
 }
 
-interface Props extends SyncDeskProps {
+interface Props extends SyncDeskProps, Omit<HTMLAttributes<"section">, "files"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  files: _files,
+  class: className,
+  style,
+  "aria-label": ariaLabel = "Sync desk",
+  ...attrs
+} = Astro.props;
 
 const email = "ada@example.com" as string;
 const checking = false as boolean;
@@ -33,12 +34,7 @@ const outcome = "" as string;
 const level = 4 as number;
 ---
 
-<section
-  class:list={["sync-desk", className]}
-  aria-label="Sync desk"
-  style={style}
-  {...scopeAttributes(Astro.props)}
->
+<section class:list={["sync-desk", className]} aria-label={ariaLabel} style={style} {...attrs}>
   <button type="button">Suggest</button>
   <button type="button">Use this email</button>
   <p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p>

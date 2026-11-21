@@ -697,7 +697,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "refTag": "div"
           }
         ],
         "keys": []
@@ -746,7 +748,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "ol"
+            "rootTag": "ol",
+            "fallthroughTag": "ol",
+            "refTag": "ol"
           }
         ],
         "keys": []
@@ -817,7 +821,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "section"
+            "rootTag": "section",
+            "fallthroughTag": "section",
+            "refTag": "section"
           }
         ],
         "keys": []

@@ -1641,7 +1641,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "div"
+            "rootTag": "div",
+            "fallthroughTag": "div",
+            "refTag": "div"
           }
         ],
         "keys": []

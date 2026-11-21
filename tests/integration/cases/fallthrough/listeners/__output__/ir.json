@@ -1,0 +1,548 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/listeners/Picker.uf.tsx",
+  "components": [
+    {
+      "name": "Picker",
+      "span": {
+        "start": 80,
+        "end": 661
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "log@123",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 123,
+            "end": 126
+          }
+        },
+        {
+          "id": "record@160",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 160,
+            "end": 166
+          }
+        },
+        {
+          "id": "entry@558",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 558,
+            "end": 563
+          }
+        },
+        {
+          "id": "index@565",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 565,
+            "end": 570
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "log@123",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 133,
+              "end": 141
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 143,
+              "end": 145
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 117,
+            "end": 147
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@160",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 173,
+                    "end": 179
+                  }
+                },
+                "span": {
+                  "start": 167,
+                  "end": 179
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 181,
+                "end": 224
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@123",
+                  "operator": "=",
+                  "span": {
+                    "start": 187,
+                    "end": 219
+                  },
+                  "target": {
+                    "start": 187,
+                    "end": 196
+                  },
+                  "value": {
+                    "start": 199,
+                    "end": 219
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@123",
+                  "span": {
+                    "start": 203,
+                    "end": 212
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 166,
+              "end": 224
+            }
+          },
+          "span": {
+            "start": 151,
+            "end": 224
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Picker",
+            "span": {
+              "start": 250,
+              "end": 269
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Chip",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Ada\"",
+                  "span": {
+                    "start": 297,
+                    "end": 302
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 291,
+                  "end": 302
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"click\")",
+                      "span": {
+                        "start": 326,
+                        "end": 341
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@160",
+                          "span": {
+                            "start": 326,
+                            "end": 332
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 320,
+                      "end": 341
+                    }
+                  },
+                  "span": {
+                    "start": 320,
+                    "end": 341
+                  }
+                },
+                "span": {
+                  "start": 311,
+                  "end": 342
+                }
+              },
+              {
+                "kind": "Listener",
+                "event": "pick",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "label",
+                        "span": {
+                          "start": 360,
+                          "end": 365
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "record(`pick ${label}`)",
+                      "span": {
+                        "start": 370,
+                        "end": 393
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@160",
+                          "span": {
+                            "start": 370,
+                            "end": 376
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 359,
+                      "end": 393
+                    }
+                  },
+                  "span": {
+                    "start": 359,
+                    "end": 393
+                  }
+                },
+                "span": {
+                  "start": 351,
+                  "end": 394
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "focus",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"focus\")",
+                      "span": {
+                        "start": 418,
+                        "end": 433
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@160",
+                          "span": {
+                            "start": 418,
+                            "end": 424
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 412,
+                      "end": 433
+                    }
+                  },
+                  "span": {
+                    "start": 412,
+                    "end": 433
+                  }
+                },
+                "span": {
+                  "start": 403,
+                  "end": 434
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "keydown",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "KeyboardEvent",
+                        "span": {
+                          "start": 455,
+                          "end": 460
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "record(`keydown ${event.key}`)",
+                      "span": {
+                        "start": 465,
+                        "end": 495
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@160",
+                          "span": {
+                            "start": 465,
+                            "end": 471
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "key",
+                          "span": {
+                            "start": 483,
+                            "end": 492
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 454,
+                      "end": 495
+                    }
+                  },
+                  "span": {
+                    "start": 454,
+                    "end": 495
+                  }
+                },
+                "span": {
+                  "start": 443,
+                  "end": 496
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 277,
+              "end": 505
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 516,
+                  "end": 532
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 543,
+                    "end": 552
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@123",
+                      "span": {
+                        "start": 543,
+                        "end": 552
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@558",
+                "index": "index@565",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 596,
+                    "end": 601
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@565",
+                      "span": {
+                        "start": 596,
+                        "end": 601
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 604,
+                          "end": 609
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@558",
+                            "span": {
+                              "start": 604,
+                              "end": 609
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 603,
+                        "end": 610
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 587,
+                    "end": 615
+                  }
+                },
+                "span": {
+                  "start": 543,
+                  "end": 626
+                }
+              }
+            ],
+            "span": {
+              "start": 512,
+              "end": 639
+            }
+          }
+        ],
+        "span": {
+          "start": 241,
+          "end": 654
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Picker",
+      "span": {
+        "start": 80,
+        "end": 661
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Chip.uf.tsx",
+      "file": "Chip.uf.tsx",
+      "api": {
+        "file": "Chip.uf.tsx",
+        "components": [
+          {
+            "name": "Chip",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [
+              {
+                "name": "pick",
+                "parameters": [
+                  {
+                    "name": "label",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "button",
+            "fallthroughTag": "button",
+            "refTag": "button"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Chip",
+          "span": {
+            "start": 52,
+            "end": 56
+          }
+        }
+      ],
+      "span": {
+        "start": 45,
+        "end": 78
+      }
+    }
+  ]
+}

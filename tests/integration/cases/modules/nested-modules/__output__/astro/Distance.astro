@@ -1,31 +1,26 @@
 ---
 import { formatDistance } from "./format";
 import type { Unit } from "./units";
+import type { HTMLAttributes } from "astro/types";
 
-interface Props {
+interface Props extends Omit<HTMLAttributes<"section">, "value"> {
   value: number;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { value, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  value,
+  class: className,
+  style,
+  "aria-label": ariaLabel = "Distance",
+  ...attrs
+} = Astro.props;
 
 const unit = "km" as Unit;
 ---
 
-<section
-  class:list={["distance", className]}
-  aria-label="Distance"
-  style={style}
-  {...scopeAttributes(Astro.props)}
->
+<section class:list={["distance", className]} aria-label={ariaLabel} style={style} {...attrs}>
   <p role="status">{formatDistance(value, unit)}</p>
   <button type="button">Switch units</button>
 </section>

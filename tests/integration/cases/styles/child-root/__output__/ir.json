@@ -153,7 +153,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "button"
+            "rootTag": "button",
+            "fallthroughTag": "button",
+            "refTag": "button"
           }
         ],
         "keys": []

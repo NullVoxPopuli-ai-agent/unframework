@@ -164,7 +164,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "span"
+            "rootTag": "span",
+            "fallthroughTag": "span",
+            "refTag": "span"
           }
         ],
         "keys": []

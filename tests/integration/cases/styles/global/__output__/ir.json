@@ -158,7 +158,9 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "p"
+            "rootTag": "p",
+            "fallthroughTag": "p",
+            "refTag": "p"
           }
         ],
         "keys": []

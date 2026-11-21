@@ -1,4 +1,6 @@
 ---
+import type { HTMLAttributes } from "astro/types";
+
 export type ShippingMethod = "standard" | "express";
 
 export interface CheckoutTotalProps {
@@ -6,19 +8,18 @@ export interface CheckoutTotalProps {
   subtotal: number;
 }
 
-interface Props extends CheckoutTotalProps {
+interface Props extends CheckoutTotalProps, Omit<HTMLAttributes<"section">, "subtotal"> {
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { subtotal, class: className, style } = Astro.props;
-
-/** The scope attributes of the styled parents that render this component, for its root. */
-function scopeAttributes(props: object): Record<string, ""> {
-  const scope: Record<string, ""> = {};
-  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
-  return scope;
-}
+const {
+  subtotal,
+  class: className,
+  style,
+  "aria-label": ariaLabel = "Order total",
+  ...attrs
+} = Astro.props;
 
 const rates = { standard: 0, express: 1200 };
 
@@ -31,12 +32,7 @@ const shipping = rates[method];
 const total = formatCents(subtotal + shipping);
 ---
 
-<section
-  class:list={["checkout-total", className]}
-  aria-label="Order total"
-  style={style}
-  {...scopeAttributes(Astro.props)}
->
+<section class:list={["checkout-total", className]} aria-label={ariaLabel} style={style} {...attrs}>
   <p>Subtotal: {formatCents(subtotal)}</p>
   <p>Shipping: {formatCents(shipping)}</p>
   <p role="status">Total: {total}</p>

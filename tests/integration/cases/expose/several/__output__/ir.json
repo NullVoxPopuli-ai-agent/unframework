@@ -272,7 +272,8 @@
             ],
             "inheritAttrs": true,
             "root": "element",
-            "rootTag": "output"
+            "rootTag": "output",
+            "fallthroughTag": "output"
           }
         ],
         "keys": []
