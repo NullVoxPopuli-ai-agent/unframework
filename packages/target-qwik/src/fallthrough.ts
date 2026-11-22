@@ -48,6 +48,11 @@ export class Passed {
    * props Qwik's `PropsOf` cannot infer: those take their tag's attributes.
    */
   readonly rootComponent: ComponentNode | undefined;
+  /**
+   * A generic root component the rest spreads on, which `PropsOf` cannot type: its tag's
+   * attributes type what the rest takes, without what the component declares.
+   */
+  readonly genericRoot: ComponentNode | undefined;
   /** The rest's local, `attributes`. */
   readonly rest: string | undefined;
   /** Whether a consumer's ref holds the component's root element (it exposes nothing). */
@@ -77,13 +82,13 @@ export class Passed {
     const target = fallthroughTarget(component, module);
     this.target = target?.span;
     this.onRoot = target !== undefined && target === root;
-    this.rootComponent =
-      this.onRoot &&
-      root?.kind === "Component" &&
-      root.component !== component.name &&
-      !isGeneric(module, root.component)
+    const rootComponent =
+      this.onRoot && root?.kind === "Component" && root.component !== component.name
         ? root
         : undefined;
+    const generic = rootComponent !== undefined && isGeneric(module, rootComponent.component);
+    this.rootComponent = generic ? undefined : rootComponent;
+    this.genericRoot = generic ? rootComponent : undefined;
     this.tag = fallthroughTag(component, module);
     this.rest = target === undefined ? undefined : fresh("attributes");
     this.rootRef =
@@ -238,6 +243,31 @@ function childTag(
   const root = singleRoot(own);
   if (root?.kind === "Element") return root.tag;
   return root && childTag(module, root.component, tag, new Set([...seen, own.name]));
+}
+
+/**
+ * What a child declares, by its local name: its props, its models and its events, as its source
+ * names them. Empty for a child the module neither imports nor declares.
+ */
+export function declaredBy(
+  module: UfModule,
+  local: string,
+): { props: string[]; models: string[]; events: string[] } {
+  const api = importedApi(module, local);
+  if (api) {
+    return {
+      props: api.props.map(({ name }) => name),
+      models: api.models.map(({ name }) => name),
+      events: api.events.map(({ name }) => name),
+    };
+  }
+  const own = module.components.find((each) => each.name === local);
+  const models = own?.setup.flatMap((item) => (item.kind === "Model" ? [item.name] : [])) ?? [];
+  return {
+    props: own?.props.map(({ name }) => name) ?? [],
+    models,
+    events: own?.emits?.events.map(({ name }) => name) ?? [],
+  };
 }
 
 /** Whether a child, by its local name, is generic (ADR-0068). */

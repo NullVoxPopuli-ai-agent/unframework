@@ -256,7 +256,8 @@ function Base({ value, tone }: { value: number; tone: "primary" | "secondary" })
     expect(contents).toContain(
       'Omit<PropsOf<typeof Base>, "text" | "class" | "style" | "value" | "tone">',
     );
-    // Qwik's `PropsOf` infers no generic component's props: it takes the tag's attributes.
+    // Qwik's `PropsOf` infers no generic component's props: it takes the tag's attributes,
+    // without what the generic component declares.
     const generic = await emitSource(
       `export default function Wrapper({ label }: { label: string }) {
   return <Items items={["a"]} aria-label={label} />;
@@ -267,8 +268,29 @@ function Items<T extends string>({ items }: { items: T[] }) {
 }`,
       { fallthrough: true },
     );
-    expect(generic).toContain('Omit<PropsOf<"ul">, "label" | "class" | "style">');
+    expect(generic).toContain('Omit<PropsOf<"ul">, "label" | "class" | "style" | "items">');
   });
+
+  it(
+    "types what passes on to a generic root component without what it declares (L4)",
+    async () => {
+      // Qwik's `PropsOf` infers no generic component's props, so the rest takes the tag's
+      // attributes, without the root's own `size`, whose type is narrower than an <select>'s.
+      const source = `export default function Page() {
+  return <div><Choice label="c" id="c" /></div>;
+}
+
+function Choice({ label }: { label: string }) {
+  return <Pick items={["a", "b"]} title={label} />;
+}
+
+function Pick<T extends string>({ items, name, size }: { items: T[]; name?: T; size?: "s" | "m" }) {
+  return <select aria-label="pick" name={name} class={size}>{items.map((i) => <option key={i} value={i}>{i}</option>)}</select>;
+}`;
+      await expectCheckedClean([source]);
+    },
+    CHECKED,
+  );
 
   it("keeps a consumer's listener out of the root's capture and passive listeners", async () => {
     const contents = await emitSource(

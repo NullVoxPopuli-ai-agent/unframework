@@ -95,7 +95,13 @@ import {
 } from "./composition.ts";
 import { DIRECTIVE_HELPER, emitDirective, hooksCode, QwikDirectives } from "./directive.ts";
 import { qwikEventProp } from "./events.ts";
-import { childFallthroughTag, restAttributesHelper, sameSpan, singleRoot } from "./fallthrough.ts";
+import {
+  childFallthroughTag,
+  declaredBy,
+  restAttributesHelper,
+  sameSpan,
+  singleRoot,
+} from "./fallthrough.ts";
 import type { Passed } from "./fallthrough.ts";
 import { generatedInterface, typeParameterDeclaration } from "./generics.ts";
 import type { GeneratedInterface } from "./generics.ts";
@@ -873,6 +879,16 @@ function elementProps(plan: SetupPlan): string | undefined {
   // then need not pass.
   const root = passed.rootComponent;
   if (root) for (const name of setByRoot(root)) omitted.add(name);
+  // A generic root component's props `PropsOf` cannot infer, so the rest takes its tag's
+  // attributes, without what that component declares, whose types are its own.
+  const generic = passed.genericRoot;
+  if (generic) {
+    for (const name of setByRoot(generic)) omitted.add(name);
+    const declared = declaredBy(plan.module, generic.component);
+    for (const name of declared.props) omitted.add(name);
+    for (const name of declared.models) omitted.add(name).add(modelCallback(name));
+    for (const name of declared.events) omitted.add(qwikEventProp(name));
+  }
   const element = root ? `typeof ${root.component}` : JSON.stringify(passed.tag);
   return `Omit<${props}<${element}>, ${[...omitted].map((name) => JSON.stringify(name)).join(" | ")}>`;
 }
