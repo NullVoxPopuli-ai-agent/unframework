@@ -29,6 +29,10 @@ export default [
       // Judge the author's listeners, which every target adds as written: one on a `<div>`, one
       // for `pointerdown`, a click listener on a submit button.
       "ember/template-no-action-on-submit-button": "off",
+      // eslint-plugin-ember 13.11 lowercases a tag before it tests it, so it reads a component
+      // named like an interactive element (`<Button>`) as that element
+      // (ember-cli/eslint-plugin-ember#2900).
+      "ember/template-no-nested-interactive": "off",
       "ember/template-no-invalid-interactive": "off",
       "ember/template-no-pointer-down-event-binding": "off",
       // A state the author seeds from a prop is a copy of its first value, as Vue's `ref(props.x)`

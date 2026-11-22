@@ -138,6 +138,9 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "scoped-slot",
   "slot-fallback",
   "default-slot-presence",
+  // A parent's `data-uf-…` attribute on a child's tag reaches the child's root through
+  // `...attributes`.
+  "child-root-scope",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -165,12 +168,13 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     ],
   },
   {
-    reason: "Composables are not emitted yet.",
-    names: ["composables", "composable-effect-order"],
+    reason:
+      "Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`.",
+    names: ["slotted-styles"],
   },
   {
-    reason: "A child's root and slot content do not take a parent's scope yet.",
-    names: ["child-root-scope", "slotted-styles"],
+    reason: "Composables are not emitted yet.",
+    names: ["composables", "composable-effect-order"],
   },
   {
     reason: "The toolchain does not rehydrate a server render yet.",

@@ -14,7 +14,7 @@ info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a c
   |
   = see: https://unframework.dev/diagnostics/UF4002
 
-error[UF4001] (ember): The ember target does not support slotted-styles: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slotted-styles: Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`. See uxfront-com/unframework#236.
   --> styles/slotted/Gallery.uf.tsx:10:9
    |
 10 |         <p class="caption">A quiet harbour</p>

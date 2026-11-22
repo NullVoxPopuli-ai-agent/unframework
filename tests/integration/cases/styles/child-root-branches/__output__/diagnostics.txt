@@ -32,11 +32,3 @@ info[UF4003] (angular): The angular target does not support child-root-scope: Ea
   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4003
-
-error[UF4001] (ember): The ember target does not support child-root-scope: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.
- --> styles/child-root-branches/Panel.uf.tsx:8:7
-  |
-8 |       <Heading big={true} text="Release" />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

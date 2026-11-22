@@ -78,9 +78,10 @@ modifier, `modelText`, follows Vue's `vModelText` for modifiers, number fields a
 `component` and `component-event` are native: a child is its output's component, imported under
 the source's name, its props are its arguments (`@label="Name"`), and a listener of its `clear`
 event is `@onClear`. Slots are blocks: `{{yield to="header"}}`, a named block `<:header>`, a
-scoped slot's props object as a block param, and `(has-block "header")`. Directives, slot
-forwarding, context, composables, a child's scope and hydration are unsupported for now
-(`src/index.ts`).
+scoped slot's props object as a block param, and `(has-block "header")`. A styled parent's
+`data-uf-…` attribute reaches a child's root through `...attributes` (`child-root-scope`).
+Directives, slot forwarding, slotted styles, context, composables and hydration are
+unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

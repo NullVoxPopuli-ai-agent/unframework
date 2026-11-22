@@ -49,22 +49,5 @@
       "offset": 247
     },
     "target": "angular"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support child-root-scope: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.",
-    "file": "styles/deep/Article.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 7,
-      "offset": 227
-    },
-    "end": {
-      "line": 8,
-      "column": 27,
-      "offset": 247
-    },
-    "target": "ember"
   }
 ]

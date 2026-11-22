@@ -44,17 +44,6 @@ info[UF4003] (angular): The angular target does not support child-root-scope: Ea
    |
    = see: https://unframework.dev/diagnostics/UF4003
 
-error[UF4001] (ember): The ember target does not support child-root-scope: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Page.uf.tsx:17:7
-   |
-17 |       <Primary
-   |       ^^^^^^^^
-   | ...
-24 |       />
-   | ^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support fallthrough: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Page.uf.tsx:21:9
    |

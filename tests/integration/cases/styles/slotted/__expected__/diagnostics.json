@@ -36,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support slotted-styles: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support slotted-styles: Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`. See uxfront-com/unframework#236.",
     "file": "styles/slotted/Gallery.uf.tsx",
     "start": {
       "line": 10,
