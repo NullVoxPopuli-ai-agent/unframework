@@ -88,6 +88,8 @@ describe("the module's components", () => {
         rootTag: "div",
         // What a consumer passes lands on the root; a ref holds what it exposes (ADR-0118).
         fallthroughTag: "div",
+        // The root's own attributes, which a consumer's listener is checked with (UF3030).
+        fallthroughOwn: { attributes: [{ name: "class", value: null }], listeners: [] },
       },
       expect.objectContaining({ name: "Form", export: "named" }),
     ]);
