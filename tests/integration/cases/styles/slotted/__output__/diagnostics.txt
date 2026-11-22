@@ -14,30 +14,6 @@ info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a c
   |
   = see: https://unframework.dev/diagnostics/UF4002
 
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> styles/slotted/Frame.uf.tsx:9:7
-  |
-9 |       {slots.default?.()}
-  |       ^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> styles/slotted/Frame.uf.tsx:10:7
-   |
-10 |       {slots.label?.({ text: "Harbour at dusk" })}
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> styles/slotted/Gallery.uf.tsx:10:9
-   |
-10 |         <p class="caption">A quiet harbour</p>
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support slotted-styles: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.
   --> styles/slotted/Gallery.uf.tsx:10:9
    |
@@ -46,15 +22,7 @@ error[UF4001] (ember): The ember target does not support slotted-styles: A child
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> styles/slotted/Gallery.uf.tsx:12:17
-   |
-12 |       <Frame>{{ label: ({ text }) => <p class="caption">{text}</p> }}</Frame>
-   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> styles/slotted/Gallery.uf.tsx:13:7
    |
 13 |       <component is={matted ? Mat : Frame}>
@@ -80,11 +48,3 @@ info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a c
   | ^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4002
-
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> styles/slotted/Mat.uf.tsx:7:27
-  |
-7 |   return <div class="mat">{slots.default?.()}</div>;
-  |                           ^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

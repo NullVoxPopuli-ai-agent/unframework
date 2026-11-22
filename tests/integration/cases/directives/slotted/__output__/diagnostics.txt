@@ -1,14 +1,3 @@
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/slotted/Card.uf.tsx:23:9
-   |
-23 |         <p data-name="body" v-trace="body">
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-30 |         ) : null}
-   | ^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/slotted/Card.uf.tsx:23:29
    |
@@ -30,13 +19,5 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
 12 |       <button type="button" aria-expanded={open.value} onClick={() => (open.value = !open.value)}>
    |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/slotted/Disclosure.uf.tsx:15:39
-   |
-15 |       {open.value ? <div class="body">{slots.default?.()}</div> : null}
-   |                                       ^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001

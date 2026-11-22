@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support fallthrough: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support fallthrough: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> bindings/style-expression/Notice.uf.tsx:38:9
    |
 38 |         style={look}
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support fallthrough: Slots, com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> bindings/style-expression/Notice.uf.tsx:41:7
    |
 41 |       <component

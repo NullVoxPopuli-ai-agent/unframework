@@ -6,7 +6,7 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support context: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> context/static/Badge.uf.tsx:6:3
   |
 6 |   const theme = inject(ThemeKey);
@@ -22,7 +22,7 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support context: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> context/static/ThemeProvider.uf.tsx:14:3
    |
 14 |   provide(ThemeKey, { accent: "teal", label: "Teal" });

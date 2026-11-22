@@ -10,13 +10,15 @@ import {
   staticClassValue,
   staticStyleValue,
 } from "@unframework.dev/codegen";
-import type { MarkupDialect, TextPosition } from "@unframework.dev/codegen";
+import type { MarkupDialect, MarkupPiece, TextPosition } from "@unframework.dev/codegen";
 import type {
   ComponentNode,
   ElementNode,
   EventAttribute,
   ListenerAttribute,
   ModelAttribute,
+  SlotFill,
+  SlotOutletNode,
 } from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
@@ -39,6 +41,10 @@ export interface DialectHost {
   optionSelected(element: ElementNode, value: string): string;
   /** A `<textarea>`'s text: its state's first value, which `modelText` makes its value. */
   modelContent(value: string): string;
+  /** A component's fills: its content, or its named blocks. */
+  fills(fills: readonly SlotFill[], node: ComponentNode): MarkupPiece[];
+  /** A slot outlet: `{{yield}}`, with its fallback. */
+  slotOutlet(node: SlotOutletNode, props: string | undefined): MarkupPiece[];
   /** The handler of a child's event, which its `@onChange` argument takes. */
   componentListener(attribute: ListenerAttribute, node: ComponentNode): string;
   /** The modifier that holds an element in a template ref's member. */
@@ -225,8 +231,12 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     modelAttribute: ({ attribute, value }, { element }) =>
       host.model(attribute, value, element).map((text) => ({ name: "model", text })),
     modelBinding: () => [],
-    fills: () => [],
-    slotOutlet: () => [],
+    fills: (fills, { component }) =>
+      host.fills(
+        fills.map(({ fill }) => fill),
+        component,
+      ),
+    slotOutlet: ({ node, props }) => host.slotOutlet(node, props?.code),
     dynamic: () => [],
     teleport: () => [],
     transition: () => [],

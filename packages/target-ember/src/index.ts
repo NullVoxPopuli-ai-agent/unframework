@@ -132,6 +132,12 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // A child is its output's component, which the template's lexical scope holds.
   "component",
   "component-event",
+  // Slots are blocks: `{{yield to="header"}}`, `<:header>`, and `(has-block "header")`.
+  "default-slot",
+  "named-slot",
+  "scoped-slot",
+  "slot-fallback",
+  "default-slot-presence",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -141,13 +147,9 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: ["directive"],
   },
   {
-    reason: "Slots, component models, context and the built-in components are not emitted yet.",
+    reason:
+      "Slot forwarding, component models, context and the built-in components are not emitted yet.",
     names: [
-      "default-slot",
-      "named-slot",
-      "scoped-slot",
-      "slot-fallback",
-      "default-slot-presence",
       "slot-forwarding",
       "model",
       "fallthrough",

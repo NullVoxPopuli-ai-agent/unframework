@@ -77,8 +77,10 @@ property and a listener, `toggle` adds or removes a checkbox group's value, and 
 modifier, `modelText`, follows Vue's `vModelText` for modifiers, number fields and `<textarea>`s.
 `component` and `component-event` are native: a child is its output's component, imported under
 the source's name, its props are its arguments (`@label="Name"`), and a listener of its `clear`
-event is `@onClear`. Directives, slots, context, composables, a child's scope and hydration are
-unsupported for now (`src/index.ts`).
+event is `@onClear`. Slots are blocks: `{{yield to="header"}}`, a named block `<:header>`, a
+scoped slot's props object as a block param, and `(has-block "header")`. Directives, slot
+forwarding, context, composables, a child's scope and hydration are unsupported for now
+(`src/index.ts`).
 
 ## The toolchain
 

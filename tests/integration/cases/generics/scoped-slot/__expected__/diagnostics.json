@@ -19,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support generic-slot-props: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support generic-slot-props: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "generics/scoped-slot/Fruits.uf.tsx",
     "start": {
       "line": 13,
@@ -36,24 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "generics/scoped-slot/Fruits.uf.tsx",
-    "start": {
-      "line": 13,
-      "column": 9,
-      "offset": 298
-    },
-    "end": {
-      "line": 17,
-      "column": 10,
-      "offset": 403
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support generic-components: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support generic-components: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "generics/scoped-slot/Picker.uf.tsx",
     "start": {
       "line": 9,
@@ -87,7 +70,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support generic-slot-props: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support generic-slot-props: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "generics/scoped-slot/Picker.uf.tsx",
     "start": {
       "line": 10,
@@ -98,23 +81,6 @@
       "line": 10,
       "column": 65,
       "offset": 378
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "generics/scoped-slot/Picker.uf.tsx",
-    "start": {
-      "line": 14,
-      "column": 25,
-      "offset": 465
-    },
-    "end": {
-      "line": 14,
-      "column": 49,
-      "offset": 489
     },
     "target": "ember"
   }

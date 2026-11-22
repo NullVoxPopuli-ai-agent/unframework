@@ -19,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support context: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "context/fallback/Greeting.uf.tsx",
     "start": {
       "line": 6,
@@ -53,7 +53,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support context: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "context/fallback/LocaleProvider.uf.tsx",
     "start": {
       "line": 8,
@@ -64,40 +64,6 @@
       "line": 8,
       "column": 30,
       "offset": 356
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "context/fallback/LocaleProvider.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 29,
-      "offset": 385
-    },
-    "end": {
-      "line": 9,
-      "column": 48,
-      "offset": 404
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "context/fallback/Page.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 9,
-      "offset": 225
-    },
-    "end": {
-      "line": 9,
-      "column": 33,
-      "offset": 249
     },
     "target": "ember"
   }

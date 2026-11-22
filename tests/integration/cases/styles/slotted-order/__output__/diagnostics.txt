@@ -14,14 +14,6 @@ info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a c
   |
   = see: https://unframework.dev/diagnostics/UF4002
 
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> styles/slotted-order/Amber.uf.tsx:7:29
-  |
-7 |   return <div class="amber">{slots.default?.()}</div>;
-  |                             ^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4002] (angular): The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.
  --> styles/slotted-order/Blue.uf.tsx:1:1
   |
@@ -38,22 +30,6 @@ info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a c
   |
   = see: https://unframework.dev/diagnostics/UF4002
 
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> styles/slotted-order/Blue.uf.tsx:7:28
-  |
-7 |   return <div class="blue">{slots.default?.()}</div>;
-  |                            ^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> styles/slotted-order/Shelf.uf.tsx:15:9
-   |
-15 |         <p class="caption">In blue</p>
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support slotted-styles: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.
   --> styles/slotted-order/Shelf.uf.tsx:15:9
    |
@@ -62,7 +38,7 @@ error[UF4001] (ember): The ember target does not support slotted-styles: A child
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> styles/slotted-order/Shelf.uf.tsx:22:11
    |
 22 |           <component is={item.warm ? Amber : Blue}>

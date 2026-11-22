@@ -24,6 +24,7 @@ import {
 import type {
   ChildImport,
   ClassPart,
+  MarkupPiece,
   EmitContext,
   RewriteRules,
   StylePart,
@@ -42,6 +43,8 @@ import type {
   ListenerAttribute,
   ModelAttribute,
   Prop,
+  SlotFill,
+  SlotOutletNode,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -97,6 +100,10 @@ class ComponentPlan {
   get #hasEffects(): boolean {
     return this.#component.setup.some((item) => item.kind === "WatchEffect");
   }
+  /** What each scoped fill's name reads: its block param, or a key of it (`fills`). */
+  readonly #slotScope = new Map<string, string>();
+  /** The children whose signature a scoped fill's block param is typed by, by name. */
+  readonly #signatures = new Map<string, ChildImport>();
   /** The children the template renders, by the name it writes them with. */
   readonly #children: ReadonlyMap<string, ChildImport>;
   /** The events interface of each child an inline handler listens to, by the child's name. */
@@ -125,6 +132,9 @@ class ComponentPlan {
     return {
       binding: (reference, binding) => this.#spell(reference, binding),
       import: (reference) => this.#local(reference.name),
+      // Whether the parent filled a slot is a template keyword, `(has-block "title")`: a marker
+      // that `value` writes as it.
+      slot: (reference) => `${HAS_BLOCK}${reference.slot}__`,
       // Vue's `nextTick` resolves once its pending flush has run: Ember's is `renderSettled`.
       api: () => {
         this.#helpers.add("renderSettled");
@@ -266,6 +276,12 @@ class ComponentPlan {
       }
       case "loopVar":
         return this.#local(binding.name);
+      // A scoped fill's name: a key of the props object its block param holds (`fills`).
+      case "slotScope": {
+        const path = this.#slotScope.get(binding.id);
+        if (path === undefined) throw new Error(`No fill declares \`${binding.name}\`.`);
+        return path;
+      }
       case "state":
       case "derived":
       case "localConst":
@@ -296,6 +312,16 @@ class ComponentPlan {
   value(code: string, subexpression: boolean, at?: object, typed = false): string {
     const literal = glimmerLiteral(code);
     if (literal !== undefined) return literal;
+    const presence = new RegExp(`^(!?)${HAS_BLOCK}(\\w+)__$`).exec(code);
+    if (presence) {
+      const test = presence[2] === "default" ? "has-block" : `has-block "${presence[2]}"`;
+      return presence[1] ? `(not (${test}))` : subexpression ? `(${test})` : test;
+    }
+    if (code.includes(HAS_BLOCK)) {
+      throw new Error(
+        `The ember target tests a slot's presence only as a whole condition: \`${code}\`.`,
+      );
+    }
     const conditions = this.#conditions(code, at);
     const path = this.#path(code);
     // Glint narrows a path under `{{#if}}` of a path, as TypeScript narrows the source; under any
@@ -390,11 +416,13 @@ class ComponentPlan {
     const hoisted = { name, parameters };
     this.#hoisted.set(key, hoisted);
     const list = parameters.map((each) => `${each.name}: ${each.type}`).join(", ");
+    // An arrow's object literal is parenthesised, or it reads as the arrow's block.
+    const body = code.trimStart().startsWith("{") ? `(${code})` : code;
     // A listener is a field, so `{{on}}` gets the same function at each render, bound to the
     // instance. A value is a getter, which Glimmer reads again when what it reads changes.
     this.#hoistedMembers.push(
       parameters.length
-        ? `${name} = (${list}) => ${code};`
+        ? `${name} = (${list}) => ${body};`
         : kind === "listener"
           ? `${name} = ${code};`
           : kind === "initial"
@@ -423,6 +451,82 @@ class ComponentPlan {
     if (handler.kind === "Function") return `this.${bindingName(this.#component, handler.binding)}`;
     const fn = typedEvent(handler.function, `HTMLElementEventMap["${attribute.event}"]`);
     return this.#inline(fn, at);
+  }
+
+  /**
+   * A component's fills (ADR-0054): the default slot's children between its tags, or each slot
+   * as a named block, `<:header>…</:header>`, once any named one is there. A scoped fill takes
+   * the props object as a block param, `as |slotProps|`, whose keys its names read.
+   */
+  fills(fills: readonly SlotFill[], node: ComponentNode): MarkupPiece[] {
+    const named = fills.some((fill) => fill.slot !== "default" || fill.parameter !== undefined);
+    return fills.map((fill): MarkupPiece => {
+      if (fill.forward !== undefined) {
+        throw new Error("The ember target does not forward a slot yet.");
+      }
+      const content: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
+      if (!named) return content;
+      const params = fill.parameter ? ` as |${this.#scope(fill, node)}|` : "";
+      return {
+        kind: "block",
+        segments: [{ open: `<:${fill.slot}${params}>`, content }],
+        close: `</:${fill.slot}>`,
+      };
+    });
+  }
+
+  /**
+   * Declares a scoped fill's names: its block param holds the props object, which a getter takes
+   * as a row variable, typed by the child's `Blocks`.
+   */
+  #scope(fill: SlotFill, node: ComponentNode): string {
+    const parameter = fill.parameter!;
+    const child = this.#children.get(node.component);
+    if (!child) throw new Error(`No output imports \`${node.component}\`.`);
+    this.#signatures.set(child.local, child);
+    const param = this.#local(parameter.name ?? `${fill.slot}Props`);
+    this.#rows.set(param, `${child.name}Signature["Blocks"]["${fill.slot}"][0]`);
+    this.#rowLists.set(param, fill);
+    const { start, end } = parameter.span;
+    const keys = parameter.pattern
+      ? patternKeys(parameter.pattern.code)
+      : new Map<string, string>();
+    for (const binding of this.#component.bindings) {
+      if (binding.kind !== "slotScope") continue;
+      const offset = Number(binding.id.slice(binding.id.lastIndexOf("@") + 1));
+      if (offset < start || offset > end) continue;
+      const key = keys.get(binding.name) ?? binding.name;
+      const member = /^[A-Za-z_$][\w$]*$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`;
+      this.#slotScope.set(binding.id, parameter.pattern ? `${param}${member}` : param);
+    }
+    return param;
+  }
+
+  /**
+   * A slot outlet (ADR-0054): `{{yield}}`, a named slot's `{{yield to="header"}}`, with a scoped
+   * slot's props object as its value, and the fallback where the parent left it empty.
+   */
+  slotOutlet(node: SlotOutletNode, props: string | undefined): MarkupPiece[] {
+    const value = props === undefined ? "" : ` ${this.value(props, true, node)}`;
+    const to = node.slot === "default" ? "" : ` to="${node.slot}"`;
+    const outlet: MarkupPiece = { kind: "code", code: `{{yield${value}${to}}}` };
+    if (!node.fallback.length) return [outlet];
+    return [
+      {
+        kind: "block",
+        segments: [
+          {
+            open:
+              node.slot === "default"
+                ? "{{#if (has-block)}}"
+                : `{{#if (has-block "${node.slot}")}}`,
+            content: outlet,
+          },
+          { open: "{{else}}", content: { kind: "nodes", nodes: node.fallback, container: node } },
+        ],
+        close: "{{/if}}",
+      },
+    ];
   }
 
   /**
@@ -543,7 +647,7 @@ class ComponentPlan {
       scopeRootAttributes: (element) => (element === root ? ["...attributes"] : []),
     });
     const members = this.#propGetters().concat(this.#setupMembers(), this.#hoistedMembers);
-    const { text: imports, reads } = this.#imports(members.length > 0);
+    const { text: imports, reads } = this.#imports(members);
     const parts = [imports];
     for (const type of this.#types(reads.types)) parts.push(type);
     // The module's values it reads, as the source declares them (ADR-0070).
@@ -558,7 +662,8 @@ class ComponentPlan {
   }
 
   /** The imports: Glimmer's and Ember's, then the types and the pass-through modules. */
-  #imports(isClass: boolean): { text: string; reads: ModuleReads } {
+  #imports(members: readonly string[]): { text: string; reads: ModuleReads } {
+    const isClass = members.length > 0;
     const component = this.#component;
     const module = this.#module;
     const lines = [
@@ -602,6 +707,13 @@ class ComponentPlan {
     }
     for (const { specifier, name, self } of this.#eventTypes.values()) {
       if (!self) imports.add(specifier, name, { type: true, exact: true });
+    }
+    // A child's signature, where a member's row variable is typed by its `Blocks`.
+    const read = members.join("\n");
+    for (const child of this.#signatures.values()) {
+      if (!child.self && read.includes(`${child.name}Signature[`)) {
+        imports.add(child.specifier, `${child.name}Signature`, { type: true, exact: true });
+      }
     }
     for (const { specifier, names } of passThroughImports(component, module)) {
       if (!names.length) imports.addPassThrough(specifier);
@@ -655,6 +767,13 @@ class ComponentPlan {
     }
     const lines: string[] = [];
     if (args.length) lines.push(`  Args: ${args.join(" & ")};`);
+    // Each slot a block, which yields a scoped slot's props object.
+    if (component.slots) {
+      const blocks = component.slots.slots.map(
+        (slot) => `    ${slot.name}: [${slot.props ? `props: ${slot.props.code}` : ""}];`,
+      );
+      lines.push(`  Blocks: {\n${blocks.join("\n")}\n  };`);
+    }
     if (root !== undefined) lines.push(`  Element: ${elementType(root)};`);
     return `${events}export interface ${component.name}Signature {\n${lines.join("\n")}\n}`;
   }
@@ -888,6 +1007,26 @@ function ownValue(element: ElementNode, plan: ComponentPlan): string {
     }
   }
   return '"on"';
+}
+
+/** The marker of a slot's presence in code, which `value` writes as `(has-block "…")`. */
+const HAS_BLOCK = "__ufHasBlock_";
+
+/**
+ * The key each name of a destructuring pattern reads: `{ item, index: position }` gives `item`
+ * for `item` and `index` for `position`.
+ */
+function patternKeys(code: string): Map<string, string> {
+  const keys = new Map<string, string>();
+  const inner = code.trim().replace(/^\{|\}$/g, "");
+  for (const entry of inner.split(",")) {
+    const match =
+      /^\s*(?:([A-Za-z_$][\w$]*)|"([^"]*)"|'([^']*)')\s*(?::\s*([A-Za-z_$][\w$]*))?/.exec(entry);
+    if (!match) continue;
+    const key = match[1] ?? match[2] ?? match[3]!;
+    keys.set(match[4] ?? key, key);
+  }
+  return keys;
 }
 
 /** The argument a parent passes to listen to an event: `onChange` for `change`. */

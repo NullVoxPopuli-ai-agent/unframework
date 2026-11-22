@@ -1,35 +1,8 @@
-error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Choice.uf.tsx:11:25
-   |
-11 |       {first.value ? <b>{slots.body?.()}</b> : <i>{slots.body?.()}</i>}
-   |                         ^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> directives/repeated/Choice.uf.tsx:12:29
    |
 12 |       <button type="button" onClick={() => (first.value = !first.value)}>
    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/List.uf.tsx:11:24
-   |
-11 |         <li key={item}>{slots.item?.({ item })}</li>
-   |                        ^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Page.uf.tsx:20:11
-   |
-20 |           row: () => (
-   |           ^^^^^^^^^^^^
-   | ...
-24 |           ),
-   | ^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
@@ -41,30 +14,11 @@ error[UF4001] (ember): The ember target does not support directive: Directives a
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Page.uf.tsx:38:11
-   |
-38 |           item: ({ item }) => (
-   |           ^^^^^^^^^^^^^^^^^^^^^
-   | ...
-42 |           ),
-   | ^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> directives/repeated/Page.uf.tsx:45:10
    |
 45 |       <p ref={note} data-name="note" v-trace={label.value}>
    |          ^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Rows.uf.tsx:13:26
-   |
-13 |           <li key={item}>{slots.row?.()}</li>
-   |                          ^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
@@ -76,15 +30,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Wrapper.uf.tsx:12:16
-   |
-12 |       <Rows>{{ row: slots.row }}</Rows>
-   |                ^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support slot-forwarding: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-forwarding: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Wrapper.uf.tsx:12:16
    |
 12 |       <Rows>{{ row: slots.row }}</Rows>

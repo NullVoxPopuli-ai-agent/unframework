@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support async-setup: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support async-setup: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> async-setup/nested/Member.uf.tsx:7:3
   |
 7 |   const user = await loadUser(id);
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support async-setup: Slots, com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support expose: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support expose: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> async-setup/nested/Member.uf.tsx:14:3
    |
 14 |   defineExpose({ reset });
@@ -30,7 +30,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support expose: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support expose: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> async-setup/nested/Team.uf.tsx:17:15
    |
 17 |       <Member ref={first} id="ada" />
@@ -38,7 +38,7 @@ error[UF4001] (ember): The ember target does not support expose: Slots, componen
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support fallthrough: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support fallthrough: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> async-setup/nested/Team.uf.tsx:25:13
    |
 25 |       <Lead class="lead" id="hopper" />
