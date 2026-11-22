@@ -109,7 +109,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <section
       class="order-summary"
       aria-label="Order summary"
-      [attr.data-tier]="tier"
+      [attr.data-tier]="'data-tier' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-tier'] : tier"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

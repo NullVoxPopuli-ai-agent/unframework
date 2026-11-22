@@ -10,7 +10,12 @@ interface Props extends Omit<HTMLAttributes<"section">, "label"> {
 const { label, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<section class:list={["card", className]} aria-label={ariaLabel ?? label} style={style} {...attrs}>
+<section
+  class:list={["card", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  style={style}
+  {...attrs}
+>
   {Astro.slots.has("title") ? (
     <header class="title">
       <slot name="title" />

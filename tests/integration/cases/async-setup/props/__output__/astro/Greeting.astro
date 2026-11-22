@@ -9,19 +9,17 @@ interface Props extends Omit<HTMLAttributes<"section">, "id" | "prefix"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  id,
-  prefix,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Greeting",
-  ...attrs
-} = Astro.props;
+const { id, prefix, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const user = await loadUser(prefix + id);
 ---
 
-<section class:list={["greeting", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["greeting", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Greeting"}
+  style={style}
+  {...attrs}
+>
   <h2>Hello, {user.name}</h2>
   <p>Signed in as {id}</p>
 </section>

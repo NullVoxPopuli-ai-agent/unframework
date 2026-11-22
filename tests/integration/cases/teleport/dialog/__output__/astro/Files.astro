@@ -10,10 +10,15 @@ interface Props extends FilesProps, Omit<HTMLAttributes<"section">, "file"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { file, class: className, style, "aria-label": ariaLabel = "Files", ...attrs } = Astro.props;
+const { file, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<section class:list={["files", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["files", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Files"}
+  style={style}
+  {...attrs}
+>
   <p>{file}</p>
   <button type="button">Delete {file}</button>
 </section>

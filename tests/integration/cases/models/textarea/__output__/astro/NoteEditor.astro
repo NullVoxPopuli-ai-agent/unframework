@@ -6,12 +6,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Note", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const note = "Buy milk" as string;
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Note"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <textarea aria-label="Text">{note}</textarea>
   <output>{note.length} characters</output>
   <button type="button">Discard</button>

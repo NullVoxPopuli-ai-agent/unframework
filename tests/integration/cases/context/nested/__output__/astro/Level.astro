@@ -14,7 +14,12 @@ const { title, class: className, style, "aria-label": ariaLabel, ...attrs } = As
 const depth = 0 as DepthKey;
 ---
 
-<section aria-label={ariaLabel ?? title} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <h2>{title} at depth {depth}</h2>
   <slot />
 </section>

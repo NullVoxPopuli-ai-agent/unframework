@@ -7,7 +7,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Checkout", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const first = true as boolean;
 const step = 1 as number;
@@ -15,7 +15,7 @@ const step = 1 as number;
 
 <section
   class:list={["steps", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Checkout"}
   style={style}
   data-uf-84fe8ccf=""
   {...attrs}

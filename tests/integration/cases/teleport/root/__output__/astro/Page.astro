@@ -12,18 +12,12 @@ interface Props extends PageProps, Omit<HTMLAttributes<"section">, "message"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  message,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Page",
-  ...attrs
-} = Astro.props;
+const { message, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <section
   class:list={["page", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Page"}
   style={style}
   data-uf-5a3bed67=""
   {...attrs}

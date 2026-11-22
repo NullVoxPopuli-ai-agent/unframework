@@ -25,13 +25,13 @@ const {
   badge,
   class: className,
   style,
-  type = "button",
+  type,
   ...attrs
 } = Astro.props;
 ---
 
 <button
-  type={type}
+  type={"type" in Astro.props ? type : "button"}
   class:list={["button", `button-${size}`, { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge }, primary ? "solid" : "outline", className]}
   style={style}
   {...attrs}

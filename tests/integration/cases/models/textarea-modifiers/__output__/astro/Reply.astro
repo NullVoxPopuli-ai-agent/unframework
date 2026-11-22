@@ -6,13 +6,18 @@ interface Props extends HTMLAttributes<"form"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Reply", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const message = "Thanks, see you soon" as string;
 const signature = "Ada" as string;
 ---
 
-<form aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<form
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Reply"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <textarea aria-label="Message">{message}</textarea>
   <textarea aria-label="Signature">{signature}</textarea>
   <output>[{message}] from {signature}</output>

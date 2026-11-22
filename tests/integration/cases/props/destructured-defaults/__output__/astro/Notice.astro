@@ -40,8 +40,8 @@ const {
 
 <section
   class:list={["notice", className]}
-  aria-label={ariaLabel ?? title}
-  data-tone={dataTone ?? tone}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
+  data-tone={"data-tone" in Astro.props ? dataTone : tone}
   style={style}
   {...attrs}
 >

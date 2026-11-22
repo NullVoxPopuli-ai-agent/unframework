@@ -97,7 +97,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let text = this.text();
     @let dark = this.dark();
     <section
-      [attr.data-theme]="dark ? 'dark' : 'light'"
+      [attr.data-theme]="'data-theme' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-theme'] : dark ? 'dark' : 'light'"
       class="_padding:md _background-color:surface _color:text"
       [class]="this.class()"
       [style]="this.style()"

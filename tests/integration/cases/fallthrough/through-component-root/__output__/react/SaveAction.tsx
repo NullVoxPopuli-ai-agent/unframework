@@ -1,18 +1,18 @@
+import Pressable from "./Pressable";
 import type { ComponentPropsWithRef } from "react";
 
-export type BaseAttributes = Omit<ComponentPropsWithRef<"button">, "text" | "children">;
+export type SaveActionAttributes = Omit<
+  ComponentPropsWithRef<typeof Pressable>,
+  "text" | "children"
+>;
 
-export default function Base({
+export default function SaveAction({
   text,
   className,
   style,
   ...attributes
-}: { text: string } & BaseAttributes) {
-  return (
-    <button type="button" className={cx("base", className)} style={style} {...attributes}>
-      {text}
-    </button>
-  );
+}: { text: string } & SaveActionAttributes) {
+  return <Pressable text={text} className={cx("save", className)} style={style} {...attributes} />;
 }
 
 /** Joins class names, and the keys of an object's truthy entries, into one `className`. */

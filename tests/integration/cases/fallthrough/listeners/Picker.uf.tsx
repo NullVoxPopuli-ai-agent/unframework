@@ -13,10 +13,12 @@ export default function Picker() {
     <section aria-label="Picker">
       <Chip
         label="Ada"
-        onClick={() => record("click")}
+        onClick={(event) => record(`click on ${(event.currentTarget as Element).localName}`)}
         onPick={(label) => record(`pick ${label}`)}
-        onFocus={() => record("focus")}
-        onKeydown={(event) => record(`keydown ${event.key}`)}
+        onFocus={(event) => record(`focus on ${(event.currentTarget as Element).localName}`)}
+        onKeydown={(event) =>
+          record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`)
+        }
       />
       <ol aria-label="Log">
         {log.value.map((entry, index) => (

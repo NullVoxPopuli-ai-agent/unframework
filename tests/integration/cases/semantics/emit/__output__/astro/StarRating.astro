@@ -6,13 +6,7 @@ interface Props extends HTMLAttributes<"div"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  class: className,
-  style,
-  role = "group",
-  "aria-label": ariaLabel = "Rating",
-  ...attrs
-} = Astro.props;
+const { class: className, style, role, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const choices = [1, 2, 3, 4, 5];
 const stars = 0 as number;
@@ -20,8 +14,8 @@ const stars = 0 as number;
 
 <div
   class:list={["star-rating", className]}
-  role={role}
-  aria-label={ariaLabel}
+  role={"role" in Astro.props ? role : "group"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Rating"}
   style={style}
   {...attrs}
 >

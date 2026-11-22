@@ -109,7 +109,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <div
       class="file-row"
       role="group"
-      [attr.aria-label]="path"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : path"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

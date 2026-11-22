@@ -8,13 +8,18 @@ interface Props extends Omit<HTMLAttributes<"section">, "cents"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { cents, class: className, style, "aria-label": ariaLabel = "Price", ...attrs } = Astro.props;
+const { cents, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const quantity = 1 as number;
 const total = formatPrice(cents * quantity);
 ---
 
-<section class:list={["price-tag", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["price-tag", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Price"}
+  style={style}
+  {...attrs}
+>
   <p>Each: {formatPrice(cents)}</p>
   <p role="status">{pluralise(quantity, "item")}: {total}</p>
   <button type="button">One more</button>

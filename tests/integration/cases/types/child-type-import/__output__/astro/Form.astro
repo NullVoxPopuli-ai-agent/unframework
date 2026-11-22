@@ -8,15 +8,14 @@ interface Props extends Omit<HTMLAttributes<"form">, "field"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  field,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Sign up",
-  ...attrs
-} = Astro.props;
+const { field, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<form aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<form
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Sign up"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <Field name={field.name} label={field.label} />
 </form>

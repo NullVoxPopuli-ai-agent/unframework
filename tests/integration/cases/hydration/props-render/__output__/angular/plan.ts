@@ -108,7 +108,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let note = this.note();
     <article
       [class]="[featured ? 'plan featured' : 'plan', this.class()].join(' ')"
-      [attr.aria-label]="name"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : name"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
       [ufScope]="this.host"

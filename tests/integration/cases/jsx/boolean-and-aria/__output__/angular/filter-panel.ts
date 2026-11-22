@@ -118,8 +118,8 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let current = this.current();
     <section
       class="filter-panel"
-      [attr.aria-label]="heading"
-      [attr.data-category]="category"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : heading"
+      [attr.data-category]="'data-category' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-category'] : category"
       data-layout="stacked"
       [class]="this.class()"
       [style]="this.style()"

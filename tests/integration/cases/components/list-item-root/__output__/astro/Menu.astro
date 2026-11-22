@@ -8,16 +8,15 @@ interface Props extends Omit<HTMLAttributes<"ul">, "entries"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  entries,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Menu",
-  ...attrs
-} = Astro.props;
+const { entries, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<ul aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<ul
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Menu"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {entries.map((entry) => (
     <Item label={entry} />
   ))}

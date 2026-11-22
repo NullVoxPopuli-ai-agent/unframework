@@ -7,12 +7,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Cart", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const { items } = useCart();
 ---
 
-<section class:list={["cart", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["cart", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Cart"}
+  style={style}
+  {...attrs}
+>
   <p role="status">Items: {items}</p>
   <button type="button">Add three</button>
   <button type="button">Clear</button>

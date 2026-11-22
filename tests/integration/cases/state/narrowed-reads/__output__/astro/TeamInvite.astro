@@ -25,7 +25,7 @@ const {
   members,
   class: className,
   style,
-  "aria-label": ariaLabel = "Invite",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
@@ -38,7 +38,12 @@ const byPassword = true as boolean;
 const seconds = 0 as number;
 ---
 
-<section class:list={["team-invite", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["team-invite", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Invite"}
+  style={style}
+  {...attrs}
+>
   <h2>{greeting}</h2>
   <ul aria-label="Members">
     {visible.map((member) => (

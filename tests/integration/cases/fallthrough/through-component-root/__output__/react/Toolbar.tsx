@@ -1,4 +1,4 @@
-import Primary from "./Primary";
+import SaveAction from "./SaveAction";
 import { type ComponentPropsWithRef, useRef, useState } from "react";
 
 export type ToolbarAttributes = Omit<ComponentPropsWithRef<"div">, "children">;
@@ -10,7 +10,7 @@ export default function Toolbar({ className, style, ...attributes }: ToolbarAttr
 
   return (
     <div role="toolbar" aria-label="Actions" className={className} style={style} {...attributes}>
-      <Primary
+      <SaveAction
         ref={save}
         text="Save"
         id="save"

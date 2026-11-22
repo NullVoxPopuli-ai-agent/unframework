@@ -125,7 +125,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let signature = this.signature();
     <section
       class="shipment-card"
-      [attr.aria-label]="reference"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : reference"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

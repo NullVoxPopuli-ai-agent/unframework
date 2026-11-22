@@ -19,7 +19,7 @@ const counted = false as boolean;
 
 <article
   class:list={["article-preview", className]}
-  aria-label={ariaLabel ?? title}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
   style={style}
   {...attrs}
 >

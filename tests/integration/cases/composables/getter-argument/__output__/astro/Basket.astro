@@ -8,13 +8,7 @@ interface Props extends Omit<HTMLAttributes<"section">, "price"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  price,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Basket",
-  ...attrs
-} = Astro.props;
+const { price, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const quantity = 1 as number;
 const { total, label } = useTotal(
@@ -23,7 +17,12 @@ const { total, label } = useTotal(
 );
 ---
 
-<section class:list={["basket", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["basket", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Basket"}
+  style={style}
+  {...attrs}
+>
   <p role="status">Total: {total}</p>
   <p>{label}</p>
   <button type="button">Add one</button>

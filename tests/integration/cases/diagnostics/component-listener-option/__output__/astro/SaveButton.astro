@@ -6,7 +6,12 @@ interface Props extends HTMLAttributes<"button"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, type = "button", ...attrs } = Astro.props;
+const { class: className, style, type, ...attrs } = Astro.props;
 ---
 
-<button type={type} class:list={[className]} style={style} {...attrs}>Save</button>
+<button
+  type={"type" in Astro.props ? type : "button"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>Save</button>

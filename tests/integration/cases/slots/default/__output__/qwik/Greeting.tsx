@@ -2,7 +2,7 @@ import Panel from "./Panel";
 import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
-  { name: string } & Omit<PropsOf<"section">, "name" | "class" | "style"> & {
+  { name: string } & Omit<PropsOf<typeof Panel>, "name" | "class" | "style" | "title"> & {
       class?: ClassList;
       style?: CSSProperties;
     }

@@ -88,7 +88,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
 }
 
 @Component({
-  selector: "uf-base",
+  selector: "uf-pressable",
   imports: [ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
@@ -96,7 +96,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let text = this.text();
     <button
       type="button"
-      class="base"
+      class="pressable"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
@@ -105,7 +105,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     >{{ text }}</button>
   `,
 })
-export default class Base {
+export default class Pressable {
   readonly text = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();

@@ -5,61 +5,61 @@
     {
       "name": "Toolbar",
       "span": {
-        "start": 102,
-        "end": 577
+        "start": 108,
+        "end": 586
       },
       "props": [],
       "types": [],
       "bindings": [
         {
-          "id": "clicks@146",
+          "id": "clicks@152",
           "name": "clicks",
           "kind": "state",
           "span": {
-            "start": 146,
-            "end": 152
+            "start": 152,
+            "end": 158
           }
         },
         {
-          "id": "save@171",
+          "id": "save@177",
           "name": "save",
           "kind": "templateRef",
           "span": {
-            "start": 171,
-            "end": 175
+            "start": 177,
+            "end": 181
           }
         }
       ],
       "setup": [
         {
           "kind": "State",
-          "binding": "clicks@146",
+          "binding": "clicks@152",
           "initial": {
             "code": "0",
             "span": {
-              "start": 159,
-              "end": 160
+              "start": 165,
+              "end": 166
             },
             "refs": []
           },
           "span": {
-            "start": 140,
-            "end": 162
+            "start": 146,
+            "end": 168
           }
         },
         {
           "kind": "TemplateRef",
-          "binding": "save@171",
+          "binding": "save@177",
           "type": {
             "code": "HTMLButtonElement",
             "span": {
-              "start": 193,
-              "end": 210
+              "start": 199,
+              "end": 216
             }
           },
           "span": {
-            "start": 165,
-            "end": 214
+            "start": 171,
+            "end": 220
           }
         }
       ],
@@ -72,8 +72,8 @@
             "name": "role",
             "value": "toolbar",
             "span": {
-              "start": 235,
-              "end": 249
+              "start": 241,
+              "end": 255
             }
           },
           {
@@ -81,22 +81,22 @@
             "name": "aria-label",
             "value": "Actions",
             "span": {
-              "start": 250,
-              "end": 270
+              "start": 256,
+              "end": 276
             }
           }
         ],
         "children": [
           {
             "kind": "Component",
-            "component": "Primary",
+            "component": "SaveAction",
             "attributes": [
               {
                 "kind": "Ref",
-                "binding": "save@171",
+                "binding": "save@177",
                 "span": {
-                  "start": 295,
-                  "end": 305
+                  "start": 304,
+                  "end": 314
                 }
               },
               {
@@ -105,14 +105,14 @@
                 "value": {
                   "code": "\"Save\"",
                   "span": {
-                    "start": 319,
-                    "end": 325
+                    "start": 328,
+                    "end": 334
                   },
                   "refs": []
                 },
                 "span": {
-                  "start": 314,
-                  "end": 325
+                  "start": 323,
+                  "end": 334
                 }
               },
               {
@@ -120,8 +120,8 @@
                 "name": "id",
                 "value": "save",
                 "span": {
-                  "start": 334,
-                  "end": 343
+                  "start": 343,
+                  "end": 352
                 }
               },
               {
@@ -129,8 +129,8 @@
                 "name": "aria-label",
                 "value": "Save draft",
                 "span": {
-                  "start": 352,
-                  "end": 375
+                  "start": 361,
+                  "end": 384
                 }
               },
               {
@@ -143,21 +143,21 @@
                     "body": {
                       "code": "clicks.value++",
                       "span": {
-                        "start": 399,
-                        "end": 413
+                        "start": 408,
+                        "end": 422
                       },
                       "refs": [
                         {
                           "kind": "Write",
-                          "binding": "clicks@146",
+                          "binding": "clicks@152",
                           "operator": "++",
                           "span": {
-                            "start": 399,
-                            "end": 413
+                            "start": 408,
+                            "end": 422
                           },
                           "target": {
-                            "start": 399,
-                            "end": 411
+                            "start": 408,
+                            "end": 420
                           },
                           "arrowBody": true
                         }
@@ -165,25 +165,25 @@
                     },
                     "expression": true,
                     "span": {
-                      "start": 393,
-                      "end": 413
+                      "start": 402,
+                      "end": 422
                     }
                   },
                   "span": {
-                    "start": 393,
-                    "end": 413
+                    "start": 402,
+                    "end": 422
                   }
                 },
                 "span": {
-                  "start": 384,
-                  "end": 414
+                  "start": 393,
+                  "end": 423
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 278,
-              "end": 423
+              "start": 284,
+              "end": 432
             }
           },
           {
@@ -195,8 +195,8 @@
                 "name": "type",
                 "value": "button",
                 "span": {
-                  "start": 438,
-                  "end": 451
+                  "start": 447,
+                  "end": 460
                 }
               },
               {
@@ -209,34 +209,34 @@
                     "body": {
                       "code": "save.value?.focus()",
                       "span": {
-                        "start": 467,
-                        "end": 486
+                        "start": 476,
+                        "end": 495
                       },
                       "refs": [
                         {
                           "kind": "Binding",
-                          "binding": "save@171",
+                          "binding": "save@177",
                           "span": {
-                            "start": 467,
-                            "end": 477
+                            "start": 476,
+                            "end": 486
                           }
                         }
                       ]
                     },
                     "expression": true,
                     "span": {
-                      "start": 461,
-                      "end": 486
+                      "start": 470,
+                      "end": 495
                     }
                   },
                   "span": {
-                    "start": 461,
-                    "end": 486
+                    "start": 470,
+                    "end": 495
                   }
                 },
                 "span": {
-                  "start": 452,
-                  "end": 487
+                  "start": 461,
+                  "end": 496
                 }
               }
             ],
@@ -245,14 +245,14 @@
                 "kind": "Text",
                 "value": "Focus save",
                 "span": {
-                  "start": 488,
-                  "end": 514
+                  "start": 497,
+                  "end": 523
                 }
               }
             ],
             "span": {
-              "start": 430,
-              "end": 523
+              "start": 439,
+              "end": 532
             }
           },
           {
@@ -264,8 +264,8 @@
                 "kind": "Text",
                 "value": "Clicks: ",
                 "span": {
-                  "start": 533,
-                  "end": 541
+                  "start": 542,
+                  "end": 550
                 }
               },
               {
@@ -273,35 +273,35 @@
                 "value": {
                   "code": "clicks.value",
                   "span": {
-                    "start": 542,
-                    "end": 554
+                    "start": 551,
+                    "end": 563
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "clicks@146",
+                      "binding": "clicks@152",
                       "span": {
-                        "start": 542,
-                        "end": 554
+                        "start": 551,
+                        "end": 563
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 541,
-                  "end": 555
+                  "start": 550,
+                  "end": 564
                 }
               }
             ],
             "span": {
-              "start": 530,
-              "end": 559
+              "start": 539,
+              "end": 568
             }
           }
         ],
         "span": {
-          "start": 230,
-          "end": 570
+          "start": 236,
+          "end": 579
         }
       }
     }
@@ -312,21 +312,21 @@
       "name": "default",
       "local": "Toolbar",
       "span": {
-        "start": 102,
-        "end": 577
+        "start": 108,
+        "end": 586
       }
     }
   ],
   "types": [],
   "imports": [
     {
-      "specifier": "./Primary.uf.tsx",
-      "file": "Primary.uf.tsx",
+      "specifier": "./SaveAction.uf.tsx",
+      "file": "SaveAction.uf.tsx",
       "api": {
-        "file": "Primary.uf.tsx",
+        "file": "SaveAction.uf.tsx",
         "components": [
           {
-            "name": "Primary",
+            "name": "SaveAction",
             "export": "default",
             "props": [
               {
@@ -342,7 +342,14 @@
             "inheritAttrs": true,
             "root": "component",
             "fallthroughTag": "button",
-            "refTag": "button"
+            "refTag": "button",
+            "rootDeclarations": [
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Pressable"
+              }
+            ]
           }
         ],
         "keys": []
@@ -351,16 +358,16 @@
         {
           "kind": "Component",
           "imported": "default",
-          "local": "Primary",
+          "local": "SaveAction",
           "span": {
             "start": 68,
-            "end": 75
+            "end": 78
           }
         }
       ],
       "span": {
         "start": 61,
-        "end": 100
+        "end": 106
       }
     }
   ]

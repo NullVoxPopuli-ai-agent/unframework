@@ -7,7 +7,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Menu", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const items = [
   { id: "a", label: "Alpha", note: "First" },
@@ -18,7 +18,12 @@ const items = [
 const focused = 0 as number;
 ---
 
-<section class:list={["menu", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["menu", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Menu"}
+  style={style}
+  {...attrs}
+>
   <ul aria-label="Items">
     {items.map((item) => (
       <li

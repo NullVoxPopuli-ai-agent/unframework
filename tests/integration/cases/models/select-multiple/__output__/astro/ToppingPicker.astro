@@ -6,12 +6,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Pizza", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const toppings = ["cheese"] as string[];
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Pizza"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <label>Toppings <select
     multiple
   ><option value="cheese" selected={toppings.includes("cheese")}>Cheese</option><option

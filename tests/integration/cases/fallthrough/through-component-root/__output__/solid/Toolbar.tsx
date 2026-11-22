@@ -1,4 +1,4 @@
-import Primary from "./Primary";
+import SaveAction from "./SaveAction";
 import { type ComponentProps, type JSX, createSignal, onCleanup } from "solid-js";
 
 export default function Toolbar(
@@ -9,7 +9,7 @@ export default function Toolbar(
 
   return (
     <div role="toolbar" aria-label="Actions" {...props}>
-      <Primary
+      <SaveAction
         ref={(element) => {
           save = element;
           onCleanup(() => {

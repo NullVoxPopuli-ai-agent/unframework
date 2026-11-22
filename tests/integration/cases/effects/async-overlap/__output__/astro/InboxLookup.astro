@@ -6,7 +6,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Inbox", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const answers = [] as string[];
 const ordering = "none" as string;
@@ -16,7 +16,12 @@ const failure = "" as string;
 const unread = 0 as number;
 ---
 
-<section class:list={["inbox-lookup", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["inbox-lookup", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Inbox"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Find Ann</button>
   <button type="button">Find Anna</button>
   <button type="button">Answer lookups</button>

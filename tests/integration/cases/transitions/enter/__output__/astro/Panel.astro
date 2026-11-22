@@ -7,14 +7,14 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Delivery", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const open = false as boolean;
 ---
 
 <section
   class:list={["panel", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Delivery"}
   style={style}
   data-uf-eab7eeb4=""
   {...attrs}

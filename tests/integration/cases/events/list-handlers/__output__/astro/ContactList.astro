@@ -15,19 +15,18 @@ interface Props extends ContactListProps, Omit<HTMLAttributes<"section">, "initi
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  initial,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Contacts",
-  ...attrs
-} = Astro.props;
+const { initial, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const contacts = initial;
 const chosen = undefined as string | undefined;
 ---
 
-<section class:list={["contact-list", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["contact-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Contacts"}
+  style={style}
+  {...attrs}
+>
   <ul>
     {contacts.map((contact) => (
       <li>

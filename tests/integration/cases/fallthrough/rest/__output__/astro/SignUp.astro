@@ -7,12 +7,17 @@ interface Props extends HTMLAttributes<"form"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Sign up", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const focuses = 0 as number;
 ---
 
-<form aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<form
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Sign up"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <p id="email-hint">We never share it.</p>
   <Field
     label="Email"

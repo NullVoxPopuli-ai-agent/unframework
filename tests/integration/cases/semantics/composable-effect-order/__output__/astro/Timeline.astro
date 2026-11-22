@@ -7,13 +7,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Timeline", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const entries = [] as string[];
 const { count } = useTracked();
 ---
 
-<section class:list={["timeline", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["timeline", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Timeline"}
+  style={style}
+  {...attrs}
+>
   <p role="status">Count: {count}</p>
   <button type="button">Increment</button>
   <ol>

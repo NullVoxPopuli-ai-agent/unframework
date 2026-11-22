@@ -8,13 +8,18 @@ interface Props extends Omit<HTMLAttributes<"section">, "ids"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { ids, class: className, style, "aria-label": ariaLabel = "Roster", ...attrs } = Astro.props;
+const { ids, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const lead = true as boolean;
 const guest = false as boolean;
 ---
 
-<section class:list={["roster", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["roster", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Roster"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Switch lead</button>
   <button type="button">Toggle guest</button>
   <ul>

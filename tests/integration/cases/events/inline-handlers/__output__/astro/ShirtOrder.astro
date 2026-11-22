@@ -6,14 +6,19 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Shirt order", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const size = "M" as string;
 const quantity = 1 as number;
 const note = "" as string;
 ---
 
-<section class:list={["shirt-order", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["shirt-order", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Shirt order"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{`${quantity} x size ${size}`}</p>
   <div role="group" aria-label="Size">
     <button type="button" value="S" aria-pressed={size === "S"}>Small</button>

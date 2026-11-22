@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { ClassValue, HTMLInputAttributes } from "svelte/elements";
 
   type Props = Omit<HTMLInputAttributes, "label" | "children" | "class" | "style" | "ref"> & {
@@ -20,9 +21,14 @@
   }: Props = $props();
 
   let input: HTMLInputElement | null = null;
+  let mounted = $state(false);
+
+  onMount(() => {
+    mounted = input !== null;
+  });
 
   function fill() {
-    if (input && !input.value) input.value = "Ada";
+    if (input && !input.value && mounted) input.value = "Ada";
   }
 </script>
 

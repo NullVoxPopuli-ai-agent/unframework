@@ -100,9 +100,9 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <button
       type="button"
       class="chip"
-      [attr.data-variant]="variant"
-      [attr.data-state]="pressed ? 'on' : 'off'"
-      [attr.aria-pressed]="pressed ? 'true' : 'false'"
+      [attr.data-variant]="'data-variant' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-variant'] : variant"
+      [attr.data-state]="'data-state' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-state'] : pressed ? 'on' : 'off'"
+      [attr.aria-pressed]="'aria-pressed' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-pressed'] : pressed ? 'true' : 'false'"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

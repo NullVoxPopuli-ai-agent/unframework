@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import Pressable from "./Pressable.vue";
+
 const { text } = defineProps<{ text: string }>();
 </script>
 
 <template>
-  <button type="button" class="base">{{ text }}</button>
+  <Pressable :text="text" class="save" />
 </template>

@@ -18,22 +18,22 @@ const {
   colour = "#1f6feb",
   class: className,
   style,
-  role = "img",
-  viewBox = "0 0 24 24",
+  role,
+  viewBox,
   width,
   height,
-  fill = "none",
+  fill,
   ...attrs
 } = Astro.props;
 ---
 
 <svg
   class:list={["status-icon", className]}
-  role={role}
-  viewBox={viewBox}
-  width={width ?? size}
-  height={height ?? size}
-  fill={fill}
+  role={"role" in Astro.props ? role : "img"}
+  viewBox={"viewBox" in Astro.props ? viewBox : "0 0 24 24"}
+  width={"width" in Astro.props ? width : size}
+  height={"height" in Astro.props ? height : size}
+  fill={"fill" in Astro.props ? fill : "none"}
   style={style}
   {...attrs}
 >

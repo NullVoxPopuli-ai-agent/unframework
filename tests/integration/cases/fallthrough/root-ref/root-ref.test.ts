@@ -1,6 +1,6 @@
 // fallthrough/root-ref: a ref on a component that exposes nothing holds its root element
 // (ADR-0118), an <input>, which the parent focuses. The component's own template ref on the
-// same element still works: its own focus listener fills the field through it. A component that
+// same element still works: `onMounted` reads it, and its focus listener then fills the field. A component that
 // turns fallthrough off still gives a ref its root element, as Vue's `$el` does.
 import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";

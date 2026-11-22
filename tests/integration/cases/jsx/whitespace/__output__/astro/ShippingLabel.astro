@@ -23,12 +23,17 @@ const {
   postcode,
   class: className,
   style,
-  "aria-label": ariaLabel = "Shipping label",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<article class:list={["shipping-label", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<article
+  class:list={["shipping-label", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Shipping label"}
+  style={style}
+  {...attrs}
+>
   <p><strong>To:</strong> {recipient}</p>
   <p>
     <span class="shipping-label-city">{city}</span> <span

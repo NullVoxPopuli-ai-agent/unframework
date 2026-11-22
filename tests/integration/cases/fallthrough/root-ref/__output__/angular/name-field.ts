@@ -8,8 +8,10 @@ import {
   type OnInit,
   PLATFORM_ID,
   Renderer2,
+  afterNextRender,
   inject,
   input as input_1,
+  signal,
   viewChild,
 } from "@angular/core";
 
@@ -97,7 +99,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <input
       #input
       name="name"
-      [attr.aria-label]="label"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : label"
       (focus)="fill()"
       [class]="this.class()"
       [style]="this.style()"
@@ -115,9 +117,16 @@ export default class NameField {
   readonly ufListeners = input_1<Listeners>();
   private readonly input = viewChild<ElementRef<HTMLInputElement>>("input");
   readonly ufElement = viewChild<ElementRef<HTMLInputElement>>("ufElement");
+  private readonly mounted = signal(false);
+
+  constructor() {
+    afterNextRender(() => {
+      this.mounted.set((this.input()?.nativeElement ?? null) !== null);
+    });
+  }
 
   protected fill() {
-    if (this.input()?.nativeElement && !this.input()!.nativeElement.value)
+    if (this.input()?.nativeElement && !this.input()!.nativeElement.value && this.mounted())
       this.input()!.nativeElement.value = "Ada";
   }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

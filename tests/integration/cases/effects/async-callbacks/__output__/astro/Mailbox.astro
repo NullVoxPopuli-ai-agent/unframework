@@ -10,20 +10,19 @@ interface Props extends MailboxProps, Omit<HTMLAttributes<"section">, "folder"> 
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  folder: _folder,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Mailbox",
-  ...attrs
-} = Astro.props;
+const { folder: _folder, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const name = "Loading" as string;
 const status = "idle" as string;
 const summary = "No messages" as string;
 ---
 
-<section class:list={["mailbox", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["mailbox", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Mailbox"}
+  style={style}
+  {...attrs}
+>
   <h2>{name}</h2>
   <p role="status">{summary}</p>
   <p>Status: {status}</p>

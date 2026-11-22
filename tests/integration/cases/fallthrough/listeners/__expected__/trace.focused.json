@@ -10,7 +10,7 @@
         "  </button>",
         "  <ol aria-label=\"Log\">",
         "    <li>",
-        "      \"focus\"",
+        "      \"focus on button\"",
         "    </li>",
         "  </ol>",
         "</section>"
@@ -19,7 +19,7 @@
         "- region \"Picker\":",
         "  - button \"Ada\"",
         "  - list \"Log\":",
-        "    - listitem: focus"
+        "    - listitem: focus on button"
       ],
       "events": {}
     }

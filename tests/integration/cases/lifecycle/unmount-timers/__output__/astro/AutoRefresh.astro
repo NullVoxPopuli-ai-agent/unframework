@@ -15,14 +15,19 @@ const {
   interval: _interval,
   class: className,
   style,
-  "aria-label": ariaLabel = "Auto-refresh",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
 const enabled = false as boolean;
 ---
 
-<section class:list={["auto-refresh", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["auto-refresh", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Auto-refresh"}
+  style={style}
+  {...attrs}
+>
   <button type="button" aria-pressed={enabled}>Auto-refresh</button>
   <p role="status">{enabled ? "Refreshing" : "Paused"}</p>
 </section>

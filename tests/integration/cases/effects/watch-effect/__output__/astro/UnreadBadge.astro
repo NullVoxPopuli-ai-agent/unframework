@@ -14,14 +14,19 @@ const {
   appName: _appName,
   class: className,
   style,
-  "aria-label": ariaLabel = "Inbox",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
 const unread = 0 as number;
 ---
 
-<section class:list={["unread-badge", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["unread-badge", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Inbox"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{unread} unread</p>
   <button type="button">Receive a message</button>
   <button type="button">Mark all read</button>

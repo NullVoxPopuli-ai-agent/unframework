@@ -102,7 +102,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @if (resolved()) {
       <section
         class="panel"
-        [attr.aria-label]="user.name"
+        [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : user.name"
         [class]="this.class()"
         [style]="this.style()"
         [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

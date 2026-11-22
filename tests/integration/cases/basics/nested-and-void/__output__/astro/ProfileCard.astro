@@ -6,17 +6,12 @@ interface Props extends HTMLAttributes<"article"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  class: className,
-  style,
-  "aria-labelledby": ariaLabelledby = "profile-name",
-  ...attrs
-} = Astro.props;
+const { class: className, style, "aria-labelledby": ariaLabelledby, ...attrs } = Astro.props;
 ---
 
 <article
   class:list={["profile", className]}
-  aria-labelledby={ariaLabelledby}
+  aria-labelledby={"aria-labelledby" in Astro.props ? ariaLabelledby : "profile-name"}
   style={style}
   {...attrs}
 >

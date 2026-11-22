@@ -100,7 +100,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
       #ufElement
     >{{ label }}&ngsp;<input
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
-      [attr.name]="label.toLowerCase()"
+      [attr.name]="'name' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['name'] : label.toLowerCase()"
       [class]="this.class()"
       [style]="this.style()"
     /></label>

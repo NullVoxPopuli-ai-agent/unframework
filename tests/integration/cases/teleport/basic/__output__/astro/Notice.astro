@@ -14,13 +14,18 @@ const {
   message: _message,
   class: className,
   style,
-  "aria-label": ariaLabel = "Inbox",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
 const dismissed = 0 as number;
 ---
 
-<section class:list={["inbox", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["inbox", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Inbox"}
+  style={style}
+  {...attrs}
+>
   <p>Dismissed {dismissed} times</p>
 </section>

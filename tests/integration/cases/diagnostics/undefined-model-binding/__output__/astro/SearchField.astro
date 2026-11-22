@@ -7,19 +7,12 @@ interface Props extends Omit<HTMLAttributes<"input">, "query"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  query,
-  class: className,
-  style,
-  type = "search",
-  "aria-label": ariaLabel = "Search",
-  ...attrs
-} = Astro.props;
+const { query, class: className, style, type, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
 <input
-  type={type}
-  aria-label={ariaLabel}
+  type={"type" in Astro.props ? type : "search"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Search"}
   value={query}
   class:list={[className]}
   style={style}

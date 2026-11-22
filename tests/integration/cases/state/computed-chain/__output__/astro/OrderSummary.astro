@@ -17,7 +17,7 @@ const {
   taxRate,
   class: className,
   style,
-  "aria-label": ariaLabel = "Order summary",
+  "aria-label": ariaLabel,
   "data-tier": dataTier,
   ...attrs
 } = Astro.props;
@@ -37,8 +37,8 @@ const tier = getTier();
 
 <section
   class:list={["order-summary", className]}
-  aria-label={ariaLabel}
-  data-tier={dataTier ?? tier}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Order summary"}
+  data-tier={"data-tier" in Astro.props ? dataTier : tier}
   style={style}
   {...attrs}
 >

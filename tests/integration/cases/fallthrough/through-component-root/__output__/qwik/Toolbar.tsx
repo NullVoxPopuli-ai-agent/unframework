@@ -1,4 +1,4 @@
-import Primary from "./Primary";
+import SaveAction from "./SaveAction";
 import {
   type CSSProperties,
   type ClassList,
@@ -15,7 +15,7 @@ export default component$<
 
   return (
     <div role="toolbar" aria-label="Actions" class={className} style={style} {...attributes}>
-      <Primary
+      <SaveAction
         ref={save}
         text="Save"
         id="save"

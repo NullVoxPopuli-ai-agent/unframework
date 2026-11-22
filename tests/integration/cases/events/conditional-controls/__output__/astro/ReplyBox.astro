@@ -6,14 +6,19 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Reply", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const started = false as boolean;
 const suggesting = false as boolean;
 const accepted = 0 as number;
 ---
 
-<section class:list={["reply-box", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["reply-box", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Reply"}
+  style={style}
+  {...attrs}
+>
   <label>Message<textarea name="message"></textarea></label>
   <p>{started ? "Started" : "Not started"}</p>
   <label>Answer<textarea name="answer"></textarea></label>

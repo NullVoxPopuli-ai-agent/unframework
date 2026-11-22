@@ -10,18 +10,17 @@ interface Props extends CommandMenuProps, Omit<HTMLAttributes<"section">, "comma
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  commands,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Command menu",
-  ...attrs
-} = Astro.props;
+const { commands, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const active = 0 as number;
 ---
 
-<section class:list={["command-menu", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["command-menu", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Command menu"}
+  style={style}
+  {...attrs}
+>
   <form role="search" aria-label="Commands">
     <label>Command<input name="command" /></label>
   </form>

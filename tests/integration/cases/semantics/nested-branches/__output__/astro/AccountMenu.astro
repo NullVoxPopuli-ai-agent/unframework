@@ -14,19 +14,18 @@ interface Props extends AccountMenuProps, Omit<HTMLAttributes<"section">, "owner
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  owner,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Account",
-  ...attrs
-} = Astro.props;
+const { owner, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const step = "intro" as string;
 const user = null as User | null;
 ---
 
-<section class:list={["account-menu", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["account-menu", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Account"}
+  style={style}
+  {...attrs}
+>
   {step === "intro" ? (
     <button type="button">Start</button>
   ) : (

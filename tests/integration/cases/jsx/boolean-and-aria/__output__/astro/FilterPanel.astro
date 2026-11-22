@@ -49,16 +49,16 @@ const {
   style,
   "aria-label": ariaLabel,
   "data-category": dataCategory,
-  "data-layout": dataLayout = "stacked",
+  "data-layout": dataLayout,
   ...attrs
 } = Astro.props;
 ---
 
 <section
   class:list={["filter-panel", className]}
-  aria-label={ariaLabel ?? heading}
-  data-category={dataCategory ?? category}
-  data-layout={dataLayout}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : heading}
+  data-category={"data-category" in Astro.props ? dataCategory : category}
+  data-layout={"data-layout" in Astro.props ? dataLayout : "stacked"}
   style={style}
   {...attrs}
 >

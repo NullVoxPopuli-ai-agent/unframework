@@ -27,7 +27,7 @@ function withoutScope(rest: object): Record<string, unknown> {
   {...scopeAttributes(Astro.props)}
 >{label} <input
   {...withoutScope(attrs)}
-  name={name ?? label.toLowerCase()}
+  name={"name" in Astro.props ? name : label.toLowerCase()}
   class:list={[className]}
   style={style}
 /></label>

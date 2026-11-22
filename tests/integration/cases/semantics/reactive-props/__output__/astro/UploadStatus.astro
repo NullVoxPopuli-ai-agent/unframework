@@ -37,7 +37,7 @@ const {
 
 <section
   class:list={["upload", `upload-${state}`, className]}
-  aria-label={ariaLabel ?? `Upload of ${fileName}`}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : `Upload of ${fileName}`}
   style={{ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent, ...style }}
   {...attrs}
 >

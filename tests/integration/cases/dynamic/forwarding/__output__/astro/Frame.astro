@@ -15,7 +15,12 @@ const { label, wide, class: className, style, "aria-label": ariaLabel, ...attrs 
 const Tag = wide ? Panel : Card;
 ---
 
-<section class:list={["frame", className]} aria-label={ariaLabel ?? label} style={style} {...attrs}>
+<section
+  class:list={["frame", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  style={style}
+  {...attrs}
+>
   {Astro.slots.has("title") ? (
     <>
       <Tag>

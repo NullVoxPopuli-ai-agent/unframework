@@ -7,7 +7,7 @@ export interface Person {
 }
 
 export default component$<
-  { people: Person[] } & Omit<PropsOf<"ol">, "people" | "class" | "style"> & {
+  { people: Person[] } & Omit<PropsOf<typeof Table>, "people" | "class" | "style" | "row$"> & {
       class?: ClassList;
       style?: CSSProperties;
     }

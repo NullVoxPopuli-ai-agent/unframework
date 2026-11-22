@@ -9,10 +9,15 @@ interface Props extends Omit<HTMLAttributes<"section">, "ids"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { ids, class: className, style, "aria-label": ariaLabel = "Team", ...attrs } = Astro.props;
+const { ids, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<section class:list={["team", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["team", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Team"}
+  style={style}
+  {...attrs}
+>
   <h2>Team</h2>
   <button type="button">Reset</button>
   <Member id="ada" />

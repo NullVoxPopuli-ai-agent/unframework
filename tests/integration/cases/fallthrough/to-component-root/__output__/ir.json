@@ -124,7 +124,14 @@
             "inheritAttrs": true,
             "root": "component",
             "fallthroughTag": "button",
-            "refTag": "button"
+            "refTag": "button",
+            "rootDeclarations": [
+              {
+                "name": "text",
+                "kind": "prop",
+                "component": "Base"
+              }
+            ]
           }
         ],
         "keys": []

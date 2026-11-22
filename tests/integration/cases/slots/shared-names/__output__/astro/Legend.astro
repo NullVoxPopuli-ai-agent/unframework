@@ -22,7 +22,12 @@ const {
 } = Astro.props;
 ---
 
-<ul aria-label={ariaLabel ?? label} class:list={[className]} style={style} {...attrs}>
+<ul
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {items.map((item) => (
     <li>
       <span>{swatch?.({ item })}</span> <span>{caption?.({ item })}</span>

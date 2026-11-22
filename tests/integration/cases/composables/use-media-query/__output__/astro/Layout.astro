@@ -7,13 +7,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Layout", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const { matches: wide } = useMediaQuery("(min-width: 1px)");
 const { matches: tiny } = useMediaQuery("(max-width: 1px)");
 ---
 
-<section class:list={["layout", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["layout", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Layout"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{wide ? "Wide layout" : "Narrow layout"}</p>
   <p>{tiny ? "Tiny screen" : "Not a tiny screen"}</p>
 </section>

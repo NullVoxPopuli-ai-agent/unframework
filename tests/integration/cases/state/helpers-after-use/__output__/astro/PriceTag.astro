@@ -11,7 +11,7 @@ interface Props extends PriceTagProps, Omit<HTMLAttributes<"section">, "price"> 
   style?: Record<string, string | number | undefined>;
 }
 
-const { price, class: className, style, "aria-label": ariaLabel = "Price", ...attrs } = Astro.props;
+const { price, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const quantity = 1 as number;
 const unit = formatCents(price);
@@ -28,7 +28,12 @@ function describe(): string {
 }
 ---
 
-<section class:list={["price-tag", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["price-tag", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Price"}
+  style={style}
+  {...attrs}
+>
   <p>Unit: {unit}</p>
   <p role="status">{summary}</p>
   <p>Total: {total}</p>

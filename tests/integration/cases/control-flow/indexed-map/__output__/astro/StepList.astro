@@ -14,7 +14,12 @@ interface Props extends StepListProps, Omit<HTMLAttributes<"ol">, "title" | "ste
 const { title, steps, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<ol class:list={["step-list", className]} aria-label={ariaLabel ?? title} style={style} {...attrs}>
+<ol
+  class:list={["step-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
+  style={style}
+  {...attrs}
+>
   {steps.map((step, index) => (
     <li data-step={index + 1}>Step {index + 1}: {step}</li>
   ))}

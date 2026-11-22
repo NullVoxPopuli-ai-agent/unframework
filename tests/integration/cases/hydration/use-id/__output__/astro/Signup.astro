@@ -12,17 +12,15 @@ interface Props extends SignupProps, Omit<HTMLAttributes<"form">, "name" | "emai
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  name,
-  email,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Sign up",
-  ...attrs
-} = Astro.props;
+const { name, email, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<form class:list={["signup", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<form
+  class:list={["signup", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Sign up"}
+  style={style}
+  {...attrs}
+>
   <Field label={name} hint="As it appears on your card." />
   <Field label={email} hint="We send the receipt here." />
 </form>

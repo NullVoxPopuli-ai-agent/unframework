@@ -11,11 +11,11 @@ interface Props extends Omit<HTMLAttributes<"button">, "label" | "size" | "tone"
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, size, tone, class: className, style, type = "button", ...attrs } = Astro.props;
+const { label, size, tone, class: className, style, type, ...attrs } = Astro.props;
 ---
 
 <button
-  type={type}
+  type={"type" in Astro.props ? type : "button"}
   class:list={[button({ size, tone }), className]}
   style={style}
   {...attrs}

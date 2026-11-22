@@ -6,7 +6,10 @@ interface Fruit {
   count: number;
 }
 
-export type FruitsAttributes = Omit<ComponentPropsWithRef<"ul">, "fruits" | "children">;
+export type FruitsAttributes = Omit<
+  ComponentPropsWithRef<typeof Picker>,
+  "fruits" | "children" | "items" | "renderItem"
+>;
 
 export default function Fruits({
   fruits,

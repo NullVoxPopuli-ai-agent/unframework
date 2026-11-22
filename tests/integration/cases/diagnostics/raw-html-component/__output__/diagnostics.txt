@@ -4,5 +4,5 @@ error[UF3035]: Card declares no prop `innerHTML`, and it is no attribute of <sec
 16 |   return <Card heading="Welcome" innerHTML={intro} />;
    |                                  ^^^^^^^^^
    |
-   = help: Pass a prop Card declares, or declare `innerHTML` in its props.
+   = help: Pass a prop Card declares or an attribute of <section>, or declare `innerHTML` in its props.
    = see: https://unframework.dev/diagnostics/UF3035

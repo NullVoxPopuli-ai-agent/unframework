@@ -4,6 +4,6 @@ error[UF3035]: Field declares no prop `lable`, and it is no attribute of <label>
 15 |       <Field lable="Name" />
    |              ^^^^^
    |
-   = help: Pass a prop Field declares, or declare `lable` in its props.
+   = help: Pass a prop Field declares or an attribute of <label>, or declare `lable` in its props.
    = fix (likely): Write `label`
    = see: https://unframework.dev/diagnostics/UF3035

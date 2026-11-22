@@ -7,13 +7,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Search", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const low = 20 as number;
 const high = 50 as number;
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Search"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <PriceRange label="Price" min={low} max={high} />
   <output>Between {low} and {high}</output>
   <button type="button">Cheaper</button>

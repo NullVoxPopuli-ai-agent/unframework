@@ -10,8 +10,8 @@ interface Props extends HTMLAttributes<"section"> {
 const {
   class: className,
   style,
-  "aria-label": ariaLabel = "Tree",
-  "data-name": dataName = "outer",
+  "aria-label": ariaLabel,
+  "data-name": dataName,
   ...attrs
 } = Astro.props;
 
@@ -20,8 +20,8 @@ const shown = true as boolean;
 
 <section
   class:list={["tree", className]}
-  aria-label={ariaLabel}
-  data-name={dataName}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Tree"}
+  data-name={"data-name" in Astro.props ? dataName : "outer"}
   style={style}
   {...attrs}
 >

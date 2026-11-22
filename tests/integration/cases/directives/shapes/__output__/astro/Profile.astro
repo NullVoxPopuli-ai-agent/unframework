@@ -10,7 +10,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Profile", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const user = { name: "Ada" } as User | null;
 const note = "Hello" as string;
@@ -19,7 +19,12 @@ const nick = "Al" as string | undefined;
 const cleanup = "Tidy" as string | null;
 ---
 
-<section class:list={["profile", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["profile", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
+  style={style}
+  {...attrs}
+>
   {user ? (
     <p>{user.name}</p>
   ) : null}

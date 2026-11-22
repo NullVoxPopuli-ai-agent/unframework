@@ -108,7 +108,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <div
       role="dialog"
       aria-modal="true"
-      [attr.aria-labelledby]="titleId"
+      [attr.aria-labelledby]="'aria-labelledby' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-labelledby'] : titleId"
       tabindex="-1"
       class="dialog"
       (keydown)="onKeydown($event)"

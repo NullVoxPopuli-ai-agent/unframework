@@ -15,7 +15,7 @@ interface Props extends BookShelfProps, Omit<HTMLAttributes<"section">, "books">
   style?: Record<string, string | number | undefined>;
 }
 
-const { books, class: className, style, "aria-label": ariaLabel = "Books", ...attrs } = Astro.props;
+const { books, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const focused = null as Book | null;
 const reads = new Map<number, number>();
@@ -26,7 +26,12 @@ const low = 1 as number;
 const high = 5 as number;
 ---
 
-<section class:list={["book-shelf", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["book-shelf", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Books"}
+  style={style}
+  {...attrs}
+>
   <ul aria-label="Shelf">
     {books.map((book) => (
       <li>

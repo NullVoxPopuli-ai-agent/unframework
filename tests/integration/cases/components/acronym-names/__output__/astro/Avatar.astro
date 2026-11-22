@@ -13,15 +13,15 @@ const {
   userID,
   class: className,
   style,
-  type = "button",
+  type,
   "data-user": dataUser,
   ...attrs
 } = Astro.props;
 ---
 
 <button
-  type={type}
-  data-user={dataUser ?? userID}
+  type={"type" in Astro.props ? type : "button"}
+  data-user={"data-user" in Astro.props ? dataUser : userID}
   class:list={[className]}
   style={style}
   {...attrs}

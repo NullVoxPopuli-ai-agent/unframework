@@ -52,7 +52,7 @@ const {
 
 <section
   class:list={["shipment-card", className]}
-  aria-label={ariaLabel ?? reference}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : reference}
   style={style}
   {...attrs}
 >

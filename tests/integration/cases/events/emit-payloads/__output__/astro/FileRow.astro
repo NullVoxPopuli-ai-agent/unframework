@@ -21,7 +21,7 @@ const {
   size,
   class: className,
   style,
-  role = "group",
+  role,
   "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
@@ -29,8 +29,8 @@ const {
 
 <div
   class:list={["file-row", className]}
-  role={role}
-  aria-label={ariaLabel ?? path}
+  role={"role" in Astro.props ? role : "group"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : path}
   style={style}
   {...attrs}
 >

@@ -14,7 +14,7 @@
       "column": 19,
       "offset": 449
     },
-    "help": "Pass a prop Field declares, or declare `lable` in its props.",
+    "help": "Pass a prop Field declares or an attribute of <label>, or declare `lable` in its props.",
     "fixes": [
       {
         "title": "Write `label`",

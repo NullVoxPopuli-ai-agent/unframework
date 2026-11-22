@@ -27,7 +27,7 @@ const {
   organiser,
   class: className,
   style,
-  "aria-label": ariaLabel = "Meetings",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
@@ -38,7 +38,12 @@ const clicks = 0 as number;
 const upcoming = meetings.filter((meeting) => !meeting.done);
 ---
 
-<section class:list={["meeting-list", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["meeting-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Meetings"}
+  style={style}
+  {...attrs}
+>
   <ul aria-label="Upcoming">
     {upcoming.map((event) => (
       <li>

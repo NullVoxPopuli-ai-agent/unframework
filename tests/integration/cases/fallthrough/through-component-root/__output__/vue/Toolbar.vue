@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Primary from "./Primary.vue";
+import SaveAction from "./SaveAction.vue";
 import { computed, ref, useTemplateRef } from "vue";
 
 const clicks = ref(0);
@@ -10,7 +10,7 @@ const save = computed(() => saveComponent.value?.$el ?? null);
 
 <template>
   <div role="toolbar" aria-label="Actions">
-    <Primary
+    <SaveAction
       id="save"
       ref="saveComponent"
       text="Save"

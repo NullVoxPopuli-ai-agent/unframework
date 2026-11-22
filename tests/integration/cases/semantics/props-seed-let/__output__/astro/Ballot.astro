@@ -29,7 +29,7 @@ const picked = "none" as string;
 
 <section
   class:list={["ballot", className]}
-  aria-label={ariaLabel ?? label}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
   style={style}
   {...attrs}
 >

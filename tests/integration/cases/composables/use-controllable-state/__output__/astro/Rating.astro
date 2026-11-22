@@ -8,18 +8,17 @@ interface Props extends Omit<HTMLAttributes<"section">, "value"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  value,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Rating",
-  ...attrs
-} = Astro.props;
+const { value, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const { current } = useControllableState(() => value, 1);
 ---
 
-<section class:list={["rating", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["rating", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Rating"}
+  style={style}
+  {...attrs}
+>
   <p role="status">Rated {current} of 3</p>
   <button type="button">Two</button>
   <button type="button">Three</button>

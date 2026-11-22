@@ -6,7 +6,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Composer", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const tags = [] as string[];
 const query = "" as string;
@@ -18,7 +18,7 @@ const log = [] as string[];
 
 <section
   class:list={["comment-composer", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Composer"}
   style={style}
   {...attrs}
 >

@@ -6,12 +6,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Profile", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const open = false as boolean;
 ---
 
-<section class:list={["profile-menu", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["profile-menu", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
+  style={style}
+  {...attrs}
+>
   <div class="menu">
     <button type="button" aria-expanded={open}>Account</button>
     {open ? (

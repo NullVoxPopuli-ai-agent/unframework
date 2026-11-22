@@ -41,7 +41,7 @@ const {
 
 <article
   class:list={["article-teaser", className]}
-  aria-label={ariaLabel ?? title}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
   style={style}
   {...attrs}
 >

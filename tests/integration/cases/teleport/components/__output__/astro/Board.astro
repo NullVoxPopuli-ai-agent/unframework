@@ -13,7 +13,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Board", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const rows = [
   { id: 1, label: "Alpha" },
@@ -22,7 +22,12 @@ const rows = [
 ] as Row[];
 ---
 
-<section class:list={["board", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["board", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Board"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Reverse tips</button>
   <button type="button">Show late</button>
   {rows.map((row) => (

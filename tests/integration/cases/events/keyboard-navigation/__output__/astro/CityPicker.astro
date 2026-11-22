@@ -10,7 +10,7 @@ interface Props extends CityPickerProps, Omit<HTMLAttributes<"section">, "cities
   style?: Record<string, string | number | undefined>;
 }
 
-const { cities, class: className, style, "aria-label": ariaLabel = "Trip", ...attrs } = Astro.props;
+const { cities, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
@@ -27,7 +27,12 @@ const notes = [] as string[];
 const matches = cities.filter((city) => city.toLowerCase().startsWith(query.toLowerCase()));
 ---
 
-<section class:list={["city-picker", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["city-picker", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Trip"}
+  style={style}
+  {...attrs}
+>
   <form role="search" aria-label="Destination">
     <label>City<input
       type="search"

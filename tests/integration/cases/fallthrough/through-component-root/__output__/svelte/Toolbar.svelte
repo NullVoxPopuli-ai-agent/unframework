@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import Primary from "./Primary.svelte";
+  import SaveAction from "./SaveAction.svelte";
   import type { ClassValue, SvelteHTMLElements } from "svelte/elements";
 
   type Props = Omit<SvelteHTMLElements["div"], "children" | "class" | "style" | "ref"> & {
@@ -17,7 +17,12 @@
 </script>
 
 <div role="toolbar" aria-label="Actions" class={className} {style} bind:this={ref} {...attributes}>
-  <Primary bind:ref={save} text="Save" id="save" aria-label="Save draft" onclick={() => clicks++}
+  <SaveAction
+    bind:ref={save}
+    text="Save"
+    id="save"
+    aria-label="Save draft"
+    onclick={() => clicks++}
   /><button type="button" onclick={() => save?.focus()}>Focus save</button
   ><p>Clicks: {clicks}</p>
 </div>

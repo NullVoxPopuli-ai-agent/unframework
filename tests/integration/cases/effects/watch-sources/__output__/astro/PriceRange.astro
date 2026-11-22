@@ -10,19 +10,18 @@ interface Props extends PriceRangeProps, Omit<HTMLAttributes<"section">, "curren
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  currency,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Price range",
-  ...attrs
-} = Astro.props;
+const { currency, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const low = 10 as number;
 const high = 50 as number;
 ---
 
-<section class:list={["price-range", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["price-range", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Price range"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{low} to {high} {currency}</p>
   <button type="button">Shift up</button>
   <button type="button">Widen</button>

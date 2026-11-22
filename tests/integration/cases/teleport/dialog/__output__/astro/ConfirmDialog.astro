@@ -14,10 +14,10 @@ const {
   title,
   class: className,
   style,
-  role = "dialog",
-  "aria-modal": ariaModal = "true",
+  role,
+  "aria-modal": ariaModal,
   "aria-labelledby": ariaLabelledby,
-  tabindex = "-1",
+  tabindex,
   ...attrs
 } = Astro.props;
 
@@ -31,10 +31,10 @@ const titleId = uniqueId();
 ---
 
 <div
-  role={role}
-  aria-modal={ariaModal}
-  aria-labelledby={ariaLabelledby ?? titleId}
-  tabindex={tabindex}
+  role={"role" in Astro.props ? role : "dialog"}
+  aria-modal={"aria-modal" in Astro.props ? ariaModal : "true"}
+  aria-labelledby={"aria-labelledby" in Astro.props ? ariaLabelledby : titleId}
+  tabindex={"tabindex" in Astro.props ? tabindex : "-1"}
   class:list={["dialog", className]}
   style={style}
   {...attrs}

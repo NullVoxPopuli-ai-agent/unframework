@@ -1,7 +1,10 @@
 import Panel from "./Panel";
 import type { ComponentPropsWithRef } from "react";
 
-export type GreetingAttributes = Omit<ComponentPropsWithRef<"section">, "name" | "children">;
+export type GreetingAttributes = Omit<
+  ComponentPropsWithRef<typeof Panel>,
+  "name" | "children" | "title"
+>;
 
 export default function Greeting({
   name,

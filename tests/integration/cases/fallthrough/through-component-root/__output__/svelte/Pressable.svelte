@@ -15,7 +15,7 @@
 
 <button
   type="button"
-  class={["base", className]}
+  class={["pressable", className]}
   {style}
   bind:this={ref}
   {...attributes}

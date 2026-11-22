@@ -7,15 +7,15 @@ interface Props extends HTMLAttributes<"div"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  class: className,
-  style,
-  role = "toolbar",
-  "aria-label": ariaLabel = "Actions",
-  ...attrs
-} = Astro.props;
+const { class: className, style, role, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<div role={role} aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<div
+  role={"role" in Astro.props ? role : "toolbar"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Actions"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <Primary text="Save" class="wide" />
 </div>

@@ -6,12 +6,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Terms", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const agreed = false as boolean;
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Terms"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <label><input type="checkbox" checked={agreed} /> I agree</label>
   <output>{agreed ? "Agreed" : "Not agreed"}</output>
   <button type="button">Toggle</button>

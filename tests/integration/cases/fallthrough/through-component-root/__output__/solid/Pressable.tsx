@@ -1,6 +1,6 @@
 import { type ComponentProps, type JSX, splitProps } from "solid-js";
 
-export default function Base(
+export default function Pressable(
   props: { text: string } & Omit<ComponentProps<"button">, "text" | "style"> & {
       style?: JSX.CSSProperties;
     },
@@ -8,7 +8,11 @@ export default function Base(
   const [, others] = splitProps(props, ["text", "class"]);
 
   return (
-    <button type="button" class={props.class ? `base ${props.class}` : "base"} {...others}>
+    <button
+      type="button"
+      class={props.class ? `pressable ${props.class}` : "pressable"}
+      {...others}
+    >
       {props.text}
     </button>
   );

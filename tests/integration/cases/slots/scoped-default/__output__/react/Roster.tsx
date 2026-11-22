@@ -1,7 +1,10 @@
 import Names from "./Names";
 import type { ComponentPropsWithRef } from "react";
 
-export type RosterAttributes = Omit<ComponentPropsWithRef<"ul">, "names" | "children">;
+export type RosterAttributes = Omit<
+  ComponentPropsWithRef<typeof Names>,
+  "names" | "children" | "renderDefault"
+>;
 
 export default function Roster({
   names,

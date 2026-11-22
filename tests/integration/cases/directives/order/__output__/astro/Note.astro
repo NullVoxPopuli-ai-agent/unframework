@@ -6,7 +6,12 @@ interface Props extends HTMLAttributes<"em"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "data-name": dataName = "note", ...attrs } = Astro.props;
+const { class: className, style, "data-name": dataName, ...attrs } = Astro.props;
 ---
 
-<em data-name={dataName} class:list={[className]} style={style} {...attrs}>Note</em>
+<em
+  data-name={"data-name" in Astro.props ? dataName : "note"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>Note</em>

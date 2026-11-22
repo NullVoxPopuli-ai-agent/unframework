@@ -6,13 +6,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Order", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const count = 2 as number;
 const volume = 5 as number;
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Order"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <input type="number" aria-label="Count" min="0" value={count} />
   <input type="range" aria-label="Volume" min="0" max="10" value={volume} />
   <output>Next: {count + 1}, volume {volume + 1}</output>

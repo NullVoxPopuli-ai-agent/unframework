@@ -10,19 +10,18 @@ interface Props extends ImportQueueProps, Omit<HTMLAttributes<"section">, "files
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  files: _files,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Import",
-  ...attrs
-} = Astro.props;
+const { files: _files, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const status = "idle" as string;
 const attempts = 0 as number;
 ---
 
-<section class:list={["import-queue", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["import-queue", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Import"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Import all</button>
   <p role="status">{status}, {attempts} attempts</p>
 </section>

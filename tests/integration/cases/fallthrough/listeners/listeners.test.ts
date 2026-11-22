@@ -1,7 +1,9 @@
 // fallthrough/listeners: a consumer's `onClick`, `onFocus` and `onKeydown` on a component it does
 // not declare them on are native listeners on the component's root element (ADR-0118). The
 // component also declares `pick`, which its own click listener emits: the root's own listener
-// runs first, then the consumer's, as Vue merges them.
+// runs first, then the consumer's, as Vue merges them. Each listener logs the element it is
+// attached to, its event's `currentTarget`, which is the root <button> and never a wrapper
+// around it, such as Angular's host, where a bubbling event would log the same entries.
 import { describeTargets, it, mount } from "@unframework.dev/testing";
 import { expect } from "vitest";
 
@@ -27,10 +29,10 @@ describeTargets("fallthrough/listeners", () => {
       await view.expectParity("used");
       const entries = view.getByRole("list", { name: "Log" }).getByRole("listitem");
       expect(entries.elements().map((entry) => entry.textContent)).toEqual([
-        "focus",
-        "keydown a",
+        "focus on button",
+        "keydown a on button",
         "pick Ada",
-        "click",
+        "click on button",
       ]);
     },
   );

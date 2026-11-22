@@ -12,6 +12,6 @@ interface Props extends Omit<HTMLAttributes<"div">, "locale"> {
 const { locale, class: className, style, lang, ...attrs } = Astro.props;
 ---
 
-<div lang={lang ?? locale} class:list={[className]} style={style} {...attrs}>
+<div lang={"lang" in Astro.props ? lang : locale} class:list={[className]} style={style} {...attrs}>
   <slot />
 </div>

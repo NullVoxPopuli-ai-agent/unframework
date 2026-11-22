@@ -99,7 +99,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
   template: `
     @let locale = this.locale();
     <div
-      [attr.lang]="locale"
+      [attr.lang]="'lang' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['lang'] : locale"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

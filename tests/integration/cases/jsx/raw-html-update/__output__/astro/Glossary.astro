@@ -16,7 +16,7 @@ const {
   definitions,
   class: className,
   style,
-  "aria-label": ariaLabel = "Glossary",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 
@@ -24,7 +24,12 @@ const index = 0 as number;
 const definition = definitions[index] ?? "";
 ---
 
-<section class:list={["glossary", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["glossary", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Glossary"}
+  style={style}
+  {...attrs}
+>
   <h2>{terms[index]}</h2>
   <div class="definition" set:html={definition}></div>
   <button type="button">Next term</button>

@@ -11,7 +11,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Display", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const settings = { theme: "light", size: 14 } as Settings;
 const saving = false as boolean;
@@ -21,7 +21,7 @@ const failure = "" as string;
 
 <section
   class:list={["display-settings", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Display"}
   style={style}
   {...attrs}
 >

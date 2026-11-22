@@ -108,8 +108,8 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let phone = this.phone();
     <article
       class="contact-card"
-      [attr.aria-label]="name"
-      [attr.data-team]="team"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : name"
+      [attr.data-team]="'data-team' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-team'] : team"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

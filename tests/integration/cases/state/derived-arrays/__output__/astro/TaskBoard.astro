@@ -23,13 +23,7 @@ interface Props extends TaskBoardProps, Omit<HTMLAttributes<"section">, "initial
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  initial,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Tasks",
-  ...attrs
-} = Astro.props;
+const { initial, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const tasks = initial;
 const filters = { query: "", tags: [] } as Filters;
@@ -79,7 +73,12 @@ const byState = getByState();
 const progress = Math.round((tasks.filter((task) => task.done).length / tasks.length) * 100);
 ---
 
-<section class:list={["task-board", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["task-board", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Tasks"}
+  style={style}
+  {...attrs}
+>
   <ol aria-label="Open">
     {open.map((task) => (
       <li

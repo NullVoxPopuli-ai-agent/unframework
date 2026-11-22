@@ -1,7 +1,7 @@
 import Member from "./Member";
 import type { ComponentPropsWithoutRef } from "react";
 
-export type LeadAttributes = Omit<ComponentPropsWithoutRef<"article">, "id" | "children">;
+export type LeadAttributes = Omit<ComponentPropsWithoutRef<typeof Member>, "id" | "children">;
 
 export default function Lead({
   id,

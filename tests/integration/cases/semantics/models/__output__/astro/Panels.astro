@@ -7,12 +7,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Panels", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const shipping = true as boolean;
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Panels"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <Disclosure title="Shipping" open={shipping} />
   <Disclosure title="Returns" />
   <output>Shipping is {shipping ? "open" : "closed"}</output>

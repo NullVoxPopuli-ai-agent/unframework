@@ -107,7 +107,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
       <uf-chip
         [label]="'Ada'"
         (pick)="onPick($event)"
-        [ufListeners]="{ click: () => record('click'), focus: () => record('focus'), keydown: ($event) => onKeydown($event) }"
+        [ufListeners]="{ click: ($event) => onClick($event), focus: ($event) => onFocus($event), keydown: ($event) => onKeydown($event) }"
       />
       <ol aria-label="Log">
         @for (entry of log; track index; let index = $index) {
@@ -125,7 +125,7 @@ export default class Picker {
   readonly ufElement = viewChild<ElementRef<HTMLElement>>("ufElement");
   protected readonly log = signal<string[]>([]);
 
-  protected record(line: string) {
+  private record(line: string) {
     this.log.set([...this.log(), line]);
   }
 
@@ -133,8 +133,16 @@ export default class Picker {
     this.record(`pick ${label}`);
   }
 
+  protected onClick(event: PointerEvent) {
+    this.record(`click on ${(event.currentTarget as Element).localName}`);
+  }
+
+  protected onFocus(event: FocusEvent) {
+    this.record(`focus on ${(event.currentTarget as Element).localName}`);
+  }
+
   protected onKeydown(event: KeyboardEvent) {
-    this.record(`keydown ${event.key}`);
+    this.record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`);
   }
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

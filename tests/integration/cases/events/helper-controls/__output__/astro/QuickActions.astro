@@ -10,20 +10,19 @@ interface Props extends QuickActionsProps, Omit<HTMLAttributes<"section">, "acti
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  actions,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Quick actions",
-  ...attrs
-} = Astro.props;
+const { actions, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const query = "" as string;
 const lastKey = "none" as string;
 const subscriptions = 0 as number;
 ---
 
-<section class:list={["quick-actions", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["quick-actions", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Quick actions"}
+  style={style}
+  {...attrs}
+>
   <label>Search<input name="query" /></label>
   <p>Query: {query}</p>
   <label>Note<input name="note" /></label>

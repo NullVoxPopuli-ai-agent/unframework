@@ -20,7 +20,7 @@ const {
 ---
 
 <section
-  data-theme={dataTheme ?? (dark ? "dark" : "light")}
+  data-theme={"data-theme" in Astro.props ? dataTheme : dark ? "dark" : "light"}
   class:list={["_padding:md _background-color:surface _color:text", className]}
   style={style}
   {...attrs}

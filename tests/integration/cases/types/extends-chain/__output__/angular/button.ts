@@ -98,9 +98,9 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let label = this.label();
     @let id = this.id();
     <button
-      [attr.id]="id"
+      [attr.id]="'id' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['id'] : id"
       type="button"
-      [attr.disabled]="disabled ? '' : null"
+      [attr.disabled]="'disabled' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['disabled'] : disabled ? '' : null"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

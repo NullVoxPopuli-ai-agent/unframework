@@ -16,7 +16,7 @@ const user = await loadUser(id);
 
 <section
   class:list={["panel", className]}
-  aria-label={ariaLabel ?? user.name}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : user.name}
   style={style}
   {...attrs}
 >

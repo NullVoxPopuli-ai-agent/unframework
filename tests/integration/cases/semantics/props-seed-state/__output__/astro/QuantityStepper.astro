@@ -16,7 +16,7 @@ const {
   label,
   class: className,
   style,
-  role = "group",
+  role,
   "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
@@ -26,8 +26,8 @@ const quantity = initial;
 
 <div
   class:list={["quantity-stepper", className]}
-  role={role}
-  aria-label={ariaLabel ?? label}
+  role={"role" in Astro.props ? role : "group"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
   style={style}
   {...attrs}
 >

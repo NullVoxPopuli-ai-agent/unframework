@@ -9,18 +9,17 @@ interface Props extends Omit<HTMLAttributes<"section">, "value"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  value,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Distance",
-  ...attrs
-} = Astro.props;
+const { value, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const unit = "km" as Unit;
 ---
 
-<section class:list={["distance", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["distance", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Distance"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{formatDistance(value, unit)}</p>
   <button type="button">Switch units</button>
 </section>

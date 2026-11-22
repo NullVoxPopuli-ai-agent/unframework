@@ -8,11 +8,11 @@ interface Props extends Omit<HTMLAttributes<"div">, "name" | "done"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { name, done, class: className, style, role = "listitem", ...attrs } = Astro.props;
+const { name, done, class: className, style, role, ...attrs } = Astro.props;
 ---
 
 <div
-  role={role}
+  role={"role" in Astro.props ? role : "listitem"}
   class:list={["row", { done }, className]}
   style={style}
   {...attrs}

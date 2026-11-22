@@ -24,12 +24,17 @@ const {
   emptyText = "Nothing here yet.",
   class: className,
   style,
-  "aria-label": ariaLabel = "Messages",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<section class:list={["message-list", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["message-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Messages"}
+  style={style}
+  {...attrs}
+>
   <h2>Inbox</h2>
   <ul>
     {messages.map((message) => (

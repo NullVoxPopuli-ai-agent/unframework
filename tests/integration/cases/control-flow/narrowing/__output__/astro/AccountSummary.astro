@@ -47,14 +47,14 @@ const {
   seats,
   class: className,
   style,
-  "aria-label": ariaLabel = "Account",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
 <section
   class:list={["account-summary", className]}
-  aria-label={ariaLabel}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Account"}
   style={style}
   {...attrs}
 >

@@ -15,19 +15,18 @@ interface Props extends FruitPickerProps, Omit<HTMLAttributes<"section">, "fruit
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  fruits,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Fruit",
-  ...attrs
-} = Astro.props;
+const { fruits, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const selected = null as Fruit | null;
 const basket = [] as Fruit[];
 ---
 
-<section class:list={["fruit-picker", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["fruit-picker", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Fruit"}
+  style={style}
+  {...attrs}
+>
   <ul aria-label="Fruits">
     {fruits.map((fruit) => (
       <li>

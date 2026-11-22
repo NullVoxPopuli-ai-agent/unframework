@@ -13,18 +13,15 @@ interface Props
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  saving,
-  changes,
-  savedAt,
-  class: className,
-  style,
-  role = "status",
-  ...attrs
-} = Astro.props;
+const { saving, changes, savedAt, class: className, style, role, ...attrs } = Astro.props;
 ---
 
-<p class:list={["save-indicator", className]} role={role} style={style} {...attrs}>
+<p
+  class:list={["save-indicator", className]}
+  role={"role" in Astro.props ? role : "status"}
+  style={style}
+  {...attrs}
+>
   {saving ? <em>Saving</em> : "Saved"}, {changes === 1 ? "1 change" : `${changes} changes`}{savedAt ? <time
     datetime={savedAt}
   >{" at " + savedAt}</time> : " just now"}

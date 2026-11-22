@@ -1,4 +1,4 @@
-import Primary from "./primary";
+import SaveAction from "./save-action";
 import { isPlatformBrowser } from "@angular/common";
 import {
   Component,
@@ -92,7 +92,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
 
 @Component({
   selector: "uf-toolbar",
-  imports: [Primary, ScopeAttributes, Fallthrough],
+  imports: [SaveAction, ScopeAttributes, Fallthrough],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -106,7 +106,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
       [ufScope]="this.host"
       #ufElement
     >
-      <uf-primary
+      <uf-save-action
         #save
         [text]="'Save'"
         [ufAttributes]="{ id: 'save', 'aria-label': 'Save draft' }"
@@ -122,7 +122,7 @@ export default class Toolbar {
   readonly style = input<Record<string, string | null | undefined>>();
   readonly ufAttributes = input<Record<string, unknown>>();
   readonly ufListeners = input<Listeners>();
-  private readonly saveComponent = viewChild("save", { read: Primary });
+  private readonly saveComponent = viewChild("save", { read: SaveAction });
   private readonly save = computed<ElementRef<HTMLButtonElement> | undefined>(() =>
     this.saveComponent()?.ufElement(),
   );

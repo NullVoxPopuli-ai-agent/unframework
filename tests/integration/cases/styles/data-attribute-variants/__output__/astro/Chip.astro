@@ -16,7 +16,7 @@ const {
   pressed = false,
   class: className,
   style,
-  type = "button",
+  type,
   "data-variant": dataVariant,
   "data-state": dataState,
   "aria-pressed": ariaPressed,
@@ -25,11 +25,11 @@ const {
 ---
 
 <button
-  type={type}
+  type={"type" in Astro.props ? type : "button"}
   class:list={["chip", className]}
-  data-variant={dataVariant ?? variant}
-  data-state={dataState ?? (pressed ? "on" : "off")}
-  aria-pressed={ariaPressed ?? (pressed ? "true" : "false")}
+  data-variant={"data-variant" in Astro.props ? dataVariant : variant}
+  data-state={"data-state" in Astro.props ? dataState : pressed ? "on" : "off"}
+  aria-pressed={"aria-pressed" in Astro.props ? ariaPressed : pressed ? "true" : "false"}
   style={style}
   data-uf-69db3802=""
   {...attrs}

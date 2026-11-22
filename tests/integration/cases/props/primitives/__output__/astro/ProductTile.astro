@@ -30,7 +30,7 @@ const {
 
 <article
   class:list={["product-tile", className]}
-  aria-label={ariaLabel ?? name}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : name}
   style={style}
   {...attrs}
 >

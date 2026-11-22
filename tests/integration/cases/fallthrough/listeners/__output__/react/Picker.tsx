@@ -17,12 +17,14 @@ export default function Picker({ className, style, ...attributes }: PickerAttrib
       <Chip
         label="Ada"
         onPick={(label) => record(`pick ${label}`)}
-        onClick={() => record("click")}
+        onClick={(event) => record(`click on ${(event.currentTarget as Element).localName}`)}
         onFocus={(event) => {
           if (event.target !== event.currentTarget) return;
-          record("focus");
+          record(`focus on ${(event.currentTarget as Element).localName}`);
         }}
-        onKeyDown={(event) => record(`keydown ${event.key}`)}
+        onKeyDown={(event) =>
+          record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`)
+        }
       />
       <ol aria-label="Log">
         {log.map((entry, index) => (

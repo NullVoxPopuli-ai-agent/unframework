@@ -1,7 +1,7 @@
 import Level from "./Level";
 import type { ComponentPropsWithRef } from "react";
 
-export type OutlineAttributes = Omit<ComponentPropsWithRef<"section">, "children">;
+export type OutlineAttributes = Omit<ComponentPropsWithRef<typeof Level>, "children" | "title">;
 
 export default function Outline({ className, style, ...attributes }: OutlineAttributes) {
   return (

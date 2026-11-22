@@ -11,7 +11,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Panel", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const note = false as boolean;
 const extras = [] as string[];
@@ -22,7 +22,12 @@ const rows = [
 ] as Row[];
 ---
 
-<section class:list={["panel", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["panel", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Panel"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Show note</button>
   <button type="button">Add extra</button>
   <button type="button">Reverse rows</button>

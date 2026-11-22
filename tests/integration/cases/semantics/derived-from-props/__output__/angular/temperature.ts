@@ -107,7 +107,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let level = this.level();
     <figure
       class="temperature"
-      [attr.data-level]="level"
+      [attr.data-level]="'data-level' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-level'] : level"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

@@ -1,13 +1,13 @@
 import { ref, useTemplateRef } from "@uxfront/unframework";
 
-import Primary from "./Primary.uf.tsx";
+import SaveAction from "./SaveAction.uf.tsx";
 
 export default function Toolbar() {
   const clicks = ref(0);
   const save = useTemplateRef<HTMLButtonElement>();
   return (
     <div role="toolbar" aria-label="Actions">
-      <Primary
+      <SaveAction
         ref={save}
         text="Save"
         id="save"

@@ -1,4 +1,4 @@
-import Base from "./base";
+import Pressable from "./pressable";
 import {
   Component,
   Directive,
@@ -40,15 +40,15 @@ export class ScopeAttributes implements OnInit {
 type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMap[K]) => void };
 
 @Component({
-  selector: "uf-primary",
-  imports: [Base, ScopeAttributes],
+  selector: "uf-save-action",
+  imports: [Pressable, ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let text = this.text();
-    <uf-base
+    <uf-pressable
       [text]="text"
-      [class]="['primary', this.class()].join(' ')"
+      [class]="['save', this.class()].join(' ')"
       [style]="this.style()"
       [ufAttributes]="this.ufAttributes()"
       [ufListeners]="this.ufListeners()"
@@ -57,13 +57,13 @@ type Listeners = { [K in keyof HTMLElementEventMap]?: (event: HTMLElementEventMa
     />
   `,
 })
-export default class Primary {
+export default class SaveAction {
   readonly text = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   readonly ufAttributes = input<Record<string, unknown>>();
   readonly ufListeners = input<Listeners>();
-  private readonly rootComponent = viewChild("ufElement", { read: Base });
+  private readonly rootComponent = viewChild("ufElement", { read: Pressable });
   readonly ufElement = computed(() => this.rootComponent()?.ufElement());
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

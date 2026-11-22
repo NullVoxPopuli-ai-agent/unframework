@@ -107,9 +107,9 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let muted = this.muted();
     @let danger = this.danger();
     <a
-      [attr.href]="href"
+      [attr.href]="'href' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['href'] : href"
       [class]="[active ? 'active' : null, muted ? 'nav-item-muted' : null, danger ? 'nav-item-danger' : null, danger ? 'text-danger' : null, this.class()].join(' ')"
-      [attr.aria-current]="active ? 'page' : undefined"
+      [attr.aria-current]="'aria-current' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-current'] : active ? 'page' : undefined"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
       [ufScope]="this.host"

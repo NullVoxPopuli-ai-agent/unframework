@@ -112,7 +112,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let wide = this.wide();
     <section
       class="frame"
-      [attr.aria-label]="label"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : label"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

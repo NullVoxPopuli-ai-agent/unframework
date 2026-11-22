@@ -104,7 +104,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <p
       class="network-badge"
       role="status"
-      [attr.data-checked]="online === undefined ? 'no' : 'yes'"
+      [attr.data-checked]="'data-checked' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-checked'] : online === undefined ? 'no' : 'yes'"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

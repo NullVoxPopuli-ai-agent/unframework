@@ -22,10 +22,10 @@
 <section aria-label="Picker" class={className} {style} bind:this={ref} {...attributes}>
   <Chip
     label="Ada"
-    onclick={() => record("click")}
+    onclick={(event) => record(`click on ${(event.currentTarget as Element).localName}`)}
     onpick={(label) => record(`pick ${label}`)}
-    onfocus={() => record("focus")}
-    onkeydown={(event) => record(`keydown ${event.key}`)}
+    onfocus={(event) => record(`focus on ${(event.currentTarget as Element).localName}`)}
+    onkeydown={(event) => record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`)}
   /><ol aria-label="Log">
     {#each log as entry, index (index)}
       <li>{entry}</li>

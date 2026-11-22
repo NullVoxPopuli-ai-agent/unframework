@@ -12,10 +12,15 @@ interface Props extends BannerProps, Omit<HTMLAttributes<"div">, "message" | "to
   style?: Record<string, string | number | undefined>;
 }
 
-const { message, tone, emphasis, class: className, style, role = "note", ...attrs } = Astro.props;
+const { message, tone, emphasis, class: className, style, role, ...attrs } = Astro.props;
 ---
 
-<div class:list={["banner", tone, className]} role={role} style={style} {...attrs}>
+<div
+  class:list={["banner", tone, className]}
+  role={"role" in Astro.props ? role : "note"}
+  style={style}
+  {...attrs}
+>
   <p class:list={[emphasis]}>{message}</p>
   <p class:list={[`banner-footer banner-footer-${tone}`]}>Shown to every visitor.</p>
 </div>

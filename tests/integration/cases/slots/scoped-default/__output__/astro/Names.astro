@@ -13,12 +13,17 @@ const {
   default: defaultSlot,
   class: className,
   style,
-  "aria-label": ariaLabel = "Names",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<ul aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<ul
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Names"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {names.map((item) => (
     <li>{defaultSlot?.({ item })}</li>
   ))}

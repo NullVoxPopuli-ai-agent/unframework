@@ -24,7 +24,12 @@ const {
 } = Astro.props;
 ---
 
-<ul aria-label={ariaLabel ?? label} class:list={[className]} style={style} {...attrs}>
+<ul
+  aria-label={"aria-label" in Astro.props ? ariaLabel : label}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {items.map((item) => (
     <li aria-current={item === selected ? "true" : undefined}>{String(item)}</li>
   ))}

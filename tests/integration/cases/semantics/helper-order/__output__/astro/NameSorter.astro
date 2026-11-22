@@ -6,7 +6,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Names", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const names = ["Cy", "Al"].toSorted((a, b) => compare(a, b));
 const count = 0 as number;
@@ -16,7 +16,12 @@ function compare(a: string, b: string): number {
 }
 ---
 
-<section class:list={["name-sorter", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["name-sorter", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Names"}
+  style={style}
+  {...attrs}
+>
   <p>Names: {names.join(", ")}</p>
   <p>Added: {count}</p>
   <button type="button">Add Bo</button>

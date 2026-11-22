@@ -2,7 +2,7 @@ import Member from "./Member";
 import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
-  { id: string } & Omit<PropsOf<"article">, "id" | "class" | "style" | "ref"> & {
+  { id: string } & Omit<PropsOf<typeof Member>, "id" | "class" | "style" | "ref"> & {
       class?: ClassList;
       style?: CSSProperties;
     }

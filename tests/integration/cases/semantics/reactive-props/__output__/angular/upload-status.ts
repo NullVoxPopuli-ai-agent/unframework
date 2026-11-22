@@ -114,7 +114,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <section
       class="upload"
       [class]="['upload-' + state, this.class()].join(' ')"
-      [attr.aria-label]="'Upload of ' + fileName"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : 'Upload of ' + fileName"
       [style]="{ color: state === 'failed' ? '#8a1c1c' : '#1f3d5c', '--upload-percent': percent, ...this.style() }"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
       [ufScope]="this.host"

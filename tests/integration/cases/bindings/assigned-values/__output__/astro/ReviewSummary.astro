@@ -23,12 +23,17 @@ const {
   product,
   class: className,
   style,
-  "aria-label": ariaLabel = "Review",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<section class:list={["review-summary", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["review-summary", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Review"}
+  style={style}
+  {...attrs}
+>
   <ol>
     {steps.map((step, index) => (
       <li value={index}>{step}</li>

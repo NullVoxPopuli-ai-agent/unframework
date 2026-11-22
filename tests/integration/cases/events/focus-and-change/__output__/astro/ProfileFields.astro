@@ -6,7 +6,7 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Profile", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const log = [] as string[];
 const nickname = "" as string;
@@ -14,7 +14,12 @@ const cardFocuses = 0 as number;
 const cardBlurs = 0 as number;
 ---
 
-<section class:list={["profile-fields", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["profile-fields", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Profile"}
+  style={style}
+  {...attrs}
+>
   <div class="name-group" role="group" aria-label="Name fields">
     <label>Name<input name="name" /></label>
   </div>

@@ -14,16 +14,15 @@ interface Props extends ReadingProps, Omit<HTMLAttributes<"ul">, "sources"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  sources,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Reading list",
-  ...attrs
-} = Astro.props;
+const { sources, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<ul class:list={["reading", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<ul
+  class:list={["reading", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Reading list"}
+  style={style}
+  {...attrs}
+>
   {sources.map((source, index) => (
     <li
       title={source.kind === "link" ? source.href : source.title}

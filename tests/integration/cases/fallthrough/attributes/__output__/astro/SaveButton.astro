@@ -7,7 +7,12 @@ interface Props extends Omit<HTMLAttributes<"button">, "title"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, class: className, style, type = "button", ...attrs } = Astro.props;
+const { title, class: className, style, type, ...attrs } = Astro.props;
 ---
 
-<button type={type} class:list={["button", className]} style={style} {...attrs}>{title}</button>
+<button
+  type={"type" in Astro.props ? type : "button"}
+  class:list={["button", className]}
+  style={style}
+  {...attrs}
+>{title}</button>

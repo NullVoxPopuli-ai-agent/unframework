@@ -6,12 +6,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Messages", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const messages = ["Welcome to the team"];
 ---
 
-<section class:list={["message-list", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["message-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Messages"}
+  style={style}
+  {...attrs}
+>
   <ul>
     {messages.map((message) => (
       <li>{message}</li>

@@ -120,7 +120,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     <p
       class="link-row"
       [class]="[row.class, strong ? 'link-row-strong' : null, this.class()].join(' ')"
-      [attr.id]="row.id"
+      [attr.id]="'id' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['id'] : row.id"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"
       [ufScope]="this.host"

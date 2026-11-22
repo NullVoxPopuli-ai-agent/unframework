@@ -13,10 +13,10 @@ function record(line: string) {
   <section aria-label="Picker">
     <Chip
       label="Ada"
-      @click="() => record('click')"
+      @click="(event) => record(`click on ${(event.currentTarget as Element).localName}`)"
       @pick="(label) => record(`pick ${label}`)"
-      @focus="() => record('focus')"
-      @keydown="(event) => record(`keydown ${event.key}`)"
+      @focus="(event) => record(`focus on ${(event.currentTarget as Element).localName}`)"
+      @keydown="(event) => record(`keydown ${event.key} on ${(event.currentTarget as Element).localName}`)"
     />
     <ol aria-label="Log">
       <li v-for="(entry, index) in log" :key="index">{{ entry }}</li>

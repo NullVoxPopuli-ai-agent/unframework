@@ -10,20 +10,19 @@ interface Props extends SeatPickerProps, Omit<HTMLAttributes<"section">, "priceP
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  pricePerSeat,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Seats",
-  ...attrs
-} = Astro.props;
+const { pricePerSeat, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const seats = 1 as number;
 const total = seats * pricePerSeat;
 const summary = seats === 1 ? `1 seat for ${total}` : `${seats} seats for ${total}`;
 ---
 
-<section class:list={["seat-picker", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["seat-picker", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Seats"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{summary}</p>
   <button type="button">Add a seat</button>
   <button type="button">Add a group and a guide</button>

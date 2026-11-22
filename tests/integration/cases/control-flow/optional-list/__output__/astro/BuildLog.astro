@@ -28,12 +28,17 @@ const {
   warnings,
   class: className,
   style,
-  "aria-label": ariaLabel = "Build log",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<section class:list={["build-log", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["build-log", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Build log"}
+  style={style}
+  {...attrs}
+>
   <pre>$ make {target}{failed ? <strong> (failed)</strong> : null}
 {(lines ?? []).map((line) => <code>{line.text}{"\n"}</code>)}</pre>
   <ul aria-label="Warnings">

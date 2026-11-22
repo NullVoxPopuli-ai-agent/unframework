@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { useTemplateRef } from "vue";
+import { onMounted, ref, useTemplateRef } from "vue";
 
 const { label } = defineProps<{ label: string }>();
 
 const input = useTemplateRef<HTMLInputElement>("input");
+const mounted = ref(false);
+
+onMounted(() => {
+  mounted.value = input.value !== null;
+});
 
 function fill() {
-  if (input.value && !input.value.value) input.value.value = "Ada";
+  if (input.value && !input.value.value && mounted.value) input.value.value = "Ada";
 }
 </script>
 

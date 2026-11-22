@@ -7,12 +7,17 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Picker", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const log = [] as string[];
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Picker"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <Chip label="Ada" />
   <ol aria-label="Log">
     {log.map((entry) => (

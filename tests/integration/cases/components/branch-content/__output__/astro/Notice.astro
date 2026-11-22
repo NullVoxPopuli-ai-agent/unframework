@@ -8,7 +8,12 @@ interface Props extends Omit<HTMLAttributes<"p">, "text" | "tone"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { text, tone, class: className, style, role = "status", ...attrs } = Astro.props;
+const { text, tone, class: className, style, role, ...attrs } = Astro.props;
 ---
 
-<p role={role} class:list={["notice", tone, className]} style={style} {...attrs}>{text}</p>
+<p
+  role={"role" in Astro.props ? role : "status"}
+  class:list={["notice", tone, className]}
+  style={style}
+  {...attrs}
+>{text}</p>

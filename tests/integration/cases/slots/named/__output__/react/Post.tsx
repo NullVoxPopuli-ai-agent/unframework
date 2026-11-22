@@ -1,7 +1,10 @@
 import Card from "./Card";
 import type { ComponentPropsWithRef } from "react";
 
-export type PostAttributes = Omit<ComponentPropsWithRef<"article">, "author" | "children">;
+export type PostAttributes = Omit<
+  ComponentPropsWithRef<typeof Card>,
+  "author" | "children" | "header" | "footer"
+>;
 
 export default function Post({
   author,

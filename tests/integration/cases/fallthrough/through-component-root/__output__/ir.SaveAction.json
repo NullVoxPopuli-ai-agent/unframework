@@ -1,12 +1,12 @@
 {
   "irVersion": 1,
-  "file": "fallthrough/through-component-root/Primary.uf.tsx",
+  "file": "fallthrough/through-component-root/SaveAction.uf.tsx",
   "components": [
     {
-      "name": "Primary",
+      "name": "SaveAction",
       "span": {
-        "start": 120,
-        "end": 230
+        "start": 134,
+        "end": 249
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 170,
-              "end": 176
+              "start": 187,
+              "end": 193
             }
           },
-          "binding": "text@154",
+          "binding": "text@171",
           "span": {
-            "start": 164,
-            "end": 176
+            "start": 181,
+            "end": 193
           }
         }
       ],
@@ -31,24 +31,24 @@
         "type": {
           "code": "{ text: string }",
           "span": {
-            "start": 162,
-            "end": 178
+            "start": 179,
+            "end": 195
           }
         },
         "span": {
-          "start": 152,
-          "end": 178
+          "start": 169,
+          "end": 195
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "text@154",
+          "id": "text@171",
           "name": "text",
           "kind": "prop",
           "span": {
-            "start": 154,
-            "end": 158
+            "start": 171,
+            "end": 175
           }
         }
       ],
@@ -58,7 +58,7 @@
         "children": [
           {
             "kind": "Component",
-            "component": "Base",
+            "component": "Pressable",
             "attributes": [
               {
                 "kind": "Prop",
@@ -66,23 +66,23 @@
                 "value": {
                   "code": "text",
                   "span": {
-                    "start": 203,
-                    "end": 207
+                    "start": 225,
+                    "end": 229
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "text@154",
+                      "binding": "text@171",
                       "span": {
-                        "start": 203,
-                        "end": 207
+                        "start": 225,
+                        "end": 229
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 197,
-                  "end": 208
+                  "start": 219,
+                  "end": 230
                 }
               },
               {
@@ -90,29 +90,29 @@
                 "items": [
                   {
                     "kind": "Static",
-                    "value": "primary",
+                    "value": "save",
                     "span": {
-                      "start": 209,
-                      "end": 224
+                      "start": 231,
+                      "end": 243
                     }
                   }
                 ],
                 "span": {
-                  "start": 209,
-                  "end": 224
+                  "start": 231,
+                  "end": 243
                 }
               }
             ],
             "fills": [],
             "span": {
-              "start": 191,
-              "end": 227
+              "start": 208,
+              "end": 246
             }
           }
         ],
         "span": {
-          "start": 191,
-          "end": 227
+          "start": 208,
+          "end": 246
         }
       }
     }
@@ -121,23 +121,23 @@
     {
       "kind": "default",
       "name": "default",
-      "local": "Primary",
+      "local": "SaveAction",
       "span": {
-        "start": 120,
-        "end": 230
+        "start": 134,
+        "end": 249
       }
     }
   ],
   "types": [],
   "imports": [
     {
-      "specifier": "./Base.uf.tsx",
-      "file": "Base.uf.tsx",
+      "specifier": "./Pressable.uf.tsx",
+      "file": "Pressable.uf.tsx",
       "api": {
-        "file": "Base.uf.tsx",
+        "file": "Pressable.uf.tsx",
         "components": [
           {
-            "name": "Base",
+            "name": "Pressable",
             "export": "default",
             "props": [
               {
@@ -163,16 +163,16 @@
         {
           "kind": "Component",
           "imported": "default",
-          "local": "Base",
+          "local": "Pressable",
           "span": {
             "start": 7,
-            "end": 11
+            "end": 16
           }
         }
       ],
       "span": {
         "start": 0,
-        "end": 33
+        "end": 43
       }
     }
   ]

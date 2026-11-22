@@ -113,7 +113,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let picked = this.picked();
     <section
       class="ballot"
-      [attr.aria-label]="label"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : label"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

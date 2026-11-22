@@ -421,7 +421,15 @@
             "exposes": [],
             "inheritAttrs": true,
             "root": "component",
-            "fallthroughTag": "article"
+            "fallthroughTag": "article",
+            "rootDeclarations": [
+              {
+                "name": "id",
+                "kind": "prop",
+                "component": "Member"
+              }
+            ],
+            "exposingRoot": "Member"
           }
         ],
         "keys": []

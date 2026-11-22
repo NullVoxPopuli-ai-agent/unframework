@@ -10,13 +10,7 @@ interface Props extends ReadingListProps, Omit<HTMLAttributes<"section">, "shelv
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  shelves,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Reading list",
-  ...attrs
-} = Astro.props;
+const { shelves, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const books = [] as string[];
 const searching = false as boolean;
@@ -28,7 +22,12 @@ const counts = {} as Record<string, number>;
 const refreshing = false as boolean;
 ---
 
-<section class:list={["reading-list", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["reading-list", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Reading list"}
+  style={style}
+  {...attrs}
+>
   <label>Search<input type="search" name="query" /></label>
   <p
     role="status"

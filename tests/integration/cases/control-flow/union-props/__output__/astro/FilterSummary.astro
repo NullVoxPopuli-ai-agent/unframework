@@ -21,12 +21,17 @@ const {
   result,
   class: className,
   style,
-  "aria-label": ariaLabel = "Filters",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<section class:list={["filter-summary", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["filter-summary", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Filters"}
+  style={style}
+  {...attrs}
+>
   <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p>
   <p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p>
   {result.ok ? (

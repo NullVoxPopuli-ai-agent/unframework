@@ -133,7 +133,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let text = this.text();
     @let attrs = this.attrs();
     <small
-      [attr.id]="attrs.id"
+      [attr.id]="'id' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['id'] : attrs.id"
       [class]="this.class()"
       [style]="{ ...styleObject(attrs.style), ...this.style() }"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

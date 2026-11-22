@@ -33,7 +33,7 @@ const picked = "" as string;
 
 <fieldset
   class:list={["size-picker", className]}
-  aria-describedby={ariaDescribedby ?? hintId}
+  aria-describedby={"aria-describedby" in Astro.props ? ariaDescribedby : hintId}
   style={style}
   {...attrs}
 >

@@ -8,10 +8,15 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Labels", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<section class:list={["labels", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["labels", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Labels"}
+  style={style}
+  {...attrs}
+>
   <Badge label="New" />
   <Tag name="docs" />
 </section>

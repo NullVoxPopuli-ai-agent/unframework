@@ -23,12 +23,17 @@ const {
   signature,
   class: className,
   style,
-  "aria-label": ariaLabel = "Inbox summary",
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
-<section class:list={["inbox-summary", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["inbox-summary", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Inbox summary"}
+  style={style}
+  {...attrs}
+>
   <h2>{folder || "Inbox"}</h2>
   {unread ? (
     <p>{unread} unread</p>

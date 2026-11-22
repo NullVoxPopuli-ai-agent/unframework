@@ -13,7 +13,7 @@ describeTargets("fallthrough/through-component-root", () => {
     await view.expectParity("initial");
     const save = view.getByRole("button", { name: "Save draft" });
     await expect.element(save).toHaveAttribute("id", "save");
-    await expect.element(save).toHaveClass("base", "primary");
+    await expect.element(save).toHaveClass("pressable", "save");
     await expect.element(view.getByText("Clicks: 0")).toBeVisible();
   });
 

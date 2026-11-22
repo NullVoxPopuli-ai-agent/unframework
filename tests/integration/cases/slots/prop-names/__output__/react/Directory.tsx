@@ -6,7 +6,10 @@ export interface Person {
   name: string;
 }
 
-export type DirectoryAttributes = Omit<ComponentPropsWithRef<"ol">, "people" | "children">;
+export type DirectoryAttributes = Omit<
+  ComponentPropsWithRef<typeof Table>,
+  "people" | "children" | "renderRow"
+>;
 
 export default function Directory({
   people,

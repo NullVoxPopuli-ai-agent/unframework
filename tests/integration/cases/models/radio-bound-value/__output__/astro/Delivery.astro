@@ -11,20 +11,18 @@ interface Props extends DeliveryProps, Omit<HTMLAttributes<"section">, "speeds" 
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  speeds,
-  extras,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Delivery",
-  ...attrs
-} = Astro.props;
+const { speeds, extras, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const speed = "express" as string;
 const chosen = ["insurance"] as string[];
 ---
 
-<section aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<section
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Delivery"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   <fieldset>
     <legend>Speed</legend>
     {speeds.map((value) => (

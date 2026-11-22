@@ -6,18 +6,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Listener order",
-  ...attrs
-} = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const log = [] as string[];
 const resets = 0 as number;
 ---
 
-<section class:list={["listener-order", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["listener-order", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Listener order"}
+  style={style}
+  {...attrs}
+>
   <div class="toolbar" role="presentation">
     <button type="button">Save</button>
     <button type="button">Send</button>

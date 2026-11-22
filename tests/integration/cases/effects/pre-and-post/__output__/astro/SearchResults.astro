@@ -6,14 +6,19 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Search", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const status = "Loading" as string;
 const results = [] as string[];
 const doubled = 0 as number;
 ---
 
-<section class:list={["search-results", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["search-results", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Search"}
+  style={style}
+  {...attrs}
+>
   <p>{status}</p>
   <label>Query<input name="query" /></label>
   <ul aria-label="Results">

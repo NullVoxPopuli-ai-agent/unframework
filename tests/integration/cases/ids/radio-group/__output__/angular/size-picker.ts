@@ -109,7 +109,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let picked = this.picked();
     <fieldset
       class="size-picker"
-      [attr.aria-describedby]="hintId"
+      [attr.aria-describedby]="'aria-describedby' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-describedby'] : hintId"
       [class]="this.class()"
       [style]="this.style()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

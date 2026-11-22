@@ -2,10 +2,10 @@ import Card from "./Card";
 import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
-  { author: string } & Omit<PropsOf<"article">, "author" | "class" | "style"> & {
-      class?: ClassList;
-      style?: CSSProperties;
-    }
+  { author: string } & Omit<
+    PropsOf<typeof Card>,
+    "author" | "class" | "style" | "header$" | "footer$"
+  > & { class?: ClassList; style?: CSSProperties }
 >(({ author, class: className, style, ...attributes }) => {
   return (
     <>

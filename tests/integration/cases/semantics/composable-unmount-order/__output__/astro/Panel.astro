@@ -13,6 +13,11 @@ const { name, class: className, style, "aria-label": ariaLabel, ...attrs } = Ast
 const { title } = useTeardown(() => name);
 ---
 
-<section class:list={["panel", className]} aria-label={ariaLabel ?? title} style={style} {...attrs}>
+<section
+  class:list={["panel", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : title}
+  style={style}
+  {...attrs}
+>
   <h2>{title}</h2>
 </section>

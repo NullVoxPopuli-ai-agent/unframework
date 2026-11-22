@@ -7,18 +7,12 @@ interface Props extends Omit<HTMLAttributes<"span">, "symbol"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  symbol,
-  class: className,
-  style,
-  "aria-hidden": ariaHidden = "true",
-  ...attrs
-} = Astro.props;
+const { symbol, class: className, style, "aria-hidden": ariaHidden, ...attrs } = Astro.props;
 ---
 
 <span
   class:list={["icon", className]}
-  aria-hidden={ariaHidden}
+  aria-hidden={"aria-hidden" in Astro.props ? ariaHidden : "true"}
   style={style}
   {...attrs}
 >{symbol}</span>

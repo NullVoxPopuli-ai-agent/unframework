@@ -32,7 +32,7 @@ const {
 
 <article
   class:list={[featured ? "plan featured" : "plan", className]}
-  aria-label={ariaLabel ?? name}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : name}
   style={style}
   {...attrs}
 >

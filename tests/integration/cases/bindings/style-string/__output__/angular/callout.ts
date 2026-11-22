@@ -102,7 +102,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let body = this.body();
     <aside
       class="callout"
-      [attr.aria-label]="heading"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : heading"
       [style]="{ '--callout-accent': '#1f4d7a', 'border-left': '4px solid var(--callout-accent)', padding: '8px 12px', color: '#1a1a1a', ...this.style() }"
       [class]="this.class()"
       [ufFallthrough]="{ attributes: this.ufAttributes(), listeners: this.ufListeners() }"

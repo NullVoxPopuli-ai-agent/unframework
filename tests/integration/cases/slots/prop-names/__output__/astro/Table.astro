@@ -13,17 +13,15 @@ interface Props extends Omit<HTMLAttributes<"ol">, "people" | "row"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  people,
-  row,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "People",
-  ...attrs
-} = Astro.props;
+const { people, row, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<ol aria-label={ariaLabel} class:list={[className]} style={style} {...attrs}>
+<ol
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "People"}
+  class:list={[className]}
+  style={style}
+  {...attrs}
+>
   {people.map((person, index) => (
     <li>{row?.({ name: person.name, "data-id": person.id, index })}</li>
   ))}

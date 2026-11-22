@@ -1,4 +1,3 @@
-import Base from "./Base";
 import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
@@ -8,8 +7,8 @@ export default component$<
     }
 >(({ text, class: className, style, ...attributes }) => {
   return (
-    <>
-      <Base text={text} class={["primary", className]} style={style} {...attributes} />
-    </>
+    <button type="button" class={["pressable", className]} style={style} {...attributes}>
+      {text}
+    </button>
   );
 });

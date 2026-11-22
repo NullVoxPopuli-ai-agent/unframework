@@ -7,10 +7,15 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Rows", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 ---
 
-<section class:list={["wrapper", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["wrapper", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Rows"}
+  style={style}
+  {...attrs}
+>
   {Astro.slots.has("row") ? (
     <Rows>
       <slot name="row" slot="row" />

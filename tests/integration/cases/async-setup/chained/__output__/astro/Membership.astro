@@ -8,11 +8,16 @@ interface Props extends Omit<HTMLAttributes<"p">, "id"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { id, class: className, style, role = "status", ...attrs } = Astro.props;
+const { id, class: className, style, role, ...attrs } = Astro.props;
 
 const user = await loadUser(id);
 const team = await loadTeam(user.teamId);
 const summary = `${user.name} is in ${team.name}`;
 ---
 
-<p class:list={["membership", className]} role={role} style={style} {...attrs}>{summary}</p>
+<p
+  class:list={["membership", className]}
+  role={"role" in Astro.props ? role : "status"}
+  style={style}
+  {...attrs}
+>{summary}</p>

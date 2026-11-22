@@ -6,10 +6,15 @@ interface Props extends HTMLAttributes<"div"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, role = "search", ...attrs } = Astro.props;
+const { class: className, style, role, ...attrs } = Astro.props;
 ---
 
-<div class:list={["search-toggle", className]} role={role} style={style} {...attrs}>
+<div
+  class:list={["search-toggle", className]}
+  role={"role" in Astro.props ? role : "search"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Search</button>
   <input name="query" aria-label="Search the docs" />
 </div>

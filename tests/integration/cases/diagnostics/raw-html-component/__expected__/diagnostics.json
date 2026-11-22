@@ -14,6 +14,6 @@
       "column": 43,
       "offset": 464
     },
-    "help": "Pass a prop Card declares, or declare `innerHTML` in its props."
+    "help": "Pass a prop Card declares or an attribute of <section>, or declare `innerHTML` in its props."
   }
 ]

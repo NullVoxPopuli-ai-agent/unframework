@@ -33,7 +33,7 @@ const {
 <a
   href={href}
   class:list={[{ active, "nav-item-muted": muted, "nav-item-danger": danger, "text-danger": danger }, className]}
-  aria-current={ariaCurrent ?? (active ? "page" : undefined)}
+  aria-current={"aria-current" in Astro.props ? ariaCurrent : active ? "page" : undefined}
   style={style}
   {...attrs}
 >{label}</a>

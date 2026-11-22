@@ -6,13 +6,18 @@ interface Props extends HTMLAttributes<"form"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Tags", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const tags = [] as string[];
 const helpOpen = false as boolean;
 ---
 
-<form class:list={["tag-form", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<form
+  class:list={["tag-form", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Tags"}
+  style={style}
+  {...attrs}
+>
   <label>New tag<input name="tag" /></label>
   <button type="submit">Add tag</button>
   <a href="/help/tags">How tags work</a>

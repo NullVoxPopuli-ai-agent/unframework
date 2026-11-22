@@ -10,13 +10,7 @@ interface Props extends SyncDeskProps, Omit<HTMLAttributes<"section">, "files"> 
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  files: _files,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Sync desk",
-  ...attrs
-} = Astro.props;
+const { files: _files, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const email = "ada@example.com" as string;
 const checking = false as boolean;
@@ -34,7 +28,12 @@ const outcome = "" as string;
 const level = 4 as number;
 ---
 
-<section class:list={["sync-desk", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["sync-desk", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Sync desk"}
+  style={style}
+  {...attrs}
+>
   <button type="button">Suggest</button>
   <button type="button">Use this email</button>
   <p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p>

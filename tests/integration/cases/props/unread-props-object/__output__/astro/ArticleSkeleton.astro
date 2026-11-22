@@ -19,16 +19,16 @@ const {
   minutes: _minutes,
   class: className,
   style,
-  "aria-busy": ariaBusy = "true",
-  "aria-label": ariaLabel = "Loading article",
+  "aria-busy": ariaBusy,
+  "aria-label": ariaLabel,
   ...attrs
 } = Astro.props;
 ---
 
 <article
   class:list={["article-skeleton", className]}
-  aria-busy={ariaBusy}
-  aria-label={ariaLabel}
+  aria-busy={"aria-busy" in Astro.props ? ariaBusy : "true"}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Loading article"}
   style={style}
   {...attrs}
 >

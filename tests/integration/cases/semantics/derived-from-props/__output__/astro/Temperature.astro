@@ -18,7 +18,7 @@ const level = celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild";
 
 <figure
   class:list={["temperature", className]}
-  data-level={dataLevel ?? level}
+  data-level={"data-level" in Astro.props ? dataLevel : level}
   style={style}
   {...attrs}
 >

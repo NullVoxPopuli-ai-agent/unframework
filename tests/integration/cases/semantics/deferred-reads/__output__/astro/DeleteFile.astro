@@ -10,19 +10,18 @@ interface Props extends DeleteFileProps, Omit<HTMLAttributes<"section">, "fileNa
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  fileName,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "File",
-  ...attrs
-} = Astro.props;
+const { fileName, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const copies = 1 as number;
 const confirming = false as boolean;
 ---
 
-<section class:list={["delete-file", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["delete-file", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "File"}
+  style={style}
+  {...attrs}
+>
   <p>{fileName}, {copies} {copies === 1 ? "copy" : "copies"}</p>
   <button type="button">Add a copy</button>
   {confirming ? (

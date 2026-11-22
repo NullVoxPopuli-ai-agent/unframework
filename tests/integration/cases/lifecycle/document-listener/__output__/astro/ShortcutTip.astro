@@ -6,14 +6,19 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Shortcuts", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const open = true as boolean;
 const enabled = false as boolean;
 const count = 0 as number;
 ---
 
-<section class:list={["shortcut-tip", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["shortcut-tip", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Shortcuts"}
+  style={style}
+  {...attrs}
+>
   <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p>
   <button type="button" aria-pressed={enabled}>Shortcut K</button>
   <p role="status">Used: {count}</p>

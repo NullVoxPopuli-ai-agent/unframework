@@ -21,10 +21,12 @@ export default component$<
     <section aria-label="Picker" class={className} style={style} {...attributes}>
       <Chip
         label="Ada"
-        onClick$={() => record("click")}
+        onClick$={(_, element) => record(`click on ${(element as Element).localName}`)}
         onPick$={(label) => record(`pick ${label}`)}
-        onFocus$={() => record("focus")}
-        onKeyDown$={(event) => record(`keydown ${event.key}`)}
+        onFocus$={(_, element) => record(`focus on ${(element as Element).localName}`)}
+        onKeyDown$={(event, element) =>
+          record(`keydown ${event.key} on ${(element as Element).localName}`)
+        }
       />
       <ol aria-label="Log">
         {log.value.map((entry, index) => (

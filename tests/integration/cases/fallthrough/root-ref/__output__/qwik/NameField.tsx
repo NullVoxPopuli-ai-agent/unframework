@@ -6,6 +6,7 @@ import {
   type Signal,
   component$,
   useSignal,
+  useVisibleTask$,
 } from "@qwik.dev/core";
 
 export default component$<
@@ -16,9 +17,17 @@ export default component$<
     }
 >(({ label, class: className, style, onFocus$, ref, ...attributes }) => {
   const input = useSignal<HTMLInputElement>();
+  const mounted = useSignal(false);
+
+  useVisibleTask$(
+    () => {
+      mounted.value = (input.value ?? null) !== null;
+    },
+    { strategy: "document-ready" },
+  );
 
   const fill = $(() => {
-    if (input.value && !input.value.value) input.value.value = "Ada";
+    if (input.value && !input.value.value && mounted.value) input.value.value = "Ada";
   });
 
   return (

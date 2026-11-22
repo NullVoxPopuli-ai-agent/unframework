@@ -13,13 +13,7 @@ interface Props extends CheckoutTotalProps, Omit<HTMLAttributes<"section">, "sub
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  subtotal,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Order total",
-  ...attrs
-} = Astro.props;
+const { subtotal, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const rates = { standard: 0, express: 1200 };
 
@@ -32,7 +26,12 @@ const shipping = rates[method];
 const total = formatCents(subtotal + shipping);
 ---
 
-<section class:list={["checkout-total", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["checkout-total", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Order total"}
+  style={style}
+  {...attrs}
+>
   <p>Subtotal: {formatCents(subtotal)}</p>
   <p>Shipping: {formatCents(shipping)}</p>
   <p role="status">Total: {total}</p>

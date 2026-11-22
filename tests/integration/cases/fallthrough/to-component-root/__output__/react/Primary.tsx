@@ -1,7 +1,7 @@
 import Base from "./Base";
 import type { ComponentPropsWithRef } from "react";
 
-export type PrimaryAttributes = Omit<ComponentPropsWithRef<"button">, "text" | "children">;
+export type PrimaryAttributes = Omit<ComponentPropsWithRef<typeof Base>, "text" | "children">;
 
 export default function Primary({
   text,

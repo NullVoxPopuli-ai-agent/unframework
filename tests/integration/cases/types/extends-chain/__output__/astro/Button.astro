@@ -7,20 +7,12 @@ interface Props extends ButtonProps, Omit<HTMLAttributes<"button">, "disabled" |
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  id,
-  label,
-  disabled = false,
-  class: className,
-  style,
-  type = "button",
-  ...attrs
-} = Astro.props;
+const { id, label, disabled = false, class: className, style, type, ...attrs } = Astro.props;
 ---
 
 <button
   id={id}
-  type={type}
+  type={"type" in Astro.props ? type : "button"}
   disabled={disabled}
   class:list={[className]}
   style={style}

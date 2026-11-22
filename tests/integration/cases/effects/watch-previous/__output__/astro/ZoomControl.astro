@@ -6,13 +6,18 @@ interface Props extends HTMLAttributes<"section"> {
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style, "aria-label": ariaLabel = "Zoom", ...attrs } = Astro.props;
+const { class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const zoom = 100 as number;
 const history = [] as string[];
 ---
 
-<section class:list={["zoom-control", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<section
+  class:list={["zoom-control", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Zoom"}
+  style={style}
+  {...attrs}
+>
   <output>{zoom}%</output>
   <button type="button">Zoom in</button>
   <button type="button">Zoom out</button>

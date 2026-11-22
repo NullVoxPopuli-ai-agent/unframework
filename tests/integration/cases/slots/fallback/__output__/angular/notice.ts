@@ -109,7 +109,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let label = this.label();
     <div
       role="note"
-      [attr.aria-label]="label"
+      [attr.aria-label]="'aria-label' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['aria-label'] : label"
       class="notice"
       [class]="this.class()"
       [style]="this.style()"

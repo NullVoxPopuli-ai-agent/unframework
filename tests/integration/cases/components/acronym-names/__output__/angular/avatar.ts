@@ -98,7 +98,7 @@ export class Fallthrough implements OnChanges, OnDestroy {
     @let userID = this.userID();
     <button
       type="button"
-      [attr.data-user]="userID"
+      [attr.data-user]="'data-user' in (this.ufAttributes() ?? {}) ? this.ufAttributes()?.['data-user'] : userID"
       (click)="pickedURL.emit(imageURL)"
       [class]="this.class()"
       [style]="this.style()"

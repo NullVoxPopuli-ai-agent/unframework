@@ -11,19 +11,17 @@ interface Props extends PageCountProps, Omit<HTMLAttributes<"nav">, "page" | "to
   style?: Record<string, string | number | undefined>;
 }
 
-const {
-  page = 1,
-  total,
-  class: className,
-  style,
-  "aria-label": ariaLabel = "Pages",
-  ...attrs
-} = Astro.props;
+const { page = 1, total, class: className, style, "aria-label": ariaLabel, ...attrs } = Astro.props;
 
 const label = `Page ${page} of ${total}`;
 ---
 
-<nav class:list={["page-count", className]} aria-label={ariaLabel} style={style} {...attrs}>
+<nav
+  class:list={["page-count", className]}
+  aria-label={"aria-label" in Astro.props ? ariaLabel : "Pages"}
+  style={style}
+  {...attrs}
+>
   <p role="status">{label}</p>
   <p>Direct: {page}</p>
 </nav>

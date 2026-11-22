@@ -15,11 +15,11 @@ interface Props extends ButtonProps, Omit<HTMLAttributes<"button">, "label" | "t
   style?: Record<string, string | number | undefined>;
 }
 
-const { label, tone = "primary", class: className, style, type = "button", ...attrs } = Astro.props;
+const { label, tone = "primary", class: className, style, type, ...attrs } = Astro.props;
 ---
 
 <button
-  type={type}
+  type={"type" in Astro.props ? type : "button"}
   class:list={[`button button-${tone}`, className]}
   style={style}
   {...attrs}

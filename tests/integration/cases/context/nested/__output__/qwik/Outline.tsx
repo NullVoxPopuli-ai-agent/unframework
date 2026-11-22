@@ -2,7 +2,10 @@ import Level from "./Level";
 import { type CSSProperties, type ClassList, type PropsOf, component$ } from "@qwik.dev/core";
 
 export default component$<
-  Omit<PropsOf<"section">, "class" | "style"> & { class?: ClassList; style?: CSSProperties }
+  Omit<PropsOf<typeof Level>, "class" | "style" | "title"> & {
+    class?: ClassList;
+    style?: CSSProperties;
+  }
 >(({ class: className, style, ...attributes }) => {
   return (
     <>
