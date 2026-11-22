@@ -57,7 +57,8 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
 };
 
 /**
- * What the Ember target emits so far: the static and props subset of M1. Each other cell is
+ * What the Ember target emits so far: the static and props subset of M1, with listeners, template
+ * refs, watchers and hooks (`interactivity`). Each other cell is
  * unsupported with an error, so its cases have no Ember output and skip (`ufNoOutput`).
  */
 const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([

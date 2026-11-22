@@ -40,6 +40,9 @@ it reads; the signature; the component; the inline helpers it calls.
   `onMounted` last: the `onMounted` hooks run once the first render settles, and the `onUnmounted`
   hooks are registered as destructors then. A component destroyed first, as a server render is,
   runs none of them. Cleanups run before the next run and when the component is destroyed.
+  Effects are an anti-pattern in Ember, as in every framework: a source that derives the value,
+  or does the work in the handler that causes the change, compiles to plainer Ember. These
+  helpers exist so that a source with `watch` or `watchEffect` still compiles.
 - **Expressions.** A Glimmer template reads paths, literals and helper calls, never JavaScript. So
   a path (`@user.name`, `this.total`, `item.label`) and a literal stay in the template, and any
   other expression becomes a member: a getter (`{{this.value1}}`), or an arrow field the template

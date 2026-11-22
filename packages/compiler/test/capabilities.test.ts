@@ -12,7 +12,7 @@ import { checkCapabilities } from "../src/capabilities.ts";
 import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
 
 /**
- * The targets that emit the whole language: Ember emits its static and props subset so far
+ * The targets that emit the whole language: Ember emits only part of it so far
  * (uxfront-com/unframework#236).
  */
 const WHOLE_TARGETS = TARGET_NAMES.filter((name) => name !== "ember");
