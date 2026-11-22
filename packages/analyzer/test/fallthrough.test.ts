@@ -366,6 +366,17 @@ describe("what a parent cannot pass, and how it is told", () => {
     expect(run(keyed).diagnostics).toEqual([]);
   });
 
+  it("suggests no name that would be rejected too", () => {
+    const source = module(
+      'function Card() {\n  const slots = defineSlots<{ title?(): any }>();\n  return <button type="button">{slots.title?.()}</button>;\n}\nfunction Tag({ ariaLabel }: { ariaLabel?: string }) {\n  return <span>{ariaLabel}</span>;\n}\nfunction Base({ text }: { text: string }) {\n  const emit = defineEmits<{ click: [n: number] }>();\n  return <button type="button" onClick={() => emit("click", 1)}>{text}</button>;\n}\nfunction Primary({ text }: { text: string }) {\n  return <Base text={text} />;\n}\nexport function Page() {\n  return <div><Card titel="x" /><Tag aria-labl="x" /><Primary text="go" onClik={() => {}} /></div>;\n}\n',
+    );
+    const meant = run(source).diagnostics.map(
+      (each) => each.message.match(/Did you mean `([^`]+)`/)?.[1] ?? null,
+    );
+    // Not the slot `title`, nor `aria-label` for the prop `ariaLabel`, nor Base's own `click`.
+    expect(meant).toEqual([null, "ariaLabel", null]);
+  });
+
   it("names a slot passed as an attribute a slot", () => {
     const source = module(
       'function Card() {\n  const slots = defineSlots<{ title?(): any }>();\n  return <button type="button">{slots.title?.()}</button>;\n}\nexport function Page() {\n  return <Card title="x" />;\n}\n',

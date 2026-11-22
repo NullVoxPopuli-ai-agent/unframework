@@ -411,12 +411,23 @@ function lowerProp(
     // What it may mean: a prop, or an attribute of the element what it does not declare lands
     // on, an ARIA one only for an `aria` name: `aria-` alone is within reach of a long one.
     const aria = /^aria/i.test(name.name);
+    // Never a name that would be rejected too: a slot, the kebab form of a prop or a model, or
+    // a name the root component declares.
+    const rejected = new Set([
+      ...api.slots.map((each) => each.name),
+      ...(api.rootDeclarations ?? []).map((each) => each.name),
+    ]);
+    const declared = new Set([...api.props, ...api.models].map((each) => each.name));
     const meant = closest(name.name, [
       ...api.props.map((each) => each.name),
       ...(tag === undefined
         ? []
         : attributesOf(tag, namespaceOf(api)).filter(
-            (attribute) => aria || !attribute.startsWith("aria-"),
+            (attribute) =>
+              (aria || !attribute.startsWith("aria-")) &&
+              !rejected.has(attribute) &&
+              !rejected.has(camelize(attribute)) &&
+              !declared.has(camelize(attribute)),
           )),
     ]);
     const others = items?.flatMap((each) =>
@@ -515,9 +526,15 @@ function lowerComponentListener(
       return undefined;
     }
     // What it may mean: an event the component declares, or a DOM event that falls through.
+    // Never a DOM event a root component declares as its own, which would be rejected too.
+    const rootEvents = new Set(
+      (api.rootDeclarations ?? []).flatMap((each) => (each.kind === "event" ? [each.name] : [])),
+    );
     const meant = closest(event, [
       ...api.events.map((each) => each.name),
-      ...(takesFallthrough(api) ? DOM_EVENTS.keys() : []),
+      ...(takesFallthrough(api)
+        ? [...DOM_EVENTS.keys()].filter((each) => !rootEvents.has(each))
+        : []),
     ]);
     const listener = meant && `on${meant.charAt(0).toUpperCase()}${meant.slice(1)}`;
     // The events the element's other listeners name, as UF3043's fix leaves them.
