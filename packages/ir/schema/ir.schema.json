@@ -3316,6 +3316,10 @@
           "const": "svg",
           "description": "`svg` where the fallthrough element is an SVG one (ADR-0118): an `<svg>`, or an element inside one that spreads the props' rest, whose attributes a parent checks as SVG's. Absent for an HTML element."
         },
+        "fallthroughOwn": {
+          "$ref": "#/definitions/ApiFallthroughOwn",
+          "description": "The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer passes is checked as that element would be checked with it, its `role`, its `tabindex` and its own key handlers included (UF3030). Absent where nothing falls through."
+        },
         "rootDeclarations": {
           "type": "array",
           "items": {
@@ -3466,6 +3470,58 @@
       ],
       "additionalProperties": false,
       "description": "A slot of a child's API: its name, its optionality and its props' type as written."
+    },
+    "ApiFallthroughOwn": {
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ],
+                    "enum": [
+                      true,
+                      null
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Each attribute: its static value, `true` written without one, or `null` where bound."
+        },
+        "listeners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The DOM events its own listeners listen to, in lower case (`keydown`)."
+        }
+      },
+      "required": [
+        "attributes",
+        "listeners"
+      ],
+      "additionalProperties": false,
+      "description": "The fallthrough element's own attributes and listeners, as its source writes them."
     },
     "ApiRootDeclaration": {
       "type": "object",

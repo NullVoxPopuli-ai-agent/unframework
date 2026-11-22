@@ -11,6 +11,7 @@ import type {
   ApiRootDeclaration,
   ApiSlot,
   ComponentApi,
+  ApiFallthroughOwn,
 } from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 import { isComponentName, parseModule } from "@unframework.dev/parser";
@@ -19,6 +20,7 @@ import type { ShapeMember, TypeShape } from "@unframework.dev/type-oracle";
 
 import type { AuthoringApi } from "./authoring.ts";
 import { spellsLiterals } from "./cross-component.ts";
+import { listenerName } from "./listeners.ts";
 import type { ComponentFunction } from "./render.ts";
 import type { Scopes } from "./scope.ts";
 import type { Shapes } from "./shapes.ts";
@@ -94,14 +96,16 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
   // Where what a consumer passes lands (ADR-0118): the root element, or with `inheritAttrs:
   // false` the element that spreads the props' rest. A root component's is its own, which
   // `fillRootComponents` reads once every component's API is known.
+  const rootOpening = rootElementOf(node)?.openingElement;
   const fallthrough = api.inheritAttrs
-    ? root.tag === undefined
+    ? root.tag === undefined || !rootOpening
       ? undefined
-      : { tag: root.tag, svg: root.tag === "svg" }
+      : { tag: root.tag, svg: root.tag === "svg", opening: rootOpening }
     : restElement(node);
   if (fallthrough) {
     api.fallthroughTag = fallthrough.tag;
     if (fallthrough.svg) api.fallthroughNamespace = "svg";
+    api.fallthroughOwn = ownOf(fallthrough.opening);
   }
   // A ref holds what the component exposes, or else its root element (ADR-0118).
   if (!api.exposes.length && root.tag !== undefined) api.refTag = root.tag;
@@ -134,6 +138,7 @@ export function fillRootComponents(
       if (api.inheritAttrs && child.fallthroughTag !== undefined && !api.fallthroughTag) {
         api.fallthroughTag = child.fallthroughTag;
         if (child.fallthroughNamespace) api.fallthroughNamespace = child.fallthroughNamespace;
+        if (child.fallthroughOwn) api.fallthroughOwn = child.fallthroughOwn;
         changed = true;
       }
       if (!api.exposes.length && child.refTag !== undefined && !api.refTag) {
@@ -197,7 +202,38 @@ function rootElementOf(node: ComponentFunction): AST.JSXElement | undefined {
  * source order, as the setup's checks allow one only, with whether it is an SVG element, inside
  * an `<svg>` as the analyser places it. `<component is>` is none: its rest is UF2001.
  */
-function restElement(node: ComponentFunction): { tag: string; svg: boolean } | undefined {
+/**
+ * The fallthrough element's own attributes and listeners, as its source writes them (ADR-0118),
+ * which a parent checks a listener it passes with (UF3030). A spread's keys are left out.
+ */
+function ownOf(opening: AST.JSXOpeningElement): ApiFallthroughOwn {
+  const own: ApiFallthroughOwn = { attributes: [], listeners: [] };
+  for (const item of opening.attributes) {
+    if (item.type !== "JSXAttribute" || item.name.type !== "JSXIdentifier") continue;
+    const written = item.name.name;
+    const listener = /^on/i.test(written) ? listenerName(written) : undefined;
+    if (listener) {
+      if (!own.listeners.includes(listener.event)) own.listeners.push(listener.event);
+      continue;
+    }
+    if (written === "key" || written === "ref") continue;
+    const { value } = item;
+    own.attributes.push({
+      name: written.toLowerCase(),
+      value:
+        value === null
+          ? true
+          : value.type === "Literal" && typeof value.value === "string"
+            ? value.value
+            : null,
+    });
+  }
+  return own;
+}
+
+function restElement(
+  node: ComponentFunction,
+): { tag: string; svg: boolean; opening: AST.JSXOpeningElement } | undefined {
   const [parameter] = node.params;
   const pattern = parameter?.type === "ObjectPattern" ? parameter : undefined;
   const rest = pattern?.properties.find((property) => property.type === "RestElement");
@@ -206,7 +242,7 @@ function restElement(node: ComponentFunction): { tag: string; svg: boolean } | u
   const statements = node.body?.type === "BlockStatement" ? node.body.body : [];
   const last = statements.at(-1);
   const returned = node.body?.type === "BlockStatement" ? last : node.body;
-  let found: { tag: string; svg: boolean } | undefined;
+  let found: { tag: string; svg: boolean; opening: AST.JSXOpeningElement } | undefined;
   const visit = (value: unknown, svg: boolean): void => {
     if (found !== undefined || !value || typeof value !== "object") return;
     if (Array.isArray(value)) {
@@ -231,7 +267,7 @@ function restElement(node: ComponentFunction): { tag: string; svg: boolean } | u
             item.argument.name === name,
         )
       ) {
-        if (opening.name.name !== "component") found = { tag: opening.name.name, svg };
+        if (opening.name.name !== "component") found = { tag: opening.name.name, svg, opening };
         return;
       }
     }

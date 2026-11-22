@@ -348,11 +348,22 @@ describe("what a parent cannot pass, and how it is told", () => {
     expect(problems(prop, run(prop).diagnostics)).toEqual(["UF1002 data-note"]);
   });
 
-  it("leaves a fallthrough listener's accessibility to the root's own compile", () => {
-    const source = module(
+  it("checks a fallthrough listener's accessibility with the root's own attributes", () => {
+    // A role and a tabindex of the root's own make its listeners reachable (no UF3030).
+    const reachable = module(
       'function Box({ label }: { label: string }) {\n  return <div role="button" tabindex="0" aria-label={label}>x</div>;\n}\nexport function Page() {\n  return <Box label="x" onDblclick={() => {}} />;\n}\n',
     );
-    expect(run(source).diagnostics).toEqual([]);
+    expect(run(reachable).diagnostics).toEqual([]);
+    // A role-less <div> root is reported as the same listener on the <div> is (UF3030 twice).
+    const card = module(
+      'function Card({ label }: { label: string }) {\n  return <div class="card">{label}</div>;\n}\nexport function Page() {\n  return <Card label="x" onClick={() => {}} />;\n}\n',
+    );
+    expect(codes(run(card).diagnostics)).toEqual(["UF3030", "UF3030"]);
+    // The root's own key listener counts, and a consumer's role and tabindex count too.
+    const keyed = module(
+      'function Card({ label }: { label: string }) {\n  return <div role="button" tabindex="0" onKeydown={() => {}}>{label}</div>;\n}\nfunction Plain({ label }: { label: string }) {\n  return <div>{label}</div>;\n}\nexport function Page() {\n  return <section><Card label="x" onClick={() => {}} /><Plain label="y" role="button" tabindex="0" onClick={() => {}} onKeydown={() => {}} /></section>;\n}\n',
+    );
+    expect(run(keyed).diagnostics).toEqual([]);
   });
 
   it("names a slot passed as an attribute a slot", () => {

@@ -3,6 +3,7 @@ export type {
   ApiEventParameter,
   ApiMember,
   ApiReference,
+  ApiFallthroughOwn,
   ApiRootDeclaration,
   ApiSlot,
   Attribute,

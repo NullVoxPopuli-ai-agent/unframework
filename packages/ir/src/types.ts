@@ -502,6 +502,12 @@ export interface ComponentApi {
    */
   fallthroughNamespace?: "svg";
   /**
+   * The fallthrough element's own attributes and listeners (ADR-0118): a listener a consumer
+   * passes is checked as that element would be checked with it, its `role`, its `tabindex` and
+   * its own key handlers included (UF3030). Absent where nothing falls through.
+   */
+  fallthroughOwn?: ApiFallthroughOwn;
+  /**
    * What the components the root renders declare, through a chain of root components, nearest
    * first (ADR-0118): a name a consumer passes that would fall through reaches that component's
    * own prop, model or event instead, which the targets do not pass alike, so a parent reports
@@ -543,6 +549,14 @@ export interface ComponentStylesApi {
   /** @pattern ^[0-9a-f]{8}$ */
   scopeId: string;
   slotted: boolean;
+}
+
+/** The fallthrough element's own attributes and listeners, as its source writes them. */
+export interface ApiFallthroughOwn {
+  /** Each attribute: its static value, `true` written without one, or `null` where bound. */
+  attributes: { name: string; value: string | true | null }[];
+  /** The DOM events its own listeners listen to, in lower case (`keydown`). */
+  listeners: string[];
 }
 
 /** A prop, a model or an event that a component's root component declares (ADR-0118). */

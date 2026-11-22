@@ -732,7 +732,7 @@ function lowerFallthrough(
       hasChildren: false,
       listBody: false,
       render,
-      fallthrough: true,
+      fallthrough: { own: api.fallthroughOwn },
     },
   );
   return lowered.attributes.flatMap((attribute): ComponentAttribute[] => {

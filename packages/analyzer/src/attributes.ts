@@ -25,7 +25,14 @@ import {
   unanalysableUrl,
   unbindableAttribute,
 } from "@unframework.dev/ir";
-import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework.dev/ir";
+import type {
+  Attribute,
+  Namespace,
+  NumberKind,
+  Span,
+  SpreadKey,
+  ApiFallthroughOwn,
+} from "@unframework.dev/ir";
 import type { AST } from "@unframework.dev/parser";
 
 import { handlerProblems } from "./a11y.ts";
@@ -80,10 +87,11 @@ export interface ElementContext {
   listBody: boolean;
   render: RenderContext;
   /**
-   * Set where the attributes fall through a component to its fallthrough element (ADR-0118),
-   * whose own attributes only its own compile sees.
+   * Set where the attributes fall through a component to its fallthrough element (ADR-0118):
+   * that element's own attributes and listeners, where the child's API gives them, which the
+   * handler check reads with the consumer's.
    */
-  fallthrough?: true;
+  fallthrough?: { own: ApiFallthroughOwn | undefined };
 }
 
 /** An element's attributes, lowered. */
@@ -317,9 +325,13 @@ export function lowerAttributes(
       entry.form.kind === "static" &&
       (entry.form.value?.includes("{{") ?? false),
   )?.node;
-  // The root's own compile checks its element's handlers. A parent cannot see the root's own
-  // attributes, such as its `role` or `tabindex`, so it would report a handler that is fine.
+  // What falls through is checked with the fallthrough element's own attributes and listeners,
+  // which the child's API gives (ADR-0118). The element's own handlers are its own compile's to
+  // check, so a parent checks only where it passes a listener of its own.
   if (!element.fallthrough) checkHandlers(opening, entries, element);
+  else if (element.fallthrough.own) {
+    checkHandlers(opening, entries, element, element.fallthrough.own);
+  }
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
 }
 
@@ -369,9 +381,12 @@ function checkHandlers(
   opening: AST.JSXOpeningElement,
   entries: readonly (Read | SpreadRead | OwnRead)[],
   element: ElementContext,
+  own?: ApiFallthroughOwn,
 ): void {
   const handlers = new Set<string>();
-  const attributes = new Map<string, A11yValue>();
+  const attributes = new Map<string, A11yValue>(
+    own?.attributes.map(({ name, value }) => [name, value]) ?? [],
+  );
   for (const entry of entries) {
     if ("own" in entry) {
       const event = entry.own === "listener" ? listenerName(entry.nameNode.name)?.event : undefined;
@@ -387,6 +402,9 @@ function checkHandlers(
       for (const { name } of entry.keys) attributes.set(name, null);
     }
   }
+  // A parent that passes no listener changes nothing the element's own compile checked.
+  if (own && !handlers.size) return;
+  for (const event of own?.listeners ?? []) handlers.add(event);
   for (const problem of handlerProblems(element.tag, attributes, handlers)) {
     element.render.reporter.report(
       "UF3030",
