@@ -49,6 +49,7 @@ import { codeOf } from "@unframework.dev/ir";
 import { childrenOf, walk } from "@unframework.dev/ir";
 import type {
   BindingId,
+  ComponentNode,
   DynamicNode,
   ElementNode,
   EventAttribute,
@@ -866,7 +867,40 @@ function elementProps(plan: SetupPlan): string | undefined {
   // component whose root holds no element for a ref (a root component that exposes) takes none.
   if (passed.refLocal !== undefined || !passed.rootRef) omitted.add("ref");
   const props = plan.names.core("PropsOf", { type: true });
-  return `Omit<${props}<${JSON.stringify(passed.tag)}>, ${[...omitted].map((name) => JSON.stringify(name)).join(" | ")}>`;
+  // A root component takes what it declares as its props type has it, `value: number` where the
+  // tag's would be `string | number | readonly string[]`, and passes the rest on to its own
+  // element: `PropsOf<typeof Base>`, without the props the root sets itself, which a consumer
+  // then need not pass.
+  const root = passed.rootComponent;
+  if (root) for (const name of setByRoot(root)) omitted.add(name);
+  const element = root ? `typeof ${root.component}` : JSON.stringify(passed.tag);
+  return `Omit<${props}<${element}>, ${[...omitted].map((name) => JSON.stringify(name)).join(" | ")}>`;
+}
+
+/**
+ * The props a root component element sets that its component declares, by the names Qwik passes
+ * them as: its props, its models and their callbacks, its emits' listeners and its render-prop
+ * slots. The attributes and listeners it passes on to its own element are left in, as a
+ * consumer's win over them (ADR-0118).
+ */
+function setByRoot(root: ComponentNode): string[] {
+  const names = root.attributes.flatMap((attribute) => {
+    switch (attribute.kind) {
+      case "Prop":
+        return [attribute.name];
+      case "ModelBinding":
+        return [attribute.model, modelCallback(attribute.model)];
+      case "Listener":
+        return [qwikEventProp(attribute.event)];
+      default:
+        return [];
+    }
+  });
+  // A default fill without a parameter is the projected children, and any other a render prop.
+  for (const fill of root.fills) {
+    if (fill.slot !== "default" || fill.parameter) names.push(slotProp(fill.slot));
+  }
+  return names;
 }
 
 /**
@@ -951,9 +985,14 @@ function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
   if (component.exposes)
     members.push(`ref?: ${plan.names.core("Signal", { type: true })}<object | undefined>`);
   // A consumer's ref of the root element, which the root fills beside its own (ADR-0118): the
-  // signal Qwik's `ref` on an element takes.
-  else if (plan.composition.passed?.refLocal !== undefined)
-    members.push(`ref?: ${plan.names.core("Signal", { type: true })}<Element | undefined>`);
+  // signal Qwik's `ref` on an element takes. Where a root component takes it in place of the
+  // root's own, it is of the own one's element, which the visible task fills from it.
+  else if (plan.composition.passed?.refLocal !== undefined) {
+    const element = plan.composition.passed.forwarded
+      ? (plan.composition.passed.forwarded.type?.code ?? "Element")
+      : "Element";
+    members.push(`ref?: ${plan.names.core("Signal", { type: true })}<${element} | undefined>`);
+  }
   return members.length ? `{ ${members.join("; ")} }` : undefined;
 }
 
@@ -1048,10 +1087,22 @@ function passThrough(
       help: "Put the template ref on the root element alone.",
     };
   }
+  const ref = passed.ref();
+  // A root component takes the consumer's signal, or else its own: Qwik serialises a
+  // component's props, which a function is not, and fills the consumer's as the server renders,
+  // before the consumer's `onMounted` runs. A visible task fills the own one from it
+  // (./setup.ts).
+  if (passed.forwarded) {
+    attributes.splice(
+      attributes.indexOf(own),
+      1,
+      js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(passed.rootSignal()))),
+    );
+    return undefined;
+  }
   // `ref={(element) => { input.value = element; if (ref) ref.value = element; }}`: Qwik's ref
   // takes one signal or function, and both refs hold the root element.
   const parameter = plan.names.once("element");
-  const ref = passed.ref();
   const fill = (signal: string) =>
     js.expressionStatement(
       js.assignmentExpression(

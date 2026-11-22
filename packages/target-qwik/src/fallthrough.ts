@@ -4,19 +4,23 @@
 // the root element, the root component, which passes them on in turn, or with `inheritAttrs:
 // false` the element that spreads the source's `{...rest}`. So the props pattern names every
 // prop the component declares, an unread one as `_name`, and the props type takes the element's
-// own, `Omit<PropsOf<"button">, "title" | …>`. Spread last, the consumer's attribute wins over
+// own, `Omit<PropsOf<"button">, "title" | …>`, or a root component's props, `PropsOf<typeof
+// Base>`, without the props the root sets itself. Spread last, the consumer's attribute wins over
 // the element's own; its `class` and `style` are props the element merges as before; and its
 // listener of an event the element listens to itself is a prop the element's listener runs
 // after its own, `onClick$={[$(…), onClick$]}`.
 // A ref on a component that exposes nothing holds its root element: Qwik's `ref` on an element
 // takes the signal, so it passes on in the rest, or where the root has a ref of its own, or the
-// rest spreads elsewhere, the root takes it beside its own, `ref={(element) => { … }}`.
+// rest spreads elsewhere, the root takes it beside its own, `ref={(element) => { … }}`. A root
+// component takes a signal instead, since Qwik serialises a component's props: the consumer's,
+// or else its own, which a visible task fills from the consumer's.
 import { walk } from "@unframework.dev/ir";
 import type {
   ComponentApi,
   ComponentNode,
   ElementNode,
   Span,
+  TemplateRefItem,
   UfComponent,
   UfModule,
 } from "@unframework.dev/ir";
@@ -38,15 +42,28 @@ export class Passed {
   readonly target: Span | undefined;
   /** Whether the rest spreads on the root, which then takes the scope attributes in it. */
   readonly onRoot: boolean;
+  /**
+   * The root component the rest spreads on, which types what it takes: `PropsOf<typeof Base>`.
+   * Not a component that renders itself, whose type would name itself, nor a generic one, whose
+   * props Qwik's `PropsOf` cannot infer: those take their tag's attributes.
+   */
+  readonly rootComponent: ComponentNode | undefined;
   /** The rest's local, `attributes`. */
   readonly rest: string | undefined;
   /** Whether a consumer's ref holds the component's root element (it exposes nothing). */
   readonly rootRef: boolean;
+  /**
+   * The component's own template ref on its root component, where a consumer's ref holds the
+   * same element. Qwik serialises a component's props, so the root component takes one signal,
+   * the consumer's or else this one, and a visible task fills this one from the consumer's.
+   */
+  readonly forwarded: TemplateRefItem | undefined;
   /** The props the component declares, by the names a consumer passes them as. */
   readonly declared: ReadonlySet<string>;
   /** The consumer's listeners the target merges with its own, by prop: their locals. */
   readonly listeners: Map<string, string> = new Map();
   #ref: string | undefined;
+  #rootSignal: string | undefined;
 
   constructor(
     component: UfComponent,
@@ -57,21 +74,30 @@ export class Passed {
     this.#fresh = fresh;
     this.declared = declared;
     const root = singleRoot(component);
-    const element = restElement(component);
-    const target =
-      component.inheritAttrs === false
-        ? element
-        : root && (root.kind === "Element" || takesFallthrough(module, root.component))
-          ? root
-          : undefined;
+    const target = fallthroughTarget(component, module);
     this.target = target?.span;
     this.onRoot = target !== undefined && target === root;
+    this.rootComponent =
+      this.onRoot &&
+      root?.kind === "Component" &&
+      root.component !== component.name &&
+      !isGeneric(module, root.component)
+        ? root
+        : undefined;
     this.tag = fallthroughTag(component, module);
     this.rest = target === undefined ? undefined : fresh("attributes");
     this.rootRef =
       component.exposes === undefined &&
       root !== undefined &&
       (root.kind === "Element" || holdsElement(module, root.component));
+    const own =
+      this.rootRef && root?.kind === "Component"
+        ? root.attributes.find((attribute) => attribute.kind === "Ref")
+        : undefined;
+    this.forwarded = component.setup.find(
+      (item): item is TemplateRefItem =>
+        item.kind === "TemplateRef" && item.binding === own?.binding,
+    );
   }
 
   /** Whether `node` is the one that spreads the rest. */
@@ -96,6 +122,16 @@ export class Passed {
     return local;
   }
 
+  /**
+   * The local of the signal a root component takes in place of the own template ref
+   * (`forwarded`): the consumer's, or else the own one. A local, since Qwik's optimizer makes a
+   * prop that reads a prop a read-only signal of its own.
+   */
+  rootSignal(): string {
+    this.#rootSignal ??= this.#fresh("rootRef");
+    return this.#rootSignal;
+  }
+
   /** The consumer's ref, which the root takes apart from the rest. */
   ref(): string {
     this.#ref ??= this.#fresh("ref");
@@ -106,6 +142,22 @@ export class Passed {
   get refLocal(): string | undefined {
     return this.#ref;
   }
+}
+
+/**
+ * The node that spreads the props' rest, where what a consumer passes lands: the root element,
+ * a root component that takes what falls through, or with `inheritAttrs: false` the element that
+ * spreads the source's `{...rest}`.
+ */
+export function fallthroughTarget(
+  component: UfComponent,
+  module: UfModule,
+): ElementNode | ComponentNode | undefined {
+  if (component.inheritAttrs === false) return restElement(component);
+  const root = singleRoot(component);
+  return root && (root.kind === "Element" || takesFallthrough(module, root.component))
+    ? root
+    : undefined;
 }
 
 /** Whether two spans are the same. */
@@ -186,6 +238,14 @@ function childTag(
   const root = singleRoot(own);
   if (root?.kind === "Element") return root.tag;
   return root && childTag(module, root.component, tag, new Set([...seen, own.name]));
+}
+
+/** Whether a child, by its local name, is generic (ADR-0068). */
+function isGeneric(module: UfModule, local: string): boolean {
+  const api = importedApi(module, local);
+  if (api !== null) return Boolean(api?.typeParameters?.length);
+  const own = module.components.find((each) => each.name === local);
+  return Boolean(own?.typeParameters?.length);
 }
 
 /** An imported child's API, by its local name: `null` where the module does not import it. */

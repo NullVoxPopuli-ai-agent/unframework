@@ -170,7 +170,7 @@ export function planComposition(
  * and models' QRL props, its render-prop slots, `class` and `style`, and the `ref` it exposes
  * through. None of them falls through (ADR-0118).
  */
-function declaredProps(component: UfComponent): Set<string> {
+export function declaredProps(component: UfComponent): Set<string> {
   const declared = new Set(component.props.map((prop) => prop.name));
   for (const event of component.emits?.events ?? []) declared.add(qwikEventProp(event.name));
   for (const item of component.setup) {

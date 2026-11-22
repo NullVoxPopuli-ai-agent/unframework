@@ -184,18 +184,155 @@ function Chip({ label }: { label: string }) {
   return <button type="button" onClick={() => emit("pick", label)}>{label}</button>;
 }`,
     );
+    // A control runs in a `sync$`, not as a marker: the child's element may listen to the event
+    // from the window, where its markers would apply to every event of the page.
     expect(lines(contents)).toContain(
       lines(`<Chip
         label="Ada"
         tabIndex={0}
         aria-pressed="true"
-        preventdefault:keydown
-        onKeyDown$={(event) => {
-          console.log(event.key);
-        }}
+        onKeyDown$={[
+          sync$((event: KeyboardEvent) => {
+            event.preventDefault();
+          }),
+          $((event: KeyboardEvent) => {
+            console.log(event.key);
+          }),
+        ]}
       />`),
     );
+    expect(contents).not.toContain("preventdefault:");
   });
+
+  it("hands a root component one signal for the root's own ref and a consumer's", async () => {
+    const contents = await emitSource(
+      `import { onMounted, useTemplateRef } from "@uxfront/unframework";
+
+export default function Primary({ text }: { text: string }) {
+  const own = useTemplateRef<HTMLButtonElement>();
+  onMounted(() => own.value?.focus());
+  return <Base ref={own} text={text} />;
+}
+
+function Base({ text }: { text: string }) {
+  return <button type="button">{text}</button>;
+}`,
+      { fallthrough: true },
+    );
+    // Qwik serialises a component's props, which a function ref is not (Q34).
+    expect(contents).not.toContain("(element) =>");
+    expect(contents).toContain("ref?: Signal<HTMLButtonElement | undefined>");
+    // The consumer's, filled as the server renders, or else the own one; the own one is filled
+    // from the consumer's before the component's own visible tasks run.
+    expect(lines(contents)).toContain(
+      lines(`const own = useSignal<HTMLButtonElement>();
+        useVisibleTask$(
+          ({ track }) => {
+            if (ref) own.value = track(ref);
+          },
+          { strategy: "document-ready" },
+        );
+        const rootRef = ref ?? own;
+        useVisibleTask$(
+          () => {
+            own.value?.focus();`),
+    );
+    expect(contents).toContain("<Base ref={rootRef} text={text}");
+  });
+
+  it("types what passes on to a root component as that component's props", async () => {
+    const contents = await emitSource(
+      `export default function Primary({ text }: { text: string }) {
+  return <Base value={1} tone="primary" class={text} />;
+}
+
+function Base({ value, tone }: { value: number; tone: "primary" | "secondary" }) {
+  return <button type="button" class={tone}>{value}</button>;
+}`,
+      { fallthrough: true },
+    );
+    // Not the tag's `value` (`string | number | readonly string[]`), and without the props the
+    // root sets, which a consumer then need not pass.
+    expect(contents).toContain(
+      'Omit<PropsOf<typeof Base>, "text" | "class" | "style" | "value" | "tone">',
+    );
+    // Qwik's `PropsOf` infers no generic component's props: it takes the tag's attributes.
+    const generic = await emitSource(
+      `export default function Wrapper({ label }: { label: string }) {
+  return <Items items={["a"]} aria-label={label} />;
+}
+
+function Items<T extends string>({ items }: { items: T[] }) {
+  return <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>;
+}`,
+      { fallthrough: true },
+    );
+    expect(generic).toContain('Omit<PropsOf<"ul">, "label" | "class" | "style">');
+  });
+
+  it("keeps a consumer's listener out of the root's capture and passive listeners", async () => {
+    const contents = await emitSource(
+      `import { ref } from "@uxfront/unframework";
+
+export default function Box({ label }: { label: string }) {
+  const count = ref(0);
+  return (
+    <div role="toolbar" tabindex="-1" aria-label={label} onKeydownCapture={() => count.value++} onWheelPassive={() => count.value++}>
+      <button type="button" onKeydown={() => count.value++}>{count.value}</button>
+    </div>
+  );
+}`,
+      { fallthrough: true },
+    );
+    // The root's capture listener runs from the window, and the consumer's, in the rest, in the
+    // bubble phase on the root; neither listener of the wheel is passive.
+    expect(contents).not.toContain("capture:keydown");
+    expect(contents).not.toContain("passive:wheel");
+    expect(contents).toContain("window:onKeyDown$={(event, element) => {");
+    expect(contents).toContain("({ label, class: className, style, onWheel$, ...attributes })");
+    expect(contents).toContain("onWheel$={[$(() => count.value++), onWheel$]}");
+  });
+
+  it(
+    "passes a ref, attributes and listeners through a root component, checked clean (L4, L5)",
+    async () => {
+      await expectCheckedClean([
+        `import { onMounted, ref, useTemplateRef } from "@uxfront/unframework";
+
+export default function Bar() {
+  const save = useTemplateRef<HTMLButtonElement>();
+  const count = ref(0);
+  onMounted(() => save.value?.focus());
+  return (
+    <div>
+      <Primary ref={save} text="Save" id="save" aria-label="Save draft" onClick={() => count.value++} />
+      <Box label="Tools" onKeydown={(event) => { event.preventDefault(); count.value++; }} onWheel={() => count.value++} />
+    </div>
+  );
+}
+
+function Primary({ text }: { text: string }) {
+  const own = useTemplateRef<HTMLButtonElement>();
+  onMounted(() => own.value?.setAttribute("data-mounted", ""));
+  return <Base ref={own} value={1} tone="primary" class={text} />;
+}
+
+function Base({ value, tone }: { value: number; tone: "primary" | "secondary" }) {
+  return <button type="button" class={tone}>{value}</button>;
+}
+
+function Box({ label }: { label: string }) {
+  const count = ref(0);
+  return (
+    <div role="toolbar" tabindex="-1" aria-label={label} onKeydownCapture={() => count.value++} onWheelPassive={() => count.value++}>
+      <button type="button" onKeydown={() => count.value++}>{count.value}</button>
+    </div>
+  );
+}`,
+      ]);
+    },
+    CHECKED,
+  );
 
   it(
     "emits what falls through so it type-checks and lints clean (L4, L5)",
@@ -554,7 +691,8 @@ function Base({ text }: { text: string }) {
     expect(contents).toContain(
       '<Base text={text} class={["primary", className]} style={style} {...attributes} />',
     );
-    expect(contents).toContain('Omit<PropsOf<"button">, "text" | "class" | "style">');
+    // Typed as the root component takes it, without what the root sets itself.
+    expect(contents).toContain('Omit<PropsOf<typeof Base>, "text" | "class" | "style">');
   });
 });
 

@@ -31,9 +31,10 @@ import type {
   UseItem,
 } from "@unframework.dev/ir";
 
-import { fillExpressions, planComposition } from "./composition.ts";
+import { declaredProps, fillExpressions, planComposition } from "./composition.ts";
 import type { CompositionPlan } from "./composition.ts";
-import { qwikEventProp } from "./events.ts";
+import { qwikEventProp, qwikListenerProp } from "./events.ts";
+import { fallthroughTarget } from "./fallthrough.ts";
 import { typedByParameters } from "./generics.ts";
 import { elementParameter, handlerOnlyFunctions, splitHandler, usedFunctions } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
@@ -289,7 +290,7 @@ export function planSetup(
       : (eventLocals.get(event) ?? qwikEventProp(event));
   const conditionalRefs = refsInConditionals(component);
   const { planned: eventFunctions, empty: emptyFunctions } = planEventFunctions(component, names);
-  const listeners = planListeners(component);
+  const listeners = planListeners(component, module);
   const qrlFunctions = new Map<string, BindingId>();
   for (const [id, fnPlan] of functions) {
     if (fnPlan.form !== "qrl" && fnPlan.form !== "both") continue;
@@ -716,21 +717,35 @@ export function inlinedAt(fn: FunctionCode, site: CallSite, synchronous: boolean
 }
 
 /** Groups the listeners and decides how each group runs (see {@link ListenerPlan}). */
-function planListeners(component: UfComponent): ListenerPlan {
+function planListeners(component: UfComponent, module: UfModule): ListenerPlan {
   const windowEvents = new Set<string>();
   const passive = new Map<string, Set<boolean>>();
+  // A consumer's listener of an event the element that spreads the props' rest listens to runs
+  // in that element's prop (./fallthrough.ts), as a plain one: it must not join a capture or a
+  // passive group of the element's own, so the element listens in both phases, and both
+  // passively and not (ADR-0118).
+  const target = fallthroughTarget(component, module);
+  const declared = target?.kind === "Element" ? declaredProps(component) : undefined;
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element" && node.kind !== "Dynamic" && node.kind !== "Component") return;
       const phases = new Map<string, Set<boolean>>();
+      const add = (event: string, capture: boolean, passively: boolean) => {
+        const seen = phases.get(event) ?? new Set<boolean>();
+        seen.add(capture);
+        phases.set(event, seen);
+        const kinds = passive.get(event) ?? new Set<boolean>();
+        kinds.add(passively);
+        passive.set(event, kinds);
+      };
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
-        const seen = phases.get(attribute.event) ?? new Set<boolean>();
-        seen.add(attribute.capture === true);
-        phases.set(attribute.event, seen);
-        const kinds = passive.get(attribute.event) ?? new Set<boolean>();
-        kinds.add(attribute.passive === true);
-        passive.set(attribute.event, kinds);
+        add(attribute.event, attribute.capture === true, attribute.passive === true);
+      }
+      if (declared && node === target) {
+        for (const event of phases.keys()) {
+          if (!declared.has(qwikListenerProp(event))) add(event, false, false);
+        }
       }
       for (const [event, seen] of phases) if (seen.size === 2) windowEvents.add(event);
     },
