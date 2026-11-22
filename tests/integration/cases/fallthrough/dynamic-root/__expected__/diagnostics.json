@@ -1,6 +1,23 @@
 [
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Base.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 5,
+      "offset": 579
+    },
+    "end": {
+      "line": 30,
+      "column": 17,
+      "offset": 774
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "fallthrough/dynamic-root/Base.uf.tsx",
@@ -15,6 +32,23 @@
       "offset": 738
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Base.uf.tsx",
+    "start": {
+      "line": 27,
+      "column": 7,
+      "offset": 723
+    },
+    "end": {
+      "line": 27,
+      "column": 22,
+      "offset": 738
+    },
+    "target": "ember"
   },
   {
     "code": "UF4002",
@@ -32,6 +66,40 @@
       "offset": 65
     },
     "target": "angular"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support scoped-styles: Scoped stylesheets are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 1,
+      "offset": 45
+    },
+    "end": {
+      "line": 3,
+      "column": 21,
+      "offset": 65
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support sheet-order: Scoped stylesheets are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 1,
+      "offset": 45
+    },
+    "end": {
+      "line": 3,
+      "column": 21,
+      "offset": 65
+    },
+    "target": "ember"
   },
   {
     "code": "UF4002",
@@ -69,6 +137,57 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support child-root-scope: Scoped stylesheets are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 7,
+      "offset": 459
+    },
+    "end": {
+      "line": 24,
+      "column": 9,
+      "offset": 678
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 7,
+      "offset": 459
+    },
+    "end": {
+      "line": 24,
+      "column": 9,
+      "offset": 678
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 9,
+      "offset": 570
+    },
+    "end": {
+      "line": 21,
+      "column": 21,
+      "offset": 582
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "fallthrough/dynamic-root/Page.uf.tsx",
@@ -86,6 +205,74 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 23,
+      "column": 9,
+      "offset": 629
+    },
+    "end": {
+      "line": 23,
+      "column": 49,
+      "offset": 669
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Page.uf.tsx",
+    "start": {
+      "line": 35,
+      "column": 13,
+      "offset": 1030
+    },
+    "end": {
+      "line": 42,
+      "column": 25,
+      "offset": 1249
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Primary.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 5,
+      "offset": 375
+    },
+    "end": {
+      "line": 23,
+      "column": 7,
+      "offset": 507
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Primary.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 7,
+      "offset": 449
+    },
+    "end": {
+      "line": 21,
+      "column": 22,
+      "offset": 464
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "fallthrough/dynamic-root/Primary.uf.tsx",
@@ -100,5 +287,22 @@
       "offset": 500
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "fallthrough/dynamic-root/Primary.uf.tsx",
+    "start": {
+      "line": 22,
+      "column": 7,
+      "offset": 471
+    },
+    "end": {
+      "line": 22,
+      "column": 36,
+      "offset": 500
+    },
+    "target": "ember"
   }
 ]

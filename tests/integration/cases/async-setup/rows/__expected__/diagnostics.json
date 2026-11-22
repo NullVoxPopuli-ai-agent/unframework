@@ -2,6 +2,23 @@
   {
     "code": "UF4001",
     "severity": "error",
+    "message": "The ember target does not support async-setup: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "async-setup/rows/Member.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 177
+    },
+    "end": {
+      "line": 5,
+      "column": 35,
+      "offset": 209
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
     "message": "The angular target does not support contextual-root: A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
     "file": "async-setup/rows/Member.uf.tsx",
     "start": {
@@ -32,5 +49,39 @@
       "offset": 473
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "async-setup/rows/Roster.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 29,
+      "offset": 431
+    },
+    "end": {
+      "line": 13,
+      "column": 71,
+      "offset": 473
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "async-setup/rows/Roster.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 11,
+      "offset": 670
+    },
+    "end": {
+      "line": 21,
+      "column": 38,
+      "offset": 697
+    },
+    "target": "ember"
   }
 ]

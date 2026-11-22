@@ -18,6 +18,40 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "context/reactive/Counter.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 292
+    },
+    "end": {
+      "line": 10,
+      "column": 28,
+      "offset": 317
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "context/reactive/Counter.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 7,
+      "offset": 370
+    },
+    "end": {
+      "line": 13,
+      "column": 18,
+      "offset": 381
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "context/reactive/Counter.uf.tsx",
@@ -35,6 +69,23 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "context/reactive/Counter.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 29,
+      "offset": 410
+    },
+    "end": {
+      "line": 14,
+      "column": 63,
+      "offset": 444
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "warning",
     "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
     "file": "context/reactive/Display.uf.tsx",
@@ -49,5 +100,22 @@
       "offset": 197
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "context/reactive/Display.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 160
+    },
+    "end": {
+      "line": 7,
+      "column": 40,
+      "offset": 197
+    },
+    "target": "ember"
   }
 ]

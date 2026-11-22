@@ -1,0 +1,7 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> types/shared-type/Palette.uf.tsx:10:7
+   |
+10 |       <Swatch tone={tone} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

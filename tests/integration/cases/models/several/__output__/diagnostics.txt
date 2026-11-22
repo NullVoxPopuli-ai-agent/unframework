@@ -1,0 +1,55 @@
+error[UF4001] (ember): The ember target does not support model: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> models/several/PriceRange.uf.tsx:4:3
+  |
+4 |   const min = defineModel<number>("min", { default: 0 });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> models/several/PriceRange.uf.tsx:16:29
+   |
+16 |       <button type="button" onClick={widen}>
+   |                             ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> models/several/PriceRange.uf.tsx:16:29
+   |
+16 |       <button type="button" onClick={widen}>
+   |                             ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> models/several/Search.uf.tsx:10:7
+   |
+10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> models/several/Search.uf.tsx:10:33
+   |
+10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> models/several/Search.uf.tsx:10:33
+   |
+10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support model: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> models/several/Search.uf.tsx:10:33
+   |
+10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

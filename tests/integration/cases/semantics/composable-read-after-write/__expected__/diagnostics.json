@@ -1,6 +1,23 @@
 [
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support composables: Composables are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "semantics/composable-read-after-write/Cart.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 228
+    },
+    "end": {
+      "line": 10,
+      "column": 50,
+      "offset": 275
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "semantics/composable-read-after-write/Cart.uf.tsx",
@@ -15,5 +32,22 @@
       "offset": 612
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "semantics/composable-read-after-write/Cart.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 29,
+      "offset": 585
+    },
+    "end": {
+      "line": 26,
+      "column": 56,
+      "offset": 612
+    },
+    "target": "ember"
   }
 ]

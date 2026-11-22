@@ -1,0 +1,29 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/prop-names/Directory.uf.tsx:10:5
+   |
+10 |     <Table people={people}>
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+18 |     </Table>
+   | ^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/prop-names/Directory.uf.tsx:12:9
+   |
+12 |         row: ({ name, "data-id": id, index }) => (
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+16 |         ),
+   | ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/prop-names/Table.uf.tsx:16:29
+   |
+16 |         <li key={person.id}>{slots.row?.({ name: person.name, "data-id": person.id, index })}</li>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

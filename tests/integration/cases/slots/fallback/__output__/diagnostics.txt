@@ -1,0 +1,50 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/fallback/Board.uf.tsx:6:7
+   |
+ 6 |       <Notice label="Build">
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+11 |       </Notice>
+   | ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/fallback/Board.uf.tsx:8:11
+  |
+8 |           default: () => <>Build {build} failed.</>,
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/fallback/Board.uf.tsx:9:11
+  |
+9 |           action: () => <a href="#logs">See the logs</a>,
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/fallback/Notice.uf.tsx:8:10
+  |
+8 |       <p>{slots.default?.() ?? <em>Nothing to report.</em>}</p>
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support slot-fallback: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/fallback/Notice.uf.tsx:8:10
+  |
+8 |       <p>{slots.default?.() ?? <em>Nothing to report.</em>}</p>
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/fallback/Notice.uf.tsx:9:7
+  |
+9 |       {slots.action?.() ?? <span class="muted">No action</span>}
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

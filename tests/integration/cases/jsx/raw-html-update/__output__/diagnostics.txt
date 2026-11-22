@@ -1,0 +1,24 @@
+warning[UF3051]: `innerHTML` renders its markup as HTML, unescaped: markup from a user or another site can run script in the page.
+  --> jsx/raw-html-update/Glossary.uf.tsx:19:31
+   |
+19 |       <div class="definition" innerHTML={definition.value} />
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Render only markup you trust, or that a sanitiser such as DOMPurify has cleaned. Text is safer as children, which every target escapes.
+   = see: https://unframework.dev/diagnostics/UF3051
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> jsx/raw-html-update/Glossary.uf.tsx:20:29
+   |
+20 |       <button type="button" onClick={next}>
+   |                             ^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> jsx/raw-html-update/Glossary.uf.tsx:20:29
+   |
+20 |       <button type="button" onClick={next}>
+   |                             ^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

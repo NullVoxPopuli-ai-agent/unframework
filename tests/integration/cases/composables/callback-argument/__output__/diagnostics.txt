@@ -1,0 +1,26 @@
+error[UF4001] (ember): The ember target does not support composables: Composables are not emitted yet. See uxfront-com/unframework#236.
+  --> composables/callback-argument/Clicker.uf.tsx:8:3
+   |
+ 8 |   const { count, step, increment, reset } = useCounter(3, (reached) => {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+11 |   });
+   | ^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> composables/callback-argument/Clicker.uf.tsx:17:29
+   |
+17 |       <button type="button" onClick={() => increment()}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> composables/callback-argument/Clicker.uf.tsx:17:29
+   |
+17 |       <button type="button" onClick={() => increment()}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

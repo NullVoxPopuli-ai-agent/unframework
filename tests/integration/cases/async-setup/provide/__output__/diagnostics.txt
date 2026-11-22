@@ -1,0 +1,74 @@
+warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
+ --> async-setup/provide/Badge.uf.tsx:8:3
+  |
+8 |   const tone = inject(ToneKey, "plain");
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> async-setup/provide/Badge.uf.tsx:8:3
+  |
+8 |   const tone = inject(ToneKey, "plain");
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/provide/Page.uf.tsx:8:7
+   |
+ 8 |       <Panel id="ada">
+   |       ^^^^^^^^^^^^^^^^
+   | ...
+10 |       </Panel>
+   | ^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> async-setup/provide/Page.uf.tsx:9:9
+  |
+9 |         <Badge />
+  |         ^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support async-setup: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/provide/Panel.uf.tsx:10:3
+   |
+10 |   const user = await loadUser(id);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
+  --> async-setup/provide/Panel.uf.tsx:12:3
+   |
+12 |   provide(ToneKey, "calm");
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/provide/Panel.uf.tsx:12:3
+   |
+12 |   provide(ToneKey, "calm");
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/provide/Panel.uf.tsx:16:7
+   |
+16 |       <Badge />
+   |       ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/provide/Panel.uf.tsx:17:7
+   |
+17 |       {slots.default?.()}
+   |       ^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

@@ -1,0 +1,15 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> components/framework-names/KeepAlive.uf.tsx:7:21
+  |
+7 |       {level > 0 && <KeepAlive level={level - 1} />}
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> components/framework-names/Wizard.uf.tsx:8:7
+  |
+8 |       <Transition step="details" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

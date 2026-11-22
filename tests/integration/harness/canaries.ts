@@ -259,6 +259,7 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
   qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
   // `set:html` is an output's own idiom since ADR-0097, which turned its rule off.
   astro: { attribute: 'set:text="uf-canary"', rule: "astro/no-set-text-directive" },
+  ember: { attribute: 'accesskey="u"', rule: "ember/template-no-accesskey-attribute" },
 };
 
 /** The case L15-slow-compile slows down. */

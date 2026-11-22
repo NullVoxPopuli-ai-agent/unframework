@@ -1,0 +1,37 @@
+error[UF4001] (ember): The ember target does not support late-prop: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> semantics/late-optional-prop/PageCount.uf.tsx:11:40
+   |
+11 |   const label = computed(() => `Page ${page} of ${total}`);
+   |                                        ^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+warning[UF4001] (qwik): The qwik target does not support late-prop: Qwik subscribes a `useComputed$` or a task only to the props the component holds when it reads them, so a derived value or a watcher that reads an optional prop the parent did not pass at mount, and passes later (a spread that gains the key), does not see it: the template does. Pass the prop from the start, `undefined` while it has no value.
+  --> semantics/late-optional-prop/PageCount.uf.tsx:11:40
+   |
+11 |   const label = computed(() => `Page ${page} of ${total}`);
+   |                                        ^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> semantics/late-optional-prop/PageCount.uf.tsx:13:3
+   |
+13 |   watch(
+   |   ^^^^^^
+   | ...
+18 |   );
+   | ^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> semantics/late-optional-prop/PageCount.uf.tsx:13:3
+   |
+13 |   watch(
+   |   ^^^^^^
+   | ...
+18 |   );
+   | ^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

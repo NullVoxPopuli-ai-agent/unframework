@@ -1,0 +1,18 @@
+error[UF4001] (ember): The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> dynamic/prop-union/Heading.uf.tsx:3:5
+  |
+3 |     <component is={tag} class="heading">
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | ...
+5 |     </component>
+  | ^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> dynamic/prop-union/Outline.uf.tsx:6:7
+  |
+6 |       <Heading tag="h1" text="Guide" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

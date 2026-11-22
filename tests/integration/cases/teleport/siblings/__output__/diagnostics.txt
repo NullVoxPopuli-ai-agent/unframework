@@ -1,0 +1,61 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> teleport/siblings/Board.uf.tsx:10:29
+   |
+10 |       <button type="button" onClick={() => (shown.value = false)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> teleport/siblings/Board.uf.tsx:10:29
+   |
+10 |       <button type="button" onClick={() => (shown.value = false)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> teleport/siblings/Board.uf.tsx:13:23
+   |
+13 |       {shown.value && <Panel />}
+   |                       ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> teleport/siblings/Panel.uf.tsx:22:29
+   |
+22 |       <button type="button" onClick={() => (note.value = true)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> teleport/siblings/Panel.uf.tsx:22:29
+   |
+22 |       <button type="button" onClick={() => (note.value = true)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.
+  --> teleport/siblings/Panel.uf.tsx:35:7
+   |
+35 |       <Teleport to="body">
+   |       ^^^^^^^^^^^^^^^^^^^^
+   | ...
+39 |       </Teleport>
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> teleport/siblings/Panel.uf.tsx:35:7
+   |
+35 |       <Teleport to="body">
+   |       ^^^^^^^^^^^^^^^^^^^^
+   | ...
+39 |       </Teleport>
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

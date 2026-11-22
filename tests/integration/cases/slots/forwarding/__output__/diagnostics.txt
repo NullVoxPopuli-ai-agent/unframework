@@ -1,4 +1,68 @@
+error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Box.uf.tsx:8:11
+  |
+8 |       <h3>{slots.title?.() ?? "Untitled"}</h3>
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support slot-fallback: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Box.uf.tsx:8:11
+  |
+8 |       <h3>{slots.title?.() ?? "Untitled"}</h3>
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Box.uf.tsx:9:7
+  |
+9 |       {slots.default?.() ?? <p>No content</p>}
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/forwarding/Frame.uf.tsx:10:7
+   |
+10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/forwarding/Frame.uf.tsx:10:15
+   |
+10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
+   |               ^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
 error[UF4001] (angular): The angular target does not support default-slot-presence: Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).
+  --> slots/forwarding/Frame.uf.tsx:10:35
+   |
+10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot-presence: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/forwarding/Frame.uf.tsx:10:35
+   |
+10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/forwarding/Frame.uf.tsx:10:35
+   |
+10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support slot-forwarding: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> slots/forwarding/Frame.uf.tsx:10:35
    |
 10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
@@ -13,3 +77,30 @@ error[UF4001] (qwik): The qwik target does not support default-slot-presence: Qw
    |                                   ^^^^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Gallery.uf.tsx:6:7
+  |
+6 |       <Frame label="Filled">
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  | ...
+8 |       </Frame>
+  | ^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Gallery.uf.tsx:7:12
+  |
+7 |         {{ title: () => <>Sunset</>, default: () => <p>Taken at dusk.</p> }}
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/forwarding/Gallery.uf.tsx:7:38
+  |
+7 |         {{ title: () => <>Sunset</>, default: () => <p>Taken at dusk.</p> }}
+  |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

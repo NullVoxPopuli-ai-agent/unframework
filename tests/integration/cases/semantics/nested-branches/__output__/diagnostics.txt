@@ -1,0 +1,15 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> semantics/nested-branches/AccountMenu.uf.tsx:36:31
+   |
+36 |         <button type="button" onClick={start}>
+   |                               ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> semantics/nested-branches/AccountMenu.uf.tsx:36:31
+   |
+36 |         <button type="button" onClick={start}>
+   |                               ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

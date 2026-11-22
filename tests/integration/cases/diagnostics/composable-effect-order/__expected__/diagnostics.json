@@ -17,6 +17,40 @@
     "target": "astro"
   },
   {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "diagnostics/composable-effect-order/Clock.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 3,
+      "offset": 443
+    },
+    "end": {
+      "line": 13,
+      "column": 6,
+      "offset": 490
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support composables: Composables are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "diagnostics/composable-effect-order/Clock.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 3,
+      "offset": 494
+    },
+    "end": {
+      "line": 15,
+      "column": 34,
+      "offset": 525
+    },
+    "target": "ember"
+  },
+  {
     "code": "UF4005",
     "severity": "info",
     "message": "The react target does not support composable-effect-order: A composable is a custom hook, and React runs a component's effects in its own order (ADR-0048): a hook's watchers, effects and hooks cannot take their place among the caller's own, so code that relies on that order may see another (ADR-0069).",

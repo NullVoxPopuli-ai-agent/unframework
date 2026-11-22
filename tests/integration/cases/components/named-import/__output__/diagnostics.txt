@@ -1,0 +1,7 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001

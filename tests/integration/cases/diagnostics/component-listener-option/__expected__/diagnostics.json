@@ -17,6 +17,23 @@
     "target": "astro"
   },
   {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "diagnostics/component-listener-option/Toolbar.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 27,
+      "offset": 314
+    },
+    "end": {
+      "line": 8,
+      "column": 55,
+      "offset": 342
+    },
+    "target": "ember"
+  },
+  {
     "code": "UF3043",
     "severity": "error",
     "message": "`onSaveOnce` listens to SaveButton's `save` with the option `Once`: a component's event is no DOM event, and takes no listener option.",

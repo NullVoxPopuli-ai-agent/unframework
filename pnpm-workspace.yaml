@@ -131,6 +131,9 @@ catalog:
   "@emnapi/core": 1.11.3
   "@emnapi/runtime": 1.11.3
   "@fontsource/inter": ^5.3.0
+  "@glimmer/component": 2.2.1
+  "@glint/ember-tsc": 1.14.4
+  "@glint/template": 1.11.1
   "@jridgewell/gen-mapping": 0.3.13
   "@jridgewell/remapping": 2.3.5
   "@jridgewell/trace-mapping": 0.3.31
@@ -138,6 +141,9 @@ catalog:
   "@playwright/test": 1.63.0
   "@qwik.dev/core": 2.0.0-rc.5
   "@qwik.dev/optimizer": 2.1.0-rc.11
+  "@simple-dom/document": 1.4.0
+  "@simple-dom/serializer": 1.4.0
+  "@simple-dom/void-map": 1.4.0
   "@standard-schema/spec": ^1.1.0
   "@styleframe/runtime": 3.2.2
   "@styleframe/theme": 3.10.0
@@ -157,11 +163,17 @@ catalog:
   astro: 7.3.5
   astro-eslint-parser: 3.2.0
   axe-core: 4.13.0
+  babel-plugin-ember-template-compilation: 4.0.1
   babel-plugin-react-compiler: 1.0.0
   babel-preset-solid: 1.9.15
+  content-tag: 4.3.0
   csstype: ^3.2.3
+  decorator-transforms: 2.4.0
+  ember-eslint-parser: 0.16.1
+  ember-source: 7.4.1
   eslint: 10.11.0
   eslint-plugin-astro: 3.2.1
+  eslint-plugin-ember: 13.11.2
   eslint-plugin-qwik: 2.0.0-rc.5
   eslint-plugin-solid: 0.18.0
   eslint-plugin-svelte: 3.23.0

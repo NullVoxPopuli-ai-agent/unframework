@@ -18,6 +18,40 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 21,
+      "column": 29,
+      "offset": 446
+    },
+    "end": {
+      "line": 21,
+      "column": 85,
+      "offset": 502
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 28,
+      "column": 9,
+      "offset": 681
+    },
+    "end": {
+      "line": 28,
+      "column": 47,
+      "offset": 719
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
     "file": "teleport/components/Board.uf.tsx",
@@ -32,6 +66,40 @@
       "offset": 891
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 31,
+      "column": 9,
+      "offset": 761
+    },
+    "end": {
+      "line": 35,
+      "column": 20,
+      "offset": 891
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Board.uf.tsx",
+    "start": {
+      "line": 38,
+      "column": 9,
+      "offset": 922
+    },
+    "end": {
+      "line": 42,
+      "column": 20,
+      "offset": 1047
+    },
+    "target": "ember"
   },
   {
     "code": "UF4001",
@@ -52,6 +120,40 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Card.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 29,
+      "offset": 251
+    },
+    "end": {
+      "line": 9,
+      "column": 71,
+      "offset": 293
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Card.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 40,
+      "offset": 370
+    },
+    "end": {
+      "line": 12,
+      "column": 59,
+      "offset": 389
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.",
     "file": "teleport/components/Tip.uf.tsx",
@@ -66,5 +168,22 @@
       "offset": 281
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "teleport/components/Tip.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 5,
+      "offset": 164
+    },
+    "end": {
+      "line": 13,
+      "column": 16,
+      "offset": 281
+    },
+    "target": "ember"
   }
 ]

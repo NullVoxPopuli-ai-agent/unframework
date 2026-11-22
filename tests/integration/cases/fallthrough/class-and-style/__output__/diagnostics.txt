@@ -1,0 +1,31 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> fallthrough/class-and-style/Tags.uf.tsx:9:7
+  |
+9 |       <Tag label="plain" />
+  |       ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> fallthrough/class-and-style/Tags.uf.tsx:10:25
+   |
+10 |       <Tag label="wide" class="wide" style="margin-left: 8px" />
+   |                         ^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> fallthrough/class-and-style/Tags.uf.tsx:16:29
+   |
+16 |       <button type="button" onClick={() => (active.value = !active.value)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> fallthrough/class-and-style/Tags.uf.tsx:16:29
+   |
+16 |       <button type="button" onClick={() => (active.value = !active.value)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

@@ -1,0 +1,61 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/slotted/Card.uf.tsx:22:7
+   |
+22 |       <Disclosure>
+   |       ^^^^^^^^^^^^
+   | ...
+31 |       </Disclosure>
+   | ^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/slotted/Card.uf.tsx:23:9
+   |
+23 |         <p data-name="body" v-trace="body">
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+30 |         ) : null}
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> directives/slotted/Card.uf.tsx:32:29
+   |
+32 |       <button type="button" onClick={() => (note.value = { name: "renamed" })}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/slotted/Card.uf.tsx:32:29
+   |
+32 |       <button type="button" onClick={() => (note.value = { name: "renamed" })}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> directives/slotted/Disclosure.uf.tsx:12:56
+   |
+12 |       <button type="button" aria-expanded={open.value} onClick={() => (open.value = !open.value)}>
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/slotted/Disclosure.uf.tsx:12:56
+   |
+12 |       <button type="button" aria-expanded={open.value} onClick={() => (open.value = !open.value)}>
+   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/slotted/Disclosure.uf.tsx:15:39
+   |
+15 |       {open.value ? <div class="body">{slots.default?.()}</div> : null}
+   |                                       ^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

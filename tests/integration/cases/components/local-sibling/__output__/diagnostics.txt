@@ -1,0 +1,7 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> components/local-sibling/Card.uf.tsx:13:7
+   |
+13 |       <CardIcon symbol="+" />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

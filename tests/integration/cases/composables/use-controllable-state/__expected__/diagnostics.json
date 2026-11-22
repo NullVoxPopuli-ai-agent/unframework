@@ -1,6 +1,23 @@
 [
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support composables: Composables are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "composables/use-controllable-state/Rating.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 248
+    },
+    "end": {
+      "line": 11,
+      "column": 5,
+      "offset": 359
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "composables/use-controllable-state/Rating.uf.tsx",
@@ -15,5 +32,22 @@
       "offset": 525
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "composables/use-controllable-state/Rating.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 29,
+      "offset": 503
+    },
+    "end": {
+      "line": 16,
+      "column": 51,
+      "offset": 525
+    },
+    "target": "ember"
   }
 ]

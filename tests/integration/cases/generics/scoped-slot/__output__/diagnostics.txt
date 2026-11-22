@@ -1,0 +1,75 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> generics/scoped-slot/Fruits.uf.tsx:11:5
+   |
+11 |     <Picker items={fruits}>
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+19 |     </Picker>
+   | ^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4004] (angular): The angular target does not support generic-slot-props: Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).
+  --> generics/scoped-slot/Fruits.uf.tsx:13:9
+   |
+13 |         item: ({ item }) => (
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   | ...
+17 |         ),
+   | ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4004
+
+error[UF4001] (ember): The ember target does not support generic-slot-props: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> generics/scoped-slot/Fruits.uf.tsx:13:9
+   |
+13 |         item: ({ item }) => (
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   | ...
+17 |         ),
+   | ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> generics/scoped-slot/Fruits.uf.tsx:13:9
+   |
+13 |         item: ({ item }) => (
+   |         ^^^^^^^^^^^^^^^^^^^^^
+   | ...
+17 |         ),
+   | ^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support generic-components: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> generics/scoped-slot/Picker.uf.tsx:9:32
+  |
+9 | export default function Picker<T>({ items }: PickerProps<T>) {
+  |                                ^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+info[UF4004] (angular): The angular target does not support generic-slot-props: Angular infers a component's type parameter from its inputs alone, and a slot's directive cannot infer it, so a scoped slot's context takes the parameter's constraint, where the other targets type the consumer's fill by the type argument (ADR-0068).
+  --> generics/scoped-slot/Picker.uf.tsx:10:31
+   |
+10 |   const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4004
+
+error[UF4001] (ember): The ember target does not support generic-slot-props: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> generics/scoped-slot/Picker.uf.tsx:10:31
+   |
+10 |   const slots = defineSlots<{ item?(props: { item: T }): Element }>();
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> generics/scoped-slot/Picker.uf.tsx:14:25
+   |
+14 |         <li key={index}>{slots.item?.({ item })}</li>
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

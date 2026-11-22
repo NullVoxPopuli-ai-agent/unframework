@@ -15,5 +15,22 @@
       "offset": 1693
     },
     "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "state/react-compiler-shapes/DisplaySettings.uf.tsx",
+    "start": {
+      "line": 60,
+      "column": 29,
+      "offset": 1653
+    },
+    "end": {
+      "line": 60,
+      "column": 69,
+      "offset": 1693
+    },
+    "target": "ember"
   }
 ]

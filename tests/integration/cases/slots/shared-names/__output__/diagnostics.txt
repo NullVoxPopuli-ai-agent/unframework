@@ -1,0 +1,26 @@
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/shared-names/Chart.uf.tsx:6:7
+   |
+ 6 |       <Legend items={series} label="Series">
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+11 |       </Legend>
+   | ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> slots/shared-names/Chart.uf.tsx:8:11
+  |
+8 |           swatch: ({ item }) => <b>{item.slice(0, 1)}</b>,
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> slots/shared-names/Legend.uf.tsx:13:17
+   |
+13 |           <span>{slots.swatch?.({ item })}</span> <span>{slots.caption?.({ item })}</span>
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

@@ -1,3 +1,11 @@
+error[UF4001] (ember): The ember target does not support async-setup: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> async-setup/rows/Member.uf.tsx:5:3
+  |
+5 |   const user = await loadUser(id);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
 error[UF4001] (angular): The angular target does not support contextual-root: A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).
  --> async-setup/rows/Member.uf.tsx:7:10
   |
@@ -11,5 +19,21 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
 13 |       <button type="button" onClick={() => (lead.value = !lead.value)}>
    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/rows/Roster.uf.tsx:13:29
+   |
+13 |       <button type="button" onClick={() => (lead.value = !lead.value)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+  --> async-setup/rows/Roster.uf.tsx:21:11
+   |
+21 |           <Member key={id} id={id} />
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001

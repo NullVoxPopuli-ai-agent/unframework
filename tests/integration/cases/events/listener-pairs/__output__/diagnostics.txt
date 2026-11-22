@@ -1,0 +1,21 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> events/listener-pairs/DraftPanel.uf.tsx:65:3
+   |
+65 |   watch(status, (value) => {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+67 |   });
+   | ^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+  --> events/listener-pairs/DraftPanel.uf.tsx:65:3
+   |
+65 |   watch(status, (value) => {
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ...
+67 |   });
+   | ^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
