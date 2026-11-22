@@ -128,6 +128,8 @@ catalog:
   # The wasm runtime Astro's checker loads (`@astrojs/astro2tsx`), pinned in its toolchain: a peer
   # of `@napi-rs/wasm-runtime`, which pnpm would otherwise take from rolldown's wasm binding, a 2.0
   # beta the checker cannot run on.
+  "@embroider/macros": 1.21.4
+  "@embroider/router": 3.0.6
   "@emnapi/core": 1.11.3
   "@emnapi/runtime": 1.11.3
   "@fontsource/inter": ^5.3.0
@@ -137,6 +139,7 @@ catalog:
   "@jridgewell/gen-mapping": 0.3.13
   "@jridgewell/remapping": 2.3.5
   "@jridgewell/trace-mapping": 0.3.31
+  "@nullvoxpopuli/ember-vite": 1.5.0
   "@oxc-project/types": 0.152.0
   "@playwright/test": 1.63.0
   "@qwik.dev/core": 2.0.0-rc.5
