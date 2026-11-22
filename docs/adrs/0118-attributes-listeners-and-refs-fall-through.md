@@ -45,7 +45,7 @@ Vue's rule, for components with one root:
   `style` included, and never a declared prop or a scope attribute (`data-uf-*` stays on the
   root, ADR-0063). Its one use is a whole spread on one element outside any list, `<input
 {...rest} />`, which becomes the fallthrough element. Any other use is UF2001: a member read, a
-  second spread, a spread in a list or on a component.
+  second spread, a spread in a list or a slot's fill, or on a component or `<component is>`.
 - **Refs (D4).** A `ref` on a component that does not call `defineExpose` holds its root element,
   through a chain of root components, as Vue's `$el` does, whatever `inheritAttrs` says. Its type
   is the element's DOM interface by name, `useTemplateRef<HTMLButtonElement>()`. A ref on a
@@ -80,12 +80,14 @@ unwrapped (ADR-0010). A component that takes fallthrough declares two inputs, `u
 record of attributes, and `ufListeners`, a record of handlers by event. Its fallthrough element
 carries an inline attribute directive, `Fallthrough`, which sets and removes the attributes
 through `Renderer2` on the server and the client, and adds the listeners with `Renderer2.listen`
-in the browser. The parent binds both inputs on the `uf-*` host, which keeps no attribute. A ref
-reads the child's `ufElement`, a `viewChild` of its root, which a root component forwards. Moving
-the host's attributes as `[ufScope]` does was rejected: it reads them once, a non-bubbling event
-never reaches the host, and the host keeps them in the server render. `ufAttributes`,
-`ufListeners` and `ufElement` join UF2003's reserved names. A hand-written Angular consumer that
-writes `id="x"` on `<uf-button>` puts it on the host, and passes `[ufAttributes]` instead.
+in the browser. Where that element binds an attribute of its own that the record holds, it binds
+the consumer's value, so the consumer's still wins after its own changes. The parent binds both
+inputs on the `uf-*` host, which keeps no attribute. A ref reads the child's `ufElement`, a
+`viewChild` of its root, which a root component forwards. Moving the host's attributes as
+`[ufScope]` does was rejected: it reads them once, a non-bubbling event never reaches the host,
+and the host keeps them in the server render. `ufAttributes`, `ufListeners` and `ufElement`
+join UF2003's reserved names. A hand-written Angular consumer that writes `id="x"` on
+`<uf-button>` puts it on the host, and passes `[ufAttributes]` instead.
 
 Vue's L4 configuration sets `fallthroughAttributes`, vue-tsc's own option, so a consumer's `id`
 or `@click` on a child type-checks against the child's root element under `strictTemplates`.
@@ -119,12 +121,11 @@ export default function Field({ label, ...rest }: { label: string }) {
 - Every component that takes fallthrough has a larger output: a wider props type on every typed
   target, the rest spread, and on Angular two inputs, a directive and a member. The L15 budgets
   move.
-- React's `<Name>Attributes` becomes a type alias of the root element's props. Angular reserves
-  three more names, so a source that uses one as a prop stops compiling (UF2003).
+- React's `<Name>Attributes` becomes a type alias of the root element's props, or of a root
+  component's own (`ComponentPropsWithRef<typeof Base>`). Angular reserves three more names, so
+  a source that uses one as a prop stops compiling (UF2003).
 - A consumer's listener whose React prop does not behave like the DOM event on the child's root
   is UF1002 on React (a text field's `change`, `focusin`, `focusout`, `select`, `beforeinput`).
-- On Astro, the consumer's attribute wins by reading the root's own from the props first, so an
-  `undefined` the consumer passes keeps the root's value, where Vue removes it.
 
 **Open:**
 
