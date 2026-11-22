@@ -1,7 +1,7 @@
 {
   "cases": {
     "async-setup/chained": {
-      "time": 4.39,
+      "time": 22.71,
       "sizes": {
         "react": {
           "raw": 1783,
@@ -32,13 +32,13 @@
           "gzip": 1191
         },
         "astro": {
-          "raw": 767,
-          "gzip": 529
+          "raw": 784,
+          "gzip": 537
         }
       }
     },
     "async-setup/nested": {
-      "time": 14.9,
+      "time": 84.56,
       "sizes": {
         "react": {
           "raw": 4272,
@@ -69,13 +69,13 @@
           "gzip": 2847
         },
         "astro": {
-          "raw": 1810,
-          "gzip": 1199
+          "raw": 1833,
+          "gzip": 1206
         }
       }
     },
     "async-setup/props": {
-      "time": 3.18,
+      "time": 18.58,
       "sizes": {
         "react": {
           "raw": 1996,
@@ -106,13 +106,13 @@
           "gzip": 902
         },
         "astro": {
-          "raw": 783,
-          "gzip": 539
+          "raw": 806,
+          "gzip": 549
         }
       }
     },
     "async-setup/provide": {
-      "time": 9.84,
+      "time": 55.99,
       "sizes": {
         "react": {
           "raw": 3324,
@@ -135,21 +135,21 @@
           "gzip": 1138
         },
         "angular": {
-          "raw": 9650,
-          "gzip": 4236
+          "raw": 9754,
+          "gzip": 4267
         },
         "qwik": {
           "raw": 2430,
           "gzip": 1877
         },
         "astro": {
-          "raw": 1735,
-          "gzip": 1170
+          "raw": 1757,
+          "gzip": 1177
         }
       }
     },
     "async-setup/rerun": {
-      "time": 5.46,
+      "time": 31.61,
       "sizes": {
         "react": {
           "raw": 2283,
@@ -180,13 +180,13 @@
           "gzip": 1128
         },
         "astro": {
-          "raw": 758,
-          "gzip": 520
+          "raw": 781,
+          "gzip": 524
         }
       }
     },
     "async-setup/resolved": {
-      "time": 4.44,
+      "time": 26.01,
       "sizes": {
         "react": {
           "raw": 2000,
@@ -223,7 +223,7 @@
       }
     },
     "async-setup/rows": {
-      "time": 10.18,
+      "time": 60.3,
       "sizes": {
         "react": {
           "raw": 3376,
@@ -250,8 +250,8 @@
           "gzip": 1707
         },
         "astro": {
-          "raw": 1343,
-          "gzip": 885
+          "raw": 1366,
+          "gzip": 893
         }
       }
     },
@@ -293,7 +293,7 @@
       }
     },
     "basics/nested-and-void": {
-      "time": 2,
+      "time": 10.52,
       "sizes": {
         "react": {
           "raw": 1527,
@@ -324,13 +324,13 @@
           "gzip": 743
         },
         "astro": {
-          "raw": 921,
-          "gzip": 585
+          "raw": 949,
+          "gzip": 594
         }
       }
     },
     "bindings/assigned-values": {
-      "time": 4.13,
+      "time": 22.44,
       "sizes": {
         "react": {
           "raw": 1311,
@@ -361,13 +361,13 @@
           "gzip": 593
         },
         "astro": {
-          "raw": 672,
-          "gzip": 439
+          "raw": 695,
+          "gzip": 446
         }
       }
     },
     "bindings/class-array": {
-      "time": 3.88,
+      "time": 22.08,
       "sizes": {
         "react": {
           "raw": 960,
@@ -398,13 +398,13 @@
           "gzip": 497
         },
         "astro": {
-          "raw": 577,
-          "gzip": 386
+          "raw": 594,
+          "gzip": 391
         }
       }
     },
     "bindings/class-merge": {
-      "time": 4.12,
+      "time": 24.85,
       "sizes": {
         "react": {
           "raw": 1159,
@@ -427,8 +427,8 @@
           "gzip": 531
         },
         "angular": {
-          "raw": 3294,
-          "gzip": 1401
+          "raw": 3378,
+          "gzip": 1429
         },
         "qwik": {
           "raw": 772,
@@ -441,7 +441,7 @@
       }
     },
     "bindings/class-object": {
-      "time": 3.68,
+      "time": 22.61,
       "sizes": {
         "react": {
           "raw": 956,
@@ -464,21 +464,21 @@
           "gzip": 458
         },
         "angular": {
-          "raw": 3286,
-          "gzip": 1412
+          "raw": 3471,
+          "gzip": 1453
         },
         "qwik": {
           "raw": 675,
           "gzip": 519
         },
         "astro": {
-          "raw": 562,
-          "gzip": 373
+          "raw": 584,
+          "gzip": 380
         }
       }
     },
     "bindings/class-runtime-collections": {
-      "time": 5.95,
+      "time": 35.95,
       "sizes": {
         "react": {
           "raw": 1736,
@@ -515,7 +515,7 @@
       }
     },
     "bindings/class-string": {
-      "time": 2.96,
+      "time": 15.95,
       "sizes": {
         "react": {
           "raw": 1127,
@@ -546,13 +546,13 @@
           "gzip": 522
         },
         "astro": {
-          "raw": 564,
-          "gzip": 364
+          "raw": 581,
+          "gzip": 371
         }
       }
     },
     "bindings/everyday-values": {
-      "time": 2.29,
+      "time": 12.83,
       "sizes": {
         "react": {
           "raw": 1044,
@@ -589,7 +589,7 @@
       }
     },
     "bindings/nullable-spreads": {
-      "time": 8.95,
+      "time": 50.85,
       "sizes": {
         "react": {
           "raw": 2216,
@@ -612,21 +612,21 @@
           "gzip": 974
         },
         "angular": {
-          "raw": 5011,
-          "gzip": 1810
+          "raw": 5115,
+          "gzip": 1842
         },
         "qwik": {
           "raw": 1743,
           "gzip": 826
         },
         "astro": {
-          "raw": 1042,
-          "gzip": 545
+          "raw": 1064,
+          "gzip": 552
         }
       }
     },
     "bindings/spreads": {
-      "time": 4.43,
+      "time": 25.4,
       "sizes": {
         "react": {
           "raw": 1536,
@@ -663,7 +663,7 @@
       }
     },
     "bindings/style-expression": {
-      "time": 15.24,
+      "time": 80.77,
       "sizes": {
         "react": {
           "raw": 4540,
@@ -700,7 +700,7 @@
       }
     },
     "bindings/style-merge": {
-      "time": 3.49,
+      "time": 18.53,
       "sizes": {
         "react": {
           "raw": 991,
@@ -737,7 +737,7 @@
       }
     },
     "bindings/style-object": {
-      "time": 5.11,
+      "time": 30.93,
       "sizes": {
         "react": {
           "raw": 1877,
@@ -774,7 +774,7 @@
       }
     },
     "bindings/style-spread": {
-      "time": 8.3,
+      "time": 46.07,
       "sizes": {
         "react": {
           "raw": 3012,
@@ -797,8 +797,8 @@
           "gzip": 1376
         },
         "angular": {
-          "raw": 7037,
-          "gzip": 3016
+          "raw": 7121,
+          "gzip": 3045
         },
         "qwik": {
           "raw": 1972,
@@ -811,7 +811,7 @@
       }
     },
     "bindings/style-string": {
-      "time": 3.04,
+      "time": 16.65,
       "sizes": {
         "react": {
           "raw": 1277,
@@ -834,21 +834,21 @@
           "gzip": 409
         },
         "angular": {
-          "raw": 3265,
-          "gzip": 1411
+          "raw": 3369,
+          "gzip": 1445
         },
         "qwik": {
           "raw": 826,
           "gzip": 586
         },
         "astro": {
-          "raw": 645,
-          "gzip": 427
+          "raw": 667,
+          "gzip": 433
         }
       }
     },
     "bindings/table-display": {
-      "time": 4.13,
+      "time": 23.18,
       "sizes": {
         "react": {
           "raw": 2007,
@@ -885,7 +885,7 @@
       }
     },
     "bindings/vendor-prefixes": {
-      "time": 2.8,
+      "time": 15.9,
       "sizes": {
         "react": {
           "raw": 1291,
@@ -922,7 +922,7 @@
       }
     },
     "components/acronym-names": {
-      "time": 7.48,
+      "time": 42.43,
       "sizes": {
         "react": {
           "raw": 1461,
@@ -945,21 +945,21 @@
           "gzip": 699
         },
         "angular": {
-          "raw": 6393,
-          "gzip": 2729
+          "raw": 6495,
+          "gzip": 2764
         },
         "qwik": {
           "raw": 1684,
           "gzip": 1370
         },
         "astro": {
-          "raw": 995,
-          "gzip": 694
+          "raw": 1033,
+          "gzip": 704
         }
       }
     },
     "components/branch-content": {
-      "time": 6.95,
+      "time": 39.42,
       "sizes": {
         "react": {
           "raw": 1781,
@@ -990,13 +990,13 @@
           "gzip": 1176
         },
         "astro": {
-          "raw": 1039,
-          "gzip": 695
+          "raw": 1056,
+          "gzip": 701
         }
       }
     },
     "components/framework-names": {
-      "time": 7.41,
+      "time": 41.05,
       "sizes": {
         "react": {
           "raw": 2809,
@@ -1027,13 +1027,13 @@
           "gzip": 1902
         },
         "astro": {
-          "raw": 1962,
-          "gzip": 1305
+          "raw": 1985,
+          "gzip": 1311
         }
       }
     },
     "components/list-item-root": {
-      "time": 4.02,
+      "time": 21.13,
       "sizes": {
         "react": {
           "raw": 1206,
@@ -1060,13 +1060,13 @@
           "gzip": 879
         },
         "astro": {
-          "raw": 909,
-          "gzip": 631
+          "raw": 932,
+          "gzip": 639
         }
       }
     },
     "components/list-rows": {
-      "time": 12.22,
+      "time": 68.38,
       "sizes": {
         "react": {
           "raw": 2156,
@@ -1097,13 +1097,13 @@
           "gzip": 1542
         },
         "astro": {
-          "raw": 1082,
-          "gzip": 724
+          "raw": 1099,
+          "gzip": 729
         }
       }
     },
     "components/local-sibling": {
-      "time": 3.85,
+      "time": 21.64,
       "sizes": {
         "react": {
           "raw": 1659,
@@ -1134,13 +1134,13 @@
           "gzip": 943
         },
         "astro": {
-          "raw": 968,
-          "gzip": 655
+          "raw": 992,
+          "gzip": 665
         }
       }
     },
     "components/named-import": {
-      "time": 5.61,
+      "time": 30.11,
       "sizes": {
         "react": {
           "raw": 2184,
@@ -1177,7 +1177,7 @@
       }
     },
     "components/props-and-events": {
-      "time": 10.11,
+      "time": 57.13,
       "sizes": {
         "react": {
           "raw": 2165,
@@ -1208,13 +1208,13 @@
           "gzip": 1541
         },
         "astro": {
-          "raw": 1063,
-          "gzip": 709
+          "raw": 1086,
+          "gzip": 715
         }
       }
     },
     "components/recursion": {
-      "time": 2.78,
+      "time": 13.34,
       "sizes": {
         "react": {
           "raw": 864,
@@ -1251,7 +1251,7 @@
       }
     },
     "components/three-levels": {
-      "time": 6.97,
+      "time": 38,
       "sizes": {
         "react": {
           "raw": 2260,
@@ -1282,13 +1282,13 @@
           "gzip": 1435
         },
         "astro": {
-          "raw": 1515,
-          "gzip": 1019
+          "raw": 1538,
+          "gzip": 1025
         }
       }
     },
     "composables/callback-argument": {
-      "time": 10.72,
+      "time": 60.81,
       "sizes": {
         "react": {
           "raw": 2228,
@@ -1319,13 +1319,13 @@
           "gzip": 1572
         },
         "astro": {
-          "raw": 700,
-          "gzip": 483
+          "raw": 723,
+          "gzip": 492
         }
       }
     },
     "composables/getter-argument": {
-      "time": 7.91,
+      "time": 42.7,
       "sizes": {
         "react": {
           "raw": 1954,
@@ -1356,13 +1356,13 @@
           "gzip": 1550
         },
         "astro": {
-          "raw": 703,
-          "gzip": 510
+          "raw": 726,
+          "gzip": 518
         }
       }
     },
     "composables/use-controllable-state": {
-      "time": 9.85,
+      "time": 54.44,
       "sizes": {
         "react": {
           "raw": 2020,
@@ -1393,13 +1393,13 @@
           "gzip": 1649
         },
         "astro": {
-          "raw": 723,
-          "gzip": 498
+          "raw": 746,
+          "gzip": 507
         }
       }
     },
     "composables/use-media-query": {
-      "time": 7.76,
+      "time": 42.93,
       "sizes": {
         "react": {
           "raw": 2087,
@@ -1430,13 +1430,13 @@
           "gzip": 1413
         },
         "astro": {
-          "raw": 719,
-          "gzip": 499
+          "raw": 742,
+          "gzip": 506
         }
       }
     },
     "composables/use-toggle": {
-      "time": 6.87,
+      "time": 39.38,
       "sizes": {
         "react": {
           "raw": 1858,
@@ -1467,13 +1467,13 @@
           "gzip": 1333
         },
         "astro": {
-          "raw": 735,
-          "gzip": 510
+          "raw": 758,
+          "gzip": 517
         }
       }
     },
     "context/fallback": {
-      "time": 9.16,
+      "time": 50.97,
       "sizes": {
         "react": {
           "raw": 1961,
@@ -1496,21 +1496,21 @@
           "gzip": 879
         },
         "angular": {
-          "raw": 9201,
-          "gzip": 3963
+          "raw": 9289,
+          "gzip": 3993
         },
         "qwik": {
           "raw": 1961,
           "gzip": 1492
         },
         "astro": {
-          "raw": 1452,
-          "gzip": 986
+          "raw": 1468,
+          "gzip": 990
         }
       }
     },
     "context/nested": {
-      "time": 6.45,
+      "time": 35.03,
       "sizes": {
         "react": {
           "raw": 1487,
@@ -1533,21 +1533,21 @@
           "gzip": 547
         },
         "angular": {
-          "raw": 5307,
-          "gzip": 2369
+          "raw": 5411,
+          "gzip": 2402
         },
         "qwik": {
           "raw": 1538,
           "gzip": 1079
         },
         "astro": {
-          "raw": 995,
-          "gzip": 628
+          "raw": 1017,
+          "gzip": 635
         }
       }
     },
     "context/reactive": {
-      "time": 7.84,
+      "time": 42.45,
       "sizes": {
         "react": {
           "raw": 1526,
@@ -1578,13 +1578,13 @@
           "gzip": 1164
         },
         "astro": {
-          "raw": 939,
-          "gzip": 641
+          "raw": 962,
+          "gzip": 647
         }
       }
     },
     "context/static": {
-      "time": 7.24,
+      "time": 42.01,
       "sizes": {
         "react": {
           "raw": 1588,
@@ -1615,13 +1615,13 @@
           "gzip": 1052
         },
         "astro": {
-          "raw": 938,
-          "gzip": 647
+          "raw": 961,
+          "gzip": 654
         }
       }
     },
     "control-flow/conditional-text": {
-      "time": 3.94,
+      "time": 22.69,
       "sizes": {
         "react": {
           "raw": 1026,
@@ -1652,13 +1652,13 @@
           "gzip": 610
         },
         "astro": {
-          "raw": 587,
-          "gzip": 398
+          "raw": 604,
+          "gzip": 405
         }
       }
     },
     "control-flow/empty-lists": {
-      "time": 6.09,
+      "time": 33.51,
       "sizes": {
         "react": {
           "raw": 1878,
@@ -1689,13 +1689,13 @@
           "gzip": 682
         },
         "astro": {
-          "raw": 745,
-          "gzip": 452
+          "raw": 768,
+          "gzip": 461
         }
       }
     },
     "control-flow/indexed-map": {
-      "time": 2.92,
+      "time": 16.87,
       "sizes": {
         "react": {
           "raw": 864,
@@ -1718,21 +1718,21 @@
           "gzip": 548
         },
         "angular": {
-          "raw": 3201,
-          "gzip": 1355
+          "raw": 3305,
+          "gzip": 1388
         },
         "qwik": {
           "raw": 628,
           "gzip": 500
         },
         "astro": {
-          "raw": 512,
-          "gzip": 356
+          "raw": 534,
+          "gzip": 363
         }
       }
     },
     "control-flow/keyed-map": {
-      "time": 4.2,
+      "time": 22.51,
       "sizes": {
         "react": {
           "raw": 1435,
@@ -1769,7 +1769,7 @@
       }
     },
     "control-flow/keyed-reorder-focus": {
-      "time": 10.79,
+      "time": 62.06,
       "sizes": {
         "react": {
           "raw": 1794,
@@ -1806,7 +1806,7 @@
       }
     },
     "control-flow/logical-and": {
-      "time": 5.11,
+      "time": 30.98,
       "sizes": {
         "react": {
           "raw": 1545,
@@ -1837,13 +1837,13 @@
           "gzip": 688
         },
         "astro": {
-          "raw": 729,
-          "gzip": 442
+          "raw": 752,
+          "gzip": 450
         }
       }
     },
     "control-flow/narrowed-items": {
-      "time": 7.55,
+      "time": 42.41,
       "sizes": {
         "react": {
           "raw": 1101,
@@ -1874,13 +1874,13 @@
           "gzip": 806
         },
         "astro": {
-          "raw": 668,
-          "gzip": 427
+          "raw": 691,
+          "gzip": 434
         }
       }
     },
     "control-flow/narrowing": {
-      "time": 13.75,
+      "time": 76.95,
       "sizes": {
         "react": {
           "raw": 2548,
@@ -1911,13 +1911,13 @@
           "gzip": 967
         },
         "astro": {
-          "raw": 1129,
-          "gzip": 649
+          "raw": 1152,
+          "gzip": 656
         }
       }
     },
     "control-flow/nested": {
-      "time": 5.7,
+      "time": 31.23,
       "sizes": {
         "react": {
           "raw": 1165,
@@ -1954,7 +1954,7 @@
       }
     },
     "control-flow/optional-list": {
-      "time": 4.44,
+      "time": 24.38,
       "sizes": {
         "react": {
           "raw": 1478,
@@ -1985,13 +1985,13 @@
           "gzip": 635
         },
         "astro": {
-          "raw": 663,
-          "gzip": 438
+          "raw": 686,
+          "gzip": 445
         }
       }
     },
     "control-flow/ternary-chains": {
-      "time": 4.1,
+      "time": 25.34,
       "sizes": {
         "react": {
           "raw": 1108,
@@ -2028,7 +2028,7 @@
       }
     },
     "control-flow/union-props": {
-      "time": 5.26,
+      "time": 29.31,
       "sizes": {
         "react": {
           "raw": 1353,
@@ -2059,13 +2059,13 @@
           "gzip": 620
         },
         "astro": {
-          "raw": 656,
-          "gzip": 438
+          "raw": 679,
+          "gzip": 446
         }
       }
     },
     "diagnostics/composable-effect-order": {
-      "time": 5.36,
+      "time": 30.81,
       "sizes": {
         "react": {
           "raw": 1709,
@@ -2102,7 +2102,7 @@
       }
     },
     "diagnostics/generic-slot-props": {
-      "time": 3.12,
+      "time": 17.12,
       "sizes": {
         "react": {
           "raw": 633,
@@ -2139,7 +2139,7 @@
       }
     },
     "directives/click-outside": {
-      "time": 11.64,
+      "time": 60.84,
       "sizes": {
         "react": {
           "raw": 4002,
@@ -2170,13 +2170,13 @@
           "gzip": 2495
         },
         "astro": {
-          "raw": 568,
-          "gzip": 381
+          "raw": 591,
+          "gzip": 389
         }
       }
     },
     "directives/fill-props": {
-      "time": 14.07,
+      "time": 78.19,
       "sizes": {
         "react": {
           "raw": 4329,
@@ -2207,13 +2207,13 @@
           "gzip": 3087
         },
         "astro": {
-          "raw": 1146,
-          "gzip": 761
+          "raw": 1169,
+          "gzip": 769
         }
       }
     },
     "directives/focus-trap": {
-      "time": 14.41,
+      "time": 77.56,
       "sizes": {
         "react": {
           "raw": 4069,
@@ -2244,13 +2244,13 @@
           "gzip": 2826
         },
         "astro": {
-          "raw": 488,
-          "gzip": 328
+          "raw": 511,
+          "gzip": 336
         }
       }
     },
     "directives/order": {
-      "time": 12.21,
+      "time": 67.61,
       "sizes": {
         "react": {
           "raw": 7086,
@@ -2281,13 +2281,13 @@
           "gzip": 5511
         },
         "astro": {
-          "raw": 1139,
-          "gzip": 734
+          "raw": 1206,
+          "gzip": 754
         }
       }
     },
     "directives/repeated": {
-      "time": 31.75,
+      "time": 173.09,
       "sizes": {
         "react": {
           "raw": 8334,
@@ -2318,13 +2318,13 @@
           "gzip": 6504
         },
         "astro": {
-          "raw": 3025,
-          "gzip": 1919
+          "raw": 3071,
+          "gzip": 1936
         }
       }
     },
     "directives/rows": {
-      "time": 38.03,
+      "time": 211.81,
       "sizes": {
         "react": {
           "raw": 8362,
@@ -2355,13 +2355,13 @@
           "gzip": 6269
         },
         "astro": {
-          "raw": 1976,
-          "gzip": 1013
+          "raw": 1999,
+          "gzip": 1021
         }
       }
     },
     "directives/shapes": {
-      "time": 19.95,
+      "time": 111.54,
       "sizes": {
         "react": {
           "raw": 4910,
@@ -2392,13 +2392,13 @@
           "gzip": 4441
         },
         "astro": {
-          "raw": 714,
-          "gzip": 429
+          "raw": 737,
+          "gzip": 437
         }
       }
     },
     "directives/shared": {
-      "time": 8.27,
+      "time": 45.41,
       "sizes": {
         "react": {
           "raw": 6663,
@@ -2429,13 +2429,13 @@
           "gzip": 4156
         },
         "astro": {
-          "raw": 1363,
-          "gzip": 940
+          "raw": 1386,
+          "gzip": 947
         }
       }
     },
     "directives/slotted": {
-      "time": 11.89,
+      "time": 66.93,
       "sizes": {
         "react": {
           "raw": 4627,
@@ -2466,13 +2466,13 @@
           "gzip": 3208
         },
         "astro": {
-          "raw": 1115,
-          "gzip": 740
+          "raw": 1138,
+          "gzip": 748
         }
       }
     },
     "directives/updated-value": {
-      "time": 7.73,
+      "time": 41.48,
       "sizes": {
         "react": {
           "raw": 3515,
@@ -2503,13 +2503,13 @@
           "gzip": 2254
         },
         "astro": {
-          "raw": 589,
-          "gzip": 375
+          "raw": 612,
+          "gzip": 381
         }
       }
     },
     "dynamic/components": {
-      "time": 8.29,
+      "time": 44.03,
       "sizes": {
         "react": {
           "raw": 2298,
@@ -2540,13 +2540,13 @@
           "gzip": 1581
         },
         "astro": {
-          "raw": 1381,
-          "gzip": 955
+          "raw": 1404,
+          "gzip": 964
         }
       }
     },
     "dynamic/forwarding": {
-      "time": 11.65,
+      "time": 62.11,
       "sizes": {
         "react": {
           "raw": 3049,
@@ -2569,21 +2569,21 @@
           "gzip": 1099
         },
         "angular": {
-          "raw": 14956,
-          "gzip": 5938
+          "raw": 15060,
+          "gzip": 5972
         },
         "qwik": {
           "raw": 2750,
           "gzip": 2121
         },
         "astro": {
-          "raw": 2315,
-          "gzip": 1448
+          "raw": 2337,
+          "gzip": 1454
         }
       }
     },
     "dynamic/prop-union": {
-      "time": 4.34,
+      "time": 23.79,
       "sizes": {
         "react": {
           "raw": 1189,
@@ -2620,7 +2620,7 @@
       }
     },
     "dynamic/tags": {
-      "time": 3.99,
+      "time": 21.63,
       "sizes": {
         "react": {
           "raw": 883,
@@ -2657,7 +2657,7 @@
       }
     },
     "effects/async-callbacks": {
-      "time": 26.69,
+      "time": 148.83,
       "sizes": {
         "react": {
           "raw": 6221,
@@ -2688,13 +2688,13 @@
           "gzip": 3025
         },
         "astro": {
-          "raw": 699,
-          "gzip": 418
+          "raw": 722,
+          "gzip": 425
         }
       }
     },
     "effects/async-loop": {
-      "time": 8.67,
+      "time": 50.22,
       "sizes": {
         "react": {
           "raw": 2766,
@@ -2725,13 +2725,13 @@
           "gzip": 1138
         },
         "astro": {
-          "raw": 545,
-          "gzip": 364
+          "raw": 568,
+          "gzip": 374
         }
       }
     },
     "effects/async-overlap": {
-      "time": 44.73,
+      "time": 248.02,
       "sizes": {
         "react": {
           "raw": 8513,
@@ -2762,13 +2762,13 @@
           "gzip": 4657
         },
         "astro": {
-          "raw": 988,
-          "gzip": 483
+          "raw": 1011,
+          "gzip": 491
         }
       }
     },
     "effects/async-watchers": {
-      "time": 79.86,
+      "time": 448.92,
       "sizes": {
         "react": {
           "raw": 12331,
@@ -2799,13 +2799,13 @@
           "gzip": 5980
         },
         "astro": {
-          "raw": 1213,
-          "gzip": 571
+          "raw": 1236,
+          "gzip": 578
         }
       }
     },
     "effects/flush-post": {
-      "time": 7.61,
+      "time": 43.43,
       "sizes": {
         "react": {
           "raw": 1687,
@@ -2836,13 +2836,13 @@
           "gzip": 1070
         },
         "astro": {
-          "raw": 557,
-          "gzip": 377
+          "raw": 580,
+          "gzip": 385
         }
       }
     },
     "effects/persistence-and-fetch": {
-      "time": 40.12,
+      "time": 221.72,
       "sizes": {
         "react": {
           "raw": 3702,
@@ -2873,13 +2873,13 @@
           "gzip": 3443
         },
         "astro": {
-          "raw": 1040,
-          "gzip": 568
+          "raw": 1063,
+          "gzip": 576
         }
       }
     },
     "effects/pre-and-post": {
-      "time": 18.67,
+      "time": 100.36,
       "sizes": {
         "react": {
           "raw": 4627,
@@ -2910,13 +2910,13 @@
           "gzip": 2073
         },
         "astro": {
-          "raw": 633,
-          "gzip": 416
+          "raw": 656,
+          "gzip": 424
         }
       }
     },
     "effects/watch-cleanup": {
-      "time": 7.74,
+      "time": 7.28,
       "sizes": {
         "react": {
           "raw": 1798,
@@ -2947,13 +2947,13 @@
           "gzip": 1545
         },
         "astro": {
-          "raw": 587,
-          "gzip": 374
+          "raw": 610,
+          "gzip": 381
         }
       }
     },
     "effects/watch-effect": {
-      "time": 7.59,
+      "time": 7.23,
       "sizes": {
         "react": {
           "raw": 1771,
@@ -2984,13 +2984,13 @@
           "gzip": 1395
         },
         "astro": {
-          "raw": 584,
-          "gzip": 383
+          "raw": 607,
+          "gzip": 391
         }
       }
     },
     "effects/watch-identity": {
-      "time": 40.87,
+      "time": 38.51,
       "sizes": {
         "react": {
           "raw": 5192,
@@ -3021,13 +3021,13 @@
           "gzip": 3712
         },
         "astro": {
-          "raw": 1016,
-          "gzip": 543
+          "raw": 1039,
+          "gzip": 552
         }
       }
     },
     "effects/watch-immediate": {
-      "time": 5.24,
+      "time": 4.69,
       "sizes": {
         "react": {
           "raw": 1215,
@@ -3064,7 +3064,7 @@
       }
     },
     "effects/watch-previous": {
-      "time": 7.76,
+      "time": 7.46,
       "sizes": {
         "react": {
           "raw": 2048,
@@ -3095,13 +3095,13 @@
           "gzip": 1191
         },
         "astro": {
-          "raw": 646,
-          "gzip": 395
+          "raw": 669,
+          "gzip": 403
         }
       }
     },
     "effects/watch-sources": {
-      "time": 11.44,
+      "time": 11.15,
       "sizes": {
         "react": {
           "raw": 2343,
@@ -3132,13 +3132,13 @@
           "gzip": 1752
         },
         "astro": {
-          "raw": 580,
-          "gzip": 381
+          "raw": 603,
+          "gzip": 388
         }
       }
     },
     "engines/fixture-engine": {
-      "time": 1.89,
+      "time": 1.84,
       "sizes": {
         "react": {
           "raw": 765,
@@ -3175,7 +3175,7 @@
       }
     },
     "events/async-handlers": {
-      "time": 6.62,
+      "time": 6.63,
       "sizes": {
         "react": {
           "raw": 2336,
@@ -3206,13 +3206,13 @@
           "gzip": 853
         },
         "astro": {
-          "raw": 526,
-          "gzip": 356
+          "raw": 549,
+          "gzip": 365
         }
       }
     },
     "events/conditional-controls": {
-      "time": 11.12,
+      "time": 10.75,
       "sizes": {
         "react": {
           "raw": 2172,
@@ -3239,13 +3239,13 @@
           "gzip": 1684
         },
         "astro": {
-          "raw": 667,
-          "gzip": 419
+          "raw": 690,
+          "gzip": 426
         }
       }
     },
     "events/control-only-listeners": {
-      "time": 9.85,
+      "time": 9.41,
       "sizes": {
         "react": {
           "raw": 2070,
@@ -3276,13 +3276,13 @@
           "gzip": 1199
         },
         "astro": {
-          "raw": 717,
-          "gzip": 443
+          "raw": 740,
+          "gzip": 450
         }
       }
     },
     "events/custom-controls": {
-      "time": 18.12,
+      "time": 18.15,
       "sizes": {
         "react": {
           "raw": 1990,
@@ -3313,13 +3313,13 @@
           "gzip": 1375
         },
         "astro": {
-          "raw": 714,
-          "gzip": 441
+          "raw": 737,
+          "gzip": 449
         }
       }
     },
     "events/emit-payloads": {
-      "time": 10.79,
+      "time": 11.47,
       "sizes": {
         "react": {
           "raw": 2115,
@@ -3342,21 +3342,21 @@
           "gzip": 532
         },
         "angular": {
-          "raw": 4412,
-          "gzip": 1644
+          "raw": 4516,
+          "gzip": 1678
         },
         "qwik": {
           "raw": 2159,
           "gzip": 1418
         },
         "astro": {
-          "raw": 734,
-          "gzip": 408
+          "raw": 773,
+          "gzip": 416
         }
       }
     },
     "events/event-options": {
-      "time": 18.2,
+      "time": 18.07,
       "sizes": {
         "react": {
           "raw": 2940,
@@ -3387,13 +3387,13 @@
           "gzip": 2030
         },
         "astro": {
-          "raw": 843,
-          "gzip": 472
+          "raw": 866,
+          "gzip": 480
         }
       }
     },
     "events/focus-and-change": {
-      "time": 25.35,
+      "time": 25.47,
       "sizes": {
         "react": {
           "raw": 4465,
@@ -3424,13 +3424,13 @@
           "gzip": 2584
         },
         "astro": {
-          "raw": 976,
-          "gzip": 535
+          "raw": 999,
+          "gzip": 543
         }
       }
     },
     "events/form-events": {
-      "time": 20.51,
+      "time": 20.22,
       "sizes": {
         "react": {
           "raw": 2898,
@@ -3461,13 +3461,13 @@
           "gzip": 1900
         },
         "astro": {
-          "raw": 847,
-          "gzip": 491
+          "raw": 870,
+          "gzip": 499
         }
       }
     },
     "events/function-handlers": {
-      "time": 23.44,
+      "time": 23.06,
       "sizes": {
         "react": {
           "raw": 2825,
@@ -3498,13 +3498,13 @@
           "gzip": 1595
         },
         "astro": {
-          "raw": 779,
-          "gzip": 455
+          "raw": 802,
+          "gzip": 463
         }
       }
     },
     "events/guard-controls": {
-      "time": 74.34,
+      "time": 71.64,
       "sizes": {
         "react": {
           "raw": 5981,
@@ -3535,13 +3535,13 @@
           "gzip": 3803
         },
         "astro": {
-          "raw": 1406,
-          "gzip": 665
+          "raw": 1429,
+          "gzip": 674
         }
       }
     },
     "events/helper-controls": {
-      "time": 32.5,
+      "time": 31.7,
       "sizes": {
         "react": {
           "raw": 3676,
@@ -3572,13 +3572,13 @@
           "gzip": 2612
         },
         "astro": {
-          "raw": 989,
-          "gzip": 550
+          "raw": 1012,
+          "gzip": 558
         }
       }
     },
     "events/inline-handlers": {
-      "time": 14.15,
+      "time": 13.93,
       "sizes": {
         "react": {
           "raw": 2679,
@@ -3609,13 +3609,13 @@
           "gzip": 1437
         },
         "astro": {
-          "raw": 870,
-          "gzip": 473
+          "raw": 893,
+          "gzip": 480
         }
       }
     },
     "events/keyboard-navigation": {
-      "time": 47.59,
+      "time": 46.93,
       "sizes": {
         "react": {
           "raw": 4115,
@@ -3642,13 +3642,13 @@
           "gzip": 2474
         },
         "astro": {
-          "raw": 1020,
-          "gzip": 613
+          "raw": 1043,
+          "gzip": 621
         }
       }
     },
     "events/keys": {
-      "time": 20.16,
+      "time": 19.84,
       "sizes": {
         "react": {
           "raw": 2249,
@@ -3679,13 +3679,13 @@
           "gzip": 1449
         },
         "astro": {
-          "raw": 719,
-          "gzip": 436
+          "raw": 742,
+          "gzip": 443
         }
       }
     },
     "events/list-handlers": {
-      "time": 13.26,
+      "time": 12.72,
       "sizes": {
         "react": {
           "raw": 1510,
@@ -3716,13 +3716,13 @@
           "gzip": 1430
         },
         "astro": {
-          "raw": 689,
-          "gzip": 427
+          "raw": 712,
+          "gzip": 434
         }
       }
     },
     "events/list-pairs": {
-      "time": 33.38,
+      "time": 32.55,
       "sizes": {
         "react": {
           "raw": 3215,
@@ -3753,13 +3753,13 @@
           "gzip": 2548
         },
         "astro": {
-          "raw": 972,
-          "gzip": 545
+          "raw": 995,
+          "gzip": 552
         }
       }
     },
     "events/listener-order": {
-      "time": 22.96,
+      "time": 22.26,
       "sizes": {
         "react": {
           "raw": 4137,
@@ -3790,13 +3790,13 @@
           "gzip": 2774
         },
         "astro": {
-          "raw": 1071,
-          "gzip": 507
+          "raw": 1094,
+          "gzip": 516
         }
       }
     },
     "events/listener-pairs": {
-      "time": 30.58,
+      "time": 29.87,
       "sizes": {
         "react": {
           "raw": 4545,
@@ -3827,13 +3827,13 @@
           "gzip": 3232
         },
         "astro": {
-          "raw": 779,
-          "gzip": 450
+          "raw": 802,
+          "gzip": 458
         }
       }
     },
     "expose/focus": {
-      "time": 8.36,
+      "time": 6.76,
       "sizes": {
         "react": {
           "raw": 2045,
@@ -3870,7 +3870,7 @@
       }
     },
     "expose/several": {
-      "time": 11,
+      "time": 8.28,
       "sizes": {
         "react": {
           "raw": 2158,
@@ -3907,7 +3907,7 @@
       }
     },
     "fallthrough/attributes": {
-      "time": 6.13,
+      "time": 5.32,
       "sizes": {
         "react": {
           "raw": 1911,
@@ -3938,13 +3938,13 @@
           "gzip": 1174
         },
         "astro": {
-          "raw": 1109,
-          "gzip": 732
+          "raw": 1126,
+          "gzip": 738
         }
       }
     },
     "fallthrough/class-and-style": {
-      "time": 6.97,
+      "time": 6.27,
       "sizes": {
         "react": {
           "raw": 2170,
@@ -3981,7 +3981,7 @@
       }
     },
     "fallthrough/inherit-attrs-false": {
-      "time": 3.86,
+      "time": 3.33,
       "sizes": {
         "react": {
           "raw": 1041,
@@ -4012,50 +4012,50 @@
           "gzip": 846
         },
         "astro": {
-          "raw": 893,
-          "gzip": 621
+          "raw": 916,
+          "gzip": 627
         }
       }
     },
     "fallthrough/listeners": {
-      "time": 13.87,
+      "time": 12.68,
       "sizes": {
         "react": {
-          "raw": 2021,
-          "gzip": 1180
+          "raw": 2116,
+          "gzip": 1192
         },
         "vue": {
-          "raw": 982,
-          "gzip": 691
+          "raw": 1076,
+          "gzip": 712
         },
         "svelte": {
-          "raw": 1509,
-          "gzip": 965
+          "raw": 1603,
+          "gzip": 988
         },
         "solid": {
-          "raw": 1438,
-          "gzip": 876
+          "raw": 1532,
+          "gzip": 897
         },
         "solid2": {
-          "raw": 1488,
-          "gzip": 906
+          "raw": 1582,
+          "gzip": 929
         },
         "angular": {
-          "raw": 6799,
-          "gzip": 2872
+          "raw": 6947,
+          "gzip": 2911
         },
         "qwik": {
-          "raw": 2518,
-          "gzip": 2023
+          "raw": 2582,
+          "gzip": 2074
         },
         "astro": {
-          "raw": 995,
-          "gzip": 679
+          "raw": 1035,
+          "gzip": 693
         }
       }
     },
     "fallthrough/rest": {
-      "time": 7.52,
+      "time": 5.98,
       "sizes": {
         "react": {
           "raw": 2141,
@@ -4078,95 +4078,95 @@
           "gzip": 880
         },
         "angular": {
-          "raw": 6455,
-          "gzip": 2771
+          "raw": 6543,
+          "gzip": 2802
         },
         "qwik": {
           "raw": 1776,
           "gzip": 1323
         },
         "astro": {
-          "raw": 1346,
-          "gzip": 882
+          "raw": 1385,
+          "gzip": 894
         }
       }
     },
     "fallthrough/root-ref": {
-      "time": 10.91,
+      "time": 12.56,
       "sizes": {
         "react": {
-          "raw": 2343,
-          "gzip": 1352
+          "raw": 2687,
+          "gzip": 1494
         },
         "vue": {
-          "raw": 1382,
-          "gzip": 920
+          "raw": 1455,
+          "gzip": 956
         },
         "svelte": {
-          "raw": 1879,
-          "gzip": 1171
+          "raw": 1963,
+          "gzip": 1217
         },
         "solid": {
-          "raw": 1346,
-          "gzip": 924
+          "raw": 1415,
+          "gzip": 967
         },
         "solid2": {
-          "raw": 1571,
-          "gzip": 1025
+          "raw": 1797,
+          "gzip": 1148
         },
         "angular": {
-          "raw": 7429,
-          "gzip": 3236
+          "raw": 7680,
+          "gzip": 3331
         },
         "qwik": {
-          "raw": 2329,
-          "gzip": 1826
+          "raw": 2639,
+          "gzip": 2054
         },
         "astro": {
-          "raw": 1422,
-          "gzip": 948
+          "raw": 1484,
+          "gzip": 962
         }
       }
     },
     "fallthrough/through-component-root": {
-      "time": 8.8,
+      "time": 8.81,
       "sizes": {
         "react": {
-          "raw": 2312,
-          "gzip": 1428
+          "raw": 2322,
+          "gzip": 1432
         },
         "vue": {
-          "raw": 1178,
-          "gzip": 864
+          "raw": 1196,
+          "gzip": 872
         },
         "svelte": {
-          "raw": 1947,
+          "raw": 1957,
           "gzip": 1281
         },
         "solid": {
-          "raw": 1299,
-          "gzip": 908
+          "raw": 1311,
+          "gzip": 911
         },
         "solid2": {
-          "raw": 1482,
-          "gzip": 1019
+          "raw": 1494,
+          "gzip": 1025
         },
         "angular": {
-          "raw": 8349,
-          "gzip": 3691
+          "raw": 8378,
+          "gzip": 3701
         },
         "qwik": {
-          "raw": 2285,
-          "gzip": 1779
+          "raw": 2303,
+          "gzip": 1787
         },
         "astro": {
-          "raw": 1440,
-          "gzip": 970
+          "raw": 1523,
+          "gzip": 997
         }
       }
     },
     "fallthrough/to-component-root": {
-      "time": 5.51,
+      "time": 5.5,
       "sizes": {
         "react": {
           "raw": 1878,
@@ -4197,13 +4197,13 @@
           "gzip": 1381
         },
         "astro": {
-          "raw": 1357,
-          "gzip": 925
+          "raw": 1414,
+          "gzip": 942
         }
       }
     },
     "generics/constrained": {
-      "time": 3.43,
+      "time": 3.18,
       "sizes": {
         "react": {
           "raw": 856,
@@ -4263,21 +4263,21 @@
           "gzip": 526
         },
         "angular": {
-          "raw": 3346,
-          "gzip": 1409
+          "raw": 3450,
+          "gzip": 1441
         },
         "qwik": {
           "raw": 649,
           "gzip": 499
         },
         "astro": {
-          "raw": 517,
-          "gzip": 352
+          "raw": 539,
+          "gzip": 360
         }
       }
     },
     "generics/props-named-props": {
-      "time": 2.88,
+      "time": 3.07,
       "sizes": {
         "react": {
           "raw": 683,
@@ -4314,7 +4314,7 @@
       }
     },
     "generics/scoped-slot": {
-      "time": 6.68,
+      "time": 6.67,
       "sizes": {
         "react": {
           "raw": 1178,
@@ -4351,7 +4351,7 @@
       }
     },
     "generics/select": {
-      "time": 8.93,
+      "time": 8.31,
       "sizes": {
         "react": {
           "raw": 1746,
@@ -4382,13 +4382,13 @@
           "gzip": 1769
         },
         "astro": {
-          "raw": 1080,
-          "gzip": 714
+          "raw": 1103,
+          "gzip": 720
         }
       }
     },
     "hydration/interactive": {
-      "time": 4.92,
+      "time": 4.68,
       "sizes": {
         "react": {
           "raw": 1084,
@@ -4425,7 +4425,7 @@
       }
     },
     "hydration/props-render": {
-      "time": 4.32,
+      "time": 4.23,
       "sizes": {
         "react": {
           "raw": 1374,
@@ -4448,21 +4448,21 @@
           "gzip": 635
         },
         "angular": {
-          "raw": 3912,
-          "gzip": 1582
+          "raw": 4016,
+          "gzip": 1612
         },
         "qwik": {
           "raw": 1013,
           "gzip": 622
         },
         "astro": {
-          "raw": 629,
-          "gzip": 420
+          "raw": 651,
+          "gzip": 426
         }
       }
     },
     "hydration/use-id": {
-      "time": 6.25,
+      "time": 5.92,
       "sizes": {
         "react": {
           "raw": 2103,
@@ -4493,13 +4493,13 @@
           "gzip": 1070
         },
         "astro": {
-          "raw": 1241,
-          "gzip": 809
+          "raw": 1264,
+          "gzip": 817
         }
       }
     },
     "ids/label-association": {
-      "time": 3.17,
+      "time": 3.05,
       "sizes": {
         "react": {
           "raw": 1152,
@@ -4536,7 +4536,7 @@
       }
     },
     "ids/radio-group": {
-      "time": 7.94,
+      "time": 7.27,
       "sizes": {
         "react": {
           "raw": 1549,
@@ -4559,21 +4559,21 @@
           "gzip": 904
         },
         "angular": {
-          "raw": 4125,
-          "gzip": 1675
+          "raw": 4241,
+          "gzip": 1706
         },
         "qwik": {
           "raw": 1439,
           "gzip": 1017
         },
         "astro": {
-          "raw": 816,
-          "gzip": 514
+          "raw": 844,
+          "gzip": 522
         }
       }
     },
     "jsx/attribute-names": {
-      "time": 5.53,
+      "time": 5.36,
       "sizes": {
         "react": {
           "raw": 3071,
@@ -4610,7 +4610,7 @@
       }
     },
     "jsx/boolean-and-aria": {
-      "time": 6.02,
+      "time": 5.89,
       "sizes": {
         "react": {
           "raw": 2408,
@@ -4633,21 +4633,21 @@
           "gzip": 852
         },
         "angular": {
-          "raw": 4662,
-          "gzip": 1799
+          "raw": 4865,
+          "gzip": 1844
         },
         "qwik": {
           "raw": 1667,
           "gzip": 858
         },
         "astro": {
-          "raw": 1235,
-          "gzip": 687
+          "raw": 1306,
+          "gzip": 703
         }
       }
     },
     "jsx/escaping": {
-      "time": 3.69,
+      "time": 3.61,
       "sizes": {
         "react": {
           "raw": 1958,
@@ -4684,7 +4684,7 @@
       }
     },
     "jsx/expressions": {
-      "time": 6.67,
+      "time": 6.63,
       "sizes": {
         "react": {
           "raw": 2275,
@@ -4715,13 +4715,13 @@
           "gzip": 764
         },
         "astro": {
-          "raw": 947,
-          "gzip": 585
+          "raw": 970,
+          "gzip": 593
         }
       }
     },
     "jsx/fragments": {
-      "time": 3.39,
+      "time": 3.2,
       "sizes": {
         "react": {
           "raw": 1059,
@@ -4758,7 +4758,7 @@
       }
     },
     "jsx/quoted-strings": {
-      "time": 3.65,
+      "time": 3.77,
       "sizes": {
         "react": {
           "raw": 1422,
@@ -4789,8 +4789,8 @@
           "gzip": 738
         },
         "astro": {
-          "raw": 897,
-          "gzip": 564
+          "raw": 920,
+          "gzip": 570
         }
       }
     },
@@ -4832,7 +4832,7 @@
       }
     },
     "jsx/raw-html-list": {
-      "time": 2.43,
+      "time": 2.66,
       "sizes": {
         "react": {
           "raw": 791,
@@ -4869,7 +4869,7 @@
       }
     },
     "jsx/raw-html-update": {
-      "time": 5.25,
+      "time": 5.24,
       "sizes": {
         "react": {
           "raw": 1288,
@@ -4900,13 +4900,13 @@
           "gzip": 996
         },
         "astro": {
-          "raw": 590,
-          "gzip": 401
+          "raw": 613,
+          "gzip": 409
         }
       }
     },
     "jsx/svg": {
-      "time": 3.53,
+      "time": 3.42,
       "sizes": {
         "react": {
           "raw": 1660,
@@ -4929,21 +4929,21 @@
           "gzip": 585
         },
         "angular": {
-          "raw": 3651,
-          "gzip": 1572
+          "raw": 3822,
+          "gzip": 1613
         },
         "qwik": {
           "raw": 1231,
           "gzip": 735
         },
         "astro": {
-          "raw": 970,
-          "gzip": 592
+          "raw": 1059,
+          "gzip": 615
         }
       }
     },
     "jsx/svg-titles": {
-      "time": 4.11,
+      "time": 3.79,
       "sizes": {
         "react": {
           "raw": 1679,
@@ -4980,7 +4980,7 @@
       }
     },
     "jsx/whitespace": {
-      "time": 4.03,
+      "time": 4.09,
       "sizes": {
         "react": {
           "raw": 2156,
@@ -5011,13 +5011,13 @@
           "gzip": 700
         },
         "astro": {
-          "raw": 852,
-          "gzip": 516
+          "raw": 875,
+          "gzip": 525
         }
       }
     },
     "lifecycle/click-outside": {
-      "time": 10.02,
+      "time": 9.86,
       "sizes": {
         "react": {
           "raw": 2349,
@@ -5048,13 +5048,13 @@
           "gzip": 1407
         },
         "astro": {
-          "raw": 568,
-          "gzip": 381
+          "raw": 591,
+          "gzip": 389
         }
       }
     },
     "lifecycle/document-listener": {
-      "time": 15.29,
+      "time": 13.61,
       "sizes": {
         "react": {
           "raw": 2700,
@@ -5085,13 +5085,13 @@
           "gzip": 1875
         },
         "astro": {
-          "raw": 591,
-          "gzip": 394
+          "raw": 614,
+          "gzip": 401
         }
       }
     },
     "lifecycle/mounted-dom": {
-      "time": 7.43,
+      "time": 6.7,
       "sizes": {
         "react": {
           "raw": 1526,
@@ -5114,21 +5114,21 @@
           "gzip": 610
         },
         "angular": {
-          "raw": 3564,
-          "gzip": 1501
+          "raw": 3668,
+          "gzip": 1534
         },
         "qwik": {
           "raw": 1190,
           "gzip": 865
         },
         "astro": {
-          "raw": 539,
-          "gzip": 369
+          "raw": 561,
+          "gzip": 374
         }
       }
     },
     "lifecycle/next-tick": {
-      "time": 6.27,
+      "time": 6.08,
       "sizes": {
         "react": {
           "raw": 2405,
@@ -5159,13 +5159,13 @@
           "gzip": 915
         },
         "astro": {
-          "raw": 539,
-          "gzip": 352
+          "raw": 562,
+          "gzip": 361
         }
       }
     },
     "lifecycle/save-shortcut": {
-      "time": 6.66,
+      "time": 7.31,
       "sizes": {
         "react": {
           "raw": 1812,
@@ -5192,13 +5192,13 @@
           "gzip": 1472
         },
         "astro": {
-          "raw": 536,
-          "gzip": 357
+          "raw": 559,
+          "gzip": 365
         }
       }
     },
     "lifecycle/teardown-order": {
-      "time": 19.48,
+      "time": 19.19,
       "sizes": {
         "react": {
           "raw": 4721,
@@ -5229,13 +5229,13 @@
           "gzip": 3069
         },
         "astro": {
-          "raw": 599,
-          "gzip": 395
+          "raw": 622,
+          "gzip": 403
         }
       }
     },
     "lifecycle/unmount-timers": {
-      "time": 8.74,
+      "time": 8.55,
       "sizes": {
         "react": {
           "raw": 1813,
@@ -5266,13 +5266,13 @@
           "gzip": 1218
         },
         "astro": {
-          "raw": 566,
-          "gzip": 370
+          "raw": 589,
+          "gzip": 377
         }
       }
     },
     "models/checkbox": {
-      "time": 3.54,
+      "time": 3.49,
       "sizes": {
         "react": {
           "raw": 1087,
@@ -5303,13 +5303,13 @@
           "gzip": 820
         },
         "astro": {
-          "raw": 562,
-          "gzip": 374
+          "raw": 585,
+          "gzip": 380
         }
       }
     },
     "models/checkbox-group": {
-      "time": 4.91,
+      "time": 4.94,
       "sizes": {
         "react": {
           "raw": 2324,
@@ -5346,7 +5346,7 @@
       }
     },
     "models/component": {
-      "time": 9.4,
+      "time": 9.14,
       "sizes": {
         "react": {
           "raw": 2636,
@@ -5377,13 +5377,13 @@
           "gzip": 2040
         },
         "astro": {
-          "raw": 1142,
-          "gzip": 737
+          "raw": 1165,
+          "gzip": 745
         }
       }
     },
     "models/modifiers": {
-      "time": 4.43,
+      "time": 4.61,
       "sizes": {
         "react": {
           "raw": 2330,
@@ -5414,13 +5414,13 @@
           "gzip": 1378
         },
         "astro": {
-          "raw": 607,
-          "gzip": 378
+          "raw": 630,
+          "gzip": 385
         }
       }
     },
     "models/number": {
-      "time": 4.7,
+      "time": 4.63,
       "sizes": {
         "react": {
           "raw": 2303,
@@ -5451,13 +5451,13 @@
           "gzip": 1316
         },
         "astro": {
-          "raw": 641,
-          "gzip": 407
+          "raw": 664,
+          "gzip": 415
         }
       }
     },
     "models/radio": {
-      "time": 3.71,
+      "time": 3.53,
       "sizes": {
         "react": {
           "raw": 1551,
@@ -5494,7 +5494,7 @@
       }
     },
     "models/radio-bound-value": {
-      "time": 6,
+      "time": 6.04,
       "sizes": {
         "react": {
           "raw": 1948,
@@ -5525,13 +5525,13 @@
           "gzip": 1095
         },
         "astro": {
-          "raw": 837,
-          "gzip": 485
+          "raw": 860,
+          "gzip": 493
         }
       }
     },
     "models/select": {
-      "time": 3.71,
+      "time": 3.65,
       "sizes": {
         "react": {
           "raw": 1276,
@@ -5562,13 +5562,13 @@
           "gzip": 829
         },
         "astro": {
-          "raw": 693,
-          "gzip": 413
+          "raw": 716,
+          "gzip": 419
         }
       }
     },
     "models/select-multiple": {
-      "time": 4.28,
+      "time": 4.11,
       "sizes": {
         "react": {
           "raw": 1546,
@@ -5599,13 +5599,13 @@
           "gzip": 949
         },
         "astro": {
-          "raw": 809,
-          "gzip": 464
+          "raw": 832,
+          "gzip": 472
         }
       }
     },
     "models/several": {
-      "time": 10.14,
+      "time": 10.62,
       "sizes": {
         "react": {
           "raw": 2591,
@@ -5636,13 +5636,13 @@
           "gzip": 2563
         },
         "astro": {
-          "raw": 1113,
-          "gzip": 752
+          "raw": 1136,
+          "gzip": 760
         }
       }
     },
     "models/text-field": {
-      "time": 4.14,
+      "time": 4.21,
       "sizes": {
         "react": {
           "raw": 1373,
@@ -5673,13 +5673,13 @@
           "gzip": 950
         },
         "astro": {
-          "raw": 618,
-          "gzip": 391
+          "raw": 641,
+          "gzip": 399
         }
       }
     },
     "models/textarea": {
-      "time": 3.22,
+      "time": 3.28,
       "sizes": {
         "react": {
           "raw": 1140,
@@ -5710,13 +5710,13 @@
           "gzip": 808
         },
         "astro": {
-          "raw": 555,
-          "gzip": 373
+          "raw": 578,
+          "gzip": 380
         }
       }
     },
     "models/textarea-modifiers": {
-      "time": 3.67,
+      "time": 3.57,
       "sizes": {
         "react": {
           "raw": 2201,
@@ -5747,13 +5747,13 @@
           "gzip": 1153
         },
         "astro": {
-          "raw": 583,
-          "gzip": 372
+          "raw": 606,
+          "gzip": 378
         }
       }
     },
     "modules/module-constants": {
-      "time": 7.19,
+      "time": 6.97,
       "sizes": {
         "react": {
           "raw": 1462,
@@ -5784,13 +5784,13 @@
           "gzip": 1048
         },
         "astro": {
-          "raw": 626,
-          "gzip": 432
+          "raw": 649,
+          "gzip": 440
         }
       }
     },
     "modules/nested-modules": {
-      "time": 5.19,
+      "time": 5.05,
       "sizes": {
         "react": {
           "raw": 1323,
@@ -5821,13 +5821,13 @@
           "gzip": 890
         },
         "astro": {
-          "raw": 731,
-          "gzip": 568
+          "raw": 754,
+          "gzip": 578
         }
       }
     },
     "modules/shared-constants": {
-      "time": 6.42,
+      "time": 6.34,
       "sizes": {
         "react": {
           "raw": 1435,
@@ -5864,7 +5864,7 @@
       }
     },
     "modules/shared-helpers": {
-      "time": 7.49,
+      "time": 7.28,
       "sizes": {
         "react": {
           "raw": 1882,
@@ -5895,13 +5895,13 @@
           "gzip": 1315
         },
         "astro": {
-          "raw": 790,
-          "gzip": 557
+          "raw": 813,
+          "gzip": 564
         }
       }
     },
     "props/destructured-defaults": {
-      "time": 6.11,
+      "time": 5.3,
       "sizes": {
         "react": {
           "raw": 1760,
@@ -5924,21 +5924,21 @@
           "gzip": 622
         },
         "angular": {
-          "raw": 3875,
-          "gzip": 1571
+          "raw": 4070,
+          "gzip": 1615
         },
         "qwik": {
           "raw": 1060,
           "gzip": 663
         },
         "astro": {
-          "raw": 722,
-          "gzip": 482
+          "raw": 765,
+          "gzip": 491
         }
       }
     },
     "props/literal-unions": {
-      "time": 5.02,
+      "time": 3.82,
       "sizes": {
         "react": {
           "raw": 951,
@@ -5975,7 +5975,7 @@
       }
     },
     "props/local-types": {
-      "time": 6.22,
+      "time": 5.05,
       "sizes": {
         "react": {
           "raw": 1744,
@@ -5998,21 +5998,21 @@
           "gzip": 653
         },
         "angular": {
-          "raw": 3806,
-          "gzip": 1518
+          "raw": 3910,
+          "gzip": 1553
         },
         "qwik": {
           "raw": 1090,
           "gzip": 625
         },
         "astro": {
-          "raw": 652,
-          "gzip": 439
+          "raw": 674,
+          "gzip": 444
         }
       }
     },
     "props/null-and-absent": {
-      "time": 4.18,
+      "time": 3.51,
       "sizes": {
         "react": {
           "raw": 1107,
@@ -6035,21 +6035,21 @@
           "gzip": 428
         },
         "angular": {
-          "raw": 3271,
-          "gzip": 1374
+          "raw": 3375,
+          "gzip": 1407
         },
         "qwik": {
           "raw": 863,
           "gzip": 587
         },
         "astro": {
-          "raw": 635,
-          "gzip": 414
+          "raw": 657,
+          "gzip": 420
         }
       }
     },
     "props/optional": {
-      "time": 4.37,
+      "time": 3.42,
       "sizes": {
         "react": {
           "raw": 1180,
@@ -6072,21 +6072,21 @@
           "gzip": 391
         },
         "angular": {
-          "raw": 3370,
-          "gzip": 1393
+          "raw": 3565,
+          "gzip": 1439
         },
         "qwik": {
           "raw": 812,
           "gzip": 554
         },
         "astro": {
-          "raw": 596,
-          "gzip": 403
+          "raw": 639,
+          "gzip": 413
         }
       }
     },
     "props/primitives": {
-      "time": 4.43,
+      "time": 3.75,
       "sizes": {
         "react": {
           "raw": 1454,
@@ -6109,21 +6109,21 @@
           "gzip": 533
         },
         "angular": {
-          "raw": 3722,
-          "gzip": 1485
+          "raw": 3826,
+          "gzip": 1518
         },
         "qwik": {
           "raw": 1018,
           "gzip": 632
         },
         "astro": {
-          "raw": 682,
-          "gzip": 454
+          "raw": 704,
+          "gzip": 460
         }
       }
     },
     "props/props-parameter": {
-      "time": 4.17,
+      "time": 3.37,
       "sizes": {
         "react": {
           "raw": 1097,
@@ -6160,7 +6160,7 @@
       }
     },
     "props/unread-props": {
-      "time": 4.19,
+      "time": 3.49,
       "sizes": {
         "react": {
           "raw": 1184,
@@ -6183,21 +6183,21 @@
           "gzip": 404
         },
         "angular": {
-          "raw": 3541,
-          "gzip": 1455
+          "raw": 3645,
+          "gzip": 1486
         },
         "qwik": {
           "raw": 825,
           "gzip": 558
         },
         "astro": {
-          "raw": 600,
-          "gzip": 403
+          "raw": 622,
+          "gzip": 409
         }
       }
     },
     "props/unread-props-object": {
-      "time": 2.84,
+      "time": 1.81,
       "sizes": {
         "react": {
           "raw": 839,
@@ -6228,13 +6228,13 @@
           "gzip": 500
         },
         "astro": {
-          "raw": 562,
-          "gzip": 363
+          "raw": 607,
+          "gzip": 376
         }
       }
     },
     "refs/focus": {
-      "time": 6.46,
+      "time": 5.65,
       "sizes": {
         "react": {
           "raw": 1183,
@@ -6265,13 +6265,13 @@
           "gzip": 915
         },
         "astro": {
-          "raw": 517,
-          "gzip": 352
+          "raw": 534,
+          "gzip": 359
         }
       }
     },
     "semantics/composable-effect-order": {
-      "time": 13.86,
+      "time": 12.36,
       "sizes": {
         "react": {
           "raw": 3353,
@@ -6302,13 +6302,13 @@
           "gzip": 2461
         },
         "astro": {
-          "raw": 673,
-          "gzip": 482
+          "raw": 696,
+          "gzip": 490
         }
       }
     },
     "semantics/composable-read-after-write": {
-      "time": 9.23,
+      "time": 9,
       "sizes": {
         "react": {
           "raw": 2195,
@@ -6339,13 +6339,13 @@
           "gzip": 1626
         },
         "astro": {
-          "raw": 654,
-          "gzip": 455
+          "raw": 677,
+          "gzip": 464
         }
       }
     },
     "semantics/composable-unmount-order": {
-      "time": 15.35,
+      "time": 14.81,
       "sizes": {
         "react": {
           "raw": 3383,
@@ -6368,21 +6368,21 @@
           "gzip": 1031
         },
         "angular": {
-          "raw": 7680,
-          "gzip": 3199
+          "raw": 7784,
+          "gzip": 3230
         },
         "qwik": {
           "raw": 3188,
           "gzip": 2401
         },
         "astro": {
-          "raw": 1194,
-          "gzip": 815
+          "raw": 1216,
+          "gzip": 821
         }
       }
     },
     "semantics/deferred-reads": {
-      "time": 9.98,
+      "time": 10.29,
       "sizes": {
         "react": {
           "raw": 1917,
@@ -6413,13 +6413,13 @@
           "gzip": 1183
         },
         "astro": {
-          "raw": 569,
-          "gzip": 368
+          "raw": 592,
+          "gzip": 377
         }
       }
     },
     "semantics/derived-consistency": {
-      "time": 9.98,
+      "time": 10.03,
       "sizes": {
         "react": {
           "raw": 1796,
@@ -6450,13 +6450,13 @@
           "gzip": 1397
         },
         "astro": {
-          "raw": 605,
-          "gzip": 388
+          "raw": 628,
+          "gzip": 397
         }
       }
     },
     "semantics/derived-from-props": {
-      "time": 6.53,
+      "time": 6.83,
       "sizes": {
         "react": {
           "raw": 1461,
@@ -6479,21 +6479,21 @@
           "gzip": 667
         },
         "angular": {
-          "raw": 3586,
-          "gzip": 1495
+          "raw": 3690,
+          "gzip": 1530
         },
         "qwik": {
           "raw": 1575,
           "gzip": 1184
         },
         "astro": {
-          "raw": 573,
-          "gzip": 397
+          "raw": 595,
+          "gzip": 404
         }
       }
     },
     "semantics/effects-client-only": {
-      "time": 5.21,
+      "time": 4.75,
       "sizes": {
         "react": {
           "raw": 1410,
@@ -6516,21 +6516,21 @@
           "gzip": 681
         },
         "angular": {
-          "raw": 3275,
-          "gzip": 1437
+          "raw": 3383,
+          "gzip": 1470
         },
         "qwik": {
           "raw": 1229,
           "gzip": 980
         },
         "astro": {
-          "raw": 500,
-          "gzip": 343
+          "raw": 541,
+          "gzip": 356
         }
       }
     },
     "semantics/emit": {
-      "time": 11.3,
+      "time": 10.97,
       "sizes": {
         "react": {
           "raw": 1511,
@@ -6561,13 +6561,13 @@
           "gzip": 1253
         },
         "astro": {
-          "raw": 664,
-          "gzip": 431
+          "raw": 704,
+          "gzip": 442
         }
       }
     },
     "semantics/helper-order": {
-      "time": 18.22,
+      "time": 17.6,
       "sizes": {
         "react": {
           "raw": 3073,
@@ -6598,13 +6598,13 @@
           "gzip": 2404
         },
         "astro": {
-          "raw": 644,
-          "gzip": 409
+          "raw": 667,
+          "gzip": 417
         }
       }
     },
     "semantics/keyed-lists": {
-      "time": 4.62,
+      "time": 3.16,
       "sizes": {
         "react": {
           "raw": 902,
@@ -6641,7 +6641,7 @@
       }
     },
     "semantics/late-optional-prop": {
-      "time": 5.82,
+      "time": 5.45,
       "sizes": {
         "react": {
           "raw": 1304,
@@ -6672,13 +6672,13 @@
           "gzip": 1000
         },
         "astro": {
-          "raw": 521,
-          "gzip": 360
+          "raw": 544,
+          "gzip": 369
         }
       }
     },
     "semantics/listbox": {
-      "time": 3.56,
+      "time": 3.57,
       "sizes": {
         "react": {
           "raw": 973,
@@ -6705,13 +6705,13 @@
           "gzip": 679
         },
         "astro": {
-          "raw": 618,
-          "gzip": 389
+          "raw": 641,
+          "gzip": 397
         }
       }
     },
     "semantics/models": {
-      "time": 9.34,
+      "time": 9.48,
       "sizes": {
         "react": {
           "raw": 2570,
@@ -6742,13 +6742,13 @@
           "gzip": 1988
         },
         "astro": {
-          "raw": 1163,
-          "gzip": 758
+          "raw": 1186,
+          "gzip": 766
         }
       }
     },
     "semantics/nested-branches": {
-      "time": 12.64,
+      "time": 13.7,
       "sizes": {
         "react": {
           "raw": 1965,
@@ -6779,13 +6779,13 @@
           "gzip": 1496
         },
         "astro": {
-          "raw": 609,
-          "gzip": 389
+          "raw": 632,
+          "gzip": 396
         }
       }
     },
     "semantics/nested-call-bubbling": {
-      "time": 17.78,
+      "time": 17.7,
       "sizes": {
         "react": {
           "raw": 3646,
@@ -6816,13 +6816,13 @@
           "gzip": 1887
         },
         "astro": {
-          "raw": 680,
-          "gzip": 417
+          "raw": 703,
+          "gzip": 426
         }
       }
     },
     "semantics/prevent-default": {
-      "time": 22.48,
+      "time": 21.88,
       "sizes": {
         "react": {
           "raw": 2337,
@@ -6853,13 +6853,13 @@
           "gzip": 1404
         },
         "astro": {
-          "raw": 621,
-          "gzip": 421
+          "raw": 644,
+          "gzip": 430
         }
       }
     },
     "semantics/props-seed-let": {
-      "time": 22.24,
+      "time": 21.61,
       "sizes": {
         "react": {
           "raw": 2815,
@@ -6882,21 +6882,21 @@
           "gzip": 1411
         },
         "angular": {
-          "raw": 5042,
-          "gzip": 2077
+          "raw": 5146,
+          "gzip": 2107
         },
         "qwik": {
           "raw": 2961,
           "gzip": 2040
         },
         "astro": {
-          "raw": 669,
-          "gzip": 431
+          "raw": 691,
+          "gzip": 436
         }
       }
     },
     "semantics/props-seed-state": {
-      "time": 4.04,
+      "time": 4.15,
       "sizes": {
         "react": {
           "raw": 1158,
@@ -6919,21 +6919,21 @@
           "gzip": 507
         },
         "angular": {
-          "raw": 3339,
-          "gzip": 1408
+          "raw": 3443,
+          "gzip": 1440
         },
         "qwik": {
           "raw": 906,
           "gzip": 688
         },
         "astro": {
-          "raw": 583,
-          "gzip": 385
+          "raw": 622,
+          "gzip": 394
         }
       }
     },
     "semantics/reactive-props": {
-      "time": 6.92,
+      "time": 6.89,
       "sizes": {
         "react": {
           "raw": 1792,
@@ -6956,21 +6956,21 @@
           "gzip": 962
         },
         "angular": {
-          "raw": 4497,
-          "gzip": 1744
+          "raw": 4601,
+          "gzip": 1778
         },
         "qwik": {
           "raw": 1351,
           "gzip": 776
         },
         "astro": {
-          "raw": 891,
-          "gzip": 564
+          "raw": 913,
+          "gzip": 570
         }
       }
     },
     "semantics/read-after-write": {
-      "time": 16.05,
+      "time": 16.07,
       "sizes": {
         "react": {
           "raw": 2720,
@@ -7001,13 +7001,13 @@
           "gzip": 1892
         },
         "astro": {
-          "raw": 709,
-          "gzip": 402
+          "raw": 732,
+          "gzip": 410
         }
       }
     },
     "semantics/setup-once": {
-      "time": 3.44,
+      "time": 3.34,
       "sizes": {
         "react": {
           "raw": 1174,
@@ -7038,13 +7038,13 @@
           "gzip": 578
         },
         "astro": {
-          "raw": 597,
-          "gzip": 407
+          "raw": 620,
+          "gzip": 415
         }
       }
     },
     "semantics/watch-timing": {
-      "time": 16.47,
+      "time": 15.11,
       "sizes": {
         "react": {
           "raw": 2723,
@@ -7075,13 +7075,13 @@
           "gzip": 2165
         },
         "astro": {
-          "raw": 672,
-          "gzip": 393
+          "raw": 695,
+          "gzip": 401
         }
       }
     },
     "slots/default": {
-      "time": 5.05,
+      "time": 5.26,
       "sizes": {
         "react": {
           "raw": 1567,
@@ -7104,21 +7104,21 @@
           "gzip": 591
         },
         "angular": {
-          "raw": 5048,
-          "gzip": 2269
+          "raw": 5152,
+          "gzip": 2301
         },
         "qwik": {
           "raw": 1417,
           "gzip": 1005
         },
         "astro": {
-          "raw": 985,
-          "gzip": 666
+          "raw": 1007,
+          "gzip": 674
         }
       }
     },
     "slots/fallback": {
-      "time": 5.42,
+      "time": 5.33,
       "sizes": {
         "react": {
           "raw": 1899,
@@ -7141,21 +7141,21 @@
           "gzip": 700
         },
         "angular": {
-          "raw": 7196,
-          "gzip": 2938
+          "raw": 7300,
+          "gzip": 2969
         },
         "qwik": {
           "raw": 1645,
           "gzip": 1235
         },
         "astro": {
-          "raw": 1240,
-          "gzip": 791
+          "raw": 1279,
+          "gzip": 798
         }
       }
     },
     "slots/forwarding": {
-      "time": 7.96,
+      "time": 7.4,
       "sizes": {
         "react": {
           "raw": 2411,
@@ -7178,13 +7178,13 @@
           "gzip": 876
         },
         "astro": {
-          "raw": 1895,
-          "gzip": 1130
+          "raw": 1917,
+          "gzip": 1138
         }
       }
     },
     "slots/in-list": {
-      "time": 4.97,
+      "time": 4.65,
       "sizes": {
         "react": {
           "raw": 1507,
@@ -7221,7 +7221,7 @@
       }
     },
     "slots/named": {
-      "time": 4.73,
+      "time": 4.33,
       "sizes": {
         "react": {
           "raw": 1834,
@@ -7258,7 +7258,7 @@
       }
     },
     "slots/presence": {
-      "time": 6.03,
+      "time": 5.55,
       "sizes": {
         "react": {
           "raw": 1948,
@@ -7281,13 +7281,13 @@
           "gzip": 757
         },
         "astro": {
-          "raw": 1247,
-          "gzip": 797
+          "raw": 1269,
+          "gzip": 804
         }
       }
     },
     "slots/prop-names": {
-      "time": 7.38,
+      "time": 6.94,
       "sizes": {
         "react": {
           "raw": 1250,
@@ -7318,13 +7318,13 @@
           "gzip": 1229
         },
         "astro": {
-          "raw": 983,
-          "gzip": 683
+          "raw": 1006,
+          "gzip": 690
         }
       }
     },
     "slots/scoped": {
-      "time": 7.33,
+      "time": 6.97,
       "sizes": {
         "react": {
           "raw": 1549,
@@ -7347,21 +7347,21 @@
           "gzip": 820
         },
         "angular": {
-          "raw": 7634,
-          "gzip": 3043
+          "raw": 7738,
+          "gzip": 3078
         },
         "qwik": {
           "raw": 1813,
           "gzip": 1383
         },
         "astro": {
-          "raw": 1111,
-          "gzip": 743
+          "raw": 1133,
+          "gzip": 749
         }
       }
     },
     "slots/scoped-default": {
-      "time": 5.47,
+      "time": 5.18,
       "sizes": {
         "react": {
           "raw": 1180,
@@ -7392,13 +7392,13 @@
           "gzip": 1154
         },
         "astro": {
-          "raw": 912,
-          "gzip": 628
+          "raw": 935,
+          "gzip": 638
         }
       }
     },
     "slots/shared-names": {
-      "time": 8.04,
+      "time": 7.48,
       "sizes": {
         "react": {
           "raw": 1779,
@@ -7421,21 +7421,21 @@
           "gzip": 860
         },
         "angular": {
-          "raw": 8509,
-          "gzip": 3142
+          "raw": 8613,
+          "gzip": 3172
         },
         "qwik": {
           "raw": 2088,
           "gzip": 1563
         },
         "astro": {
-          "raw": 1198,
-          "gzip": 765
+          "raw": 1220,
+          "gzip": 771
         }
       }
     },
     "sourcemaps/computed-throws": {
-      "time": 4.75,
+      "time": 4.68,
       "sizes": {
         "react": {
           "raw": 933,
@@ -7472,7 +7472,7 @@
       }
     },
     "sourcemaps/handler-throws": {
-      "time": 1.86,
+      "time": 1.81,
       "sizes": {
         "react": {
           "raw": 560,
@@ -7503,13 +7503,13 @@
           "gzip": 592
         },
         "astro": {
-          "raw": 427,
-          "gzip": 294
+          "raw": 444,
+          "gzip": 302
         }
       }
     },
     "sourcemaps/mounted-throws": {
-      "time": 4.99,
+      "time": 4.67,
       "sizes": {
         "react": {
           "raw": 1485,
@@ -7540,13 +7540,13 @@
           "gzip": 1282
         },
         "astro": {
-          "raw": 886,
-          "gzip": 614
+          "raw": 909,
+          "gzip": 621
         }
       }
     },
     "state/array-replacement": {
-      "time": 18.74,
+      "time": 18.35,
       "sizes": {
         "react": {
           "raw": 1957,
@@ -7577,13 +7577,13 @@
           "gzip": 1839
         },
         "astro": {
-          "raw": 762,
-          "gzip": 442
+          "raw": 785,
+          "gzip": 450
         }
       }
     },
     "state/computed-chain": {
-      "time": 8.31,
+      "time": 8.16,
       "sizes": {
         "react": {
           "raw": 1994,
@@ -7606,21 +7606,21 @@
           "gzip": 662
         },
         "angular": {
-          "raw": 4125,
-          "gzip": 1614
+          "raw": 4227,
+          "gzip": 1646
         },
         "qwik": {
           "raw": 2286,
           "gzip": 1590
         },
         "astro": {
-          "raw": 838,
-          "gzip": 515
+          "raw": 882,
+          "gzip": 527
         }
       }
     },
     "state/counter": {
-      "time": 6.35,
+      "time": 6.04,
       "sizes": {
         "react": {
           "raw": 1293,
@@ -7657,7 +7657,7 @@
       }
     },
     "state/derived-arrays": {
-      "time": 45.04,
+      "time": 44.51,
       "sizes": {
         "react": {
           "raw": 5657,
@@ -7688,13 +7688,13 @@
           "gzip": 3919
         },
         "astro": {
-          "raw": 1932,
-          "gzip": 992
+          "raw": 1955,
+          "gzip": 1000
         }
       }
     },
     "state/helpers-after-use": {
-      "time": 12.25,
+      "time": 11.95,
       "sizes": {
         "react": {
           "raw": 2372,
@@ -7725,13 +7725,13 @@
           "gzip": 1824
         },
         "astro": {
-          "raw": 723,
-          "gzip": 459
+          "raw": 746,
+          "gzip": 468
         }
       }
     },
     "state/identity-and-clone": {
-      "time": 11.59,
+      "time": 11.27,
       "sizes": {
         "react": {
           "raw": 1700,
@@ -7762,13 +7762,13 @@
           "gzip": 1228
         },
         "astro": {
-          "raw": 707,
-          "gzip": 433
+          "raw": 730,
+          "gzip": 442
         }
       }
     },
     "state/local-functions": {
-      "time": 11.76,
+      "time": 12.44,
       "sizes": {
         "react": {
           "raw": 2023,
@@ -7799,13 +7799,13 @@
           "gzip": 1677
         },
         "astro": {
-          "raw": 794,
-          "gzip": 479
+          "raw": 817,
+          "gzip": 487
         }
       }
     },
     "state/narrowed-reads": {
-      "time": 42.94,
+      "time": 42.73,
       "sizes": {
         "react": {
           "raw": 5815,
@@ -7836,13 +7836,13 @@
           "gzip": 3887
         },
         "astro": {
-          "raw": 1346,
-          "gzip": 697
+          "raw": 1369,
+          "gzip": 706
         }
       }
     },
     "state/object-replacement": {
-      "time": 8.11,
+      "time": 8.12,
       "sizes": {
         "react": {
           "raw": 1769,
@@ -7873,13 +7873,13 @@
           "gzip": 1109
         },
         "astro": {
-          "raw": 674,
-          "gzip": 419
+          "raw": 697,
+          "gzip": 427
         }
       }
     },
     "state/react-compiler-shapes": {
-      "time": 25.75,
+      "time": 25.79,
       "sizes": {
         "react": {
           "raw": 2112,
@@ -7910,13 +7910,13 @@
           "gzip": 2115
         },
         "astro": {
-          "raw": 902,
-          "gzip": 484
+          "raw": 925,
+          "gzip": 493
         }
       }
     },
     "state/toggle-in-branch": {
-      "time": 16.87,
+      "time": 16.83,
       "sizes": {
         "react": {
           "raw": 2335,
@@ -7947,13 +7947,13 @@
           "gzip": 1825
         },
         "astro": {
-          "raw": 599,
-          "gzip": 384
+          "raw": 622,
+          "gzip": 392
         }
       }
     },
     "styleframe/recipe": {
-      "time": 1.68,
+      "time": 1.61,
       "sizes": {
         "react": {
           "raw": 713,
@@ -7990,7 +7990,7 @@
       }
     },
     "styleframe/recipe-and-scoped": {
-      "time": 2.29,
+      "time": 2.1,
       "sizes": {
         "react": {
           "raw": 919,
@@ -8027,7 +8027,7 @@
       }
     },
     "styleframe/recipe-variants": {
-      "time": 2.3,
+      "time": 2.13,
       "sizes": {
         "react": {
           "raw": 833,
@@ -8058,13 +8058,13 @@
           "gzip": 472
         },
         "astro": {
-          "raw": 535,
-          "gzip": 343
+          "raw": 552,
+          "gzip": 350
         }
       }
     },
     "styleframe/tokens": {
-      "time": 1.88,
+      "time": 1.78,
       "sizes": {
         "react": {
           "raw": 844,
@@ -8101,7 +8101,7 @@
       }
     },
     "styleframe/utilities": {
-      "time": 1.51,
+      "time": 1.48,
       "sizes": {
         "react": {
           "raw": 745,
@@ -8138,7 +8138,7 @@
       }
     },
     "styles/child-root": {
-      "time": 4.14,
+      "time": 3.97,
       "sizes": {
         "react": {
           "raw": 1765,
@@ -8169,13 +8169,13 @@
           "gzip": 1169
         },
         "astro": {
-          "raw": 1154,
-          "gzip": 737
+          "raw": 1211,
+          "gzip": 755
         }
       }
     },
     "styles/child-root-branches": {
-      "time": 7.72,
+      "time": 7.58,
       "sizes": {
         "react": {
           "raw": 2166,
@@ -8212,7 +8212,7 @@
       }
     },
     "styles/custom-properties": {
-      "time": 2.72,
+      "time": 2.59,
       "sizes": {
         "react": {
           "raw": 1186,
@@ -8249,7 +8249,7 @@
       }
     },
     "styles/data-attribute-variants": {
-      "time": 3.39,
+      "time": 3.31,
       "sizes": {
         "react": {
           "raw": 943,
@@ -8272,21 +8272,21 @@
           "gzip": 391
         },
         "angular": {
-          "raw": 3678,
-          "gzip": 1543
+          "raw": 3976,
+          "gzip": 1599
         },
         "qwik": {
           "raw": 890,
           "gzip": 688
         },
         "astro": {
-          "raw": 663,
-          "gzip": 428
+          "raw": 746,
+          "gzip": 440
         }
       }
     },
     "styles/deep": {
-      "time": 4.29,
+      "time": 4.32,
       "sizes": {
         "react": {
           "raw": 1740,
@@ -8323,7 +8323,7 @@
       }
     },
     "styles/focus-visible": {
-      "time": 1.84,
+      "time": 1.69,
       "sizes": {
         "react": {
           "raw": 713,
@@ -8354,13 +8354,13 @@
           "gzip": 613
         },
         "astro": {
-          "raw": 489,
-          "gzip": 338
+          "raw": 506,
+          "gzip": 344
         }
       }
     },
     "styles/global": {
-      "time": 3.92,
+      "time": 3.66,
       "sizes": {
         "react": {
           "raw": 1578,
@@ -8397,7 +8397,7 @@
       }
     },
     "styles/hover-state": {
-      "time": 1.69,
+      "time": 1.73,
       "sizes": {
         "react": {
           "raw": 709,
@@ -8428,13 +8428,13 @@
           "gzip": 609
         },
         "astro": {
-          "raw": 483,
-          "gzip": 338
+          "raw": 500,
+          "gzip": 345
         }
       }
     },
     "styles/keyframes": {
-      "time": 1.9,
+      "time": 1.88,
       "sizes": {
         "react": {
           "raw": 955,
@@ -8471,7 +8471,7 @@
       }
     },
     "styles/layers": {
-      "time": 2.21,
+      "time": 1.78,
       "sizes": {
         "react": {
           "raw": 814,
@@ -8508,7 +8508,7 @@
       }
     },
     "styles/media-queries": {
-      "time": 2.04,
+      "time": 1.74,
       "sizes": {
         "react": {
           "raw": 811,
@@ -8545,7 +8545,7 @@
       }
     },
     "styles/pseudo-elements": {
-      "time": 1.66,
+      "time": 1.87,
       "sizes": {
         "react": {
           "raw": 687,
@@ -8582,7 +8582,7 @@
       }
     },
     "styles/scoped-basics": {
-      "time": 2.21,
+      "time": 2.12,
       "sizes": {
         "react": {
           "raw": 997,
@@ -8619,7 +8619,7 @@
       }
     },
     "styles/slotted": {
-      "time": 9.07,
+      "time": 8.45,
       "sizes": {
         "react": {
           "raw": 2816,
@@ -8656,7 +8656,7 @@
       }
     },
     "styles/slotted-order": {
-      "time": 8.54,
+      "time": 8.03,
       "sizes": {
         "react": {
           "raw": 2539,
@@ -8693,7 +8693,7 @@
       }
     },
     "teleport/basic": {
-      "time": 4.5,
+      "time": 4.31,
       "sizes": {
         "react": {
           "raw": 1432,
@@ -8724,13 +8724,13 @@
           "gzip": 1386
         },
         "astro": {
-          "raw": 475,
-          "gzip": 330
+          "raw": 498,
+          "gzip": 338
         }
       }
     },
     "teleport/components": {
-      "time": 14.83,
+      "time": 14.6,
       "sizes": {
         "react": {
           "raw": 3776,
@@ -8761,13 +8761,13 @@
           "gzip": 3340
         },
         "astro": {
-          "raw": 1285,
-          "gzip": 873
+          "raw": 1308,
+          "gzip": 881
         }
       }
     },
     "teleport/dialog": {
-      "time": 17.83,
+      "time": 16.79,
       "sizes": {
         "react": {
           "raw": 3553,
@@ -8790,21 +8790,21 @@
           "gzip": 1387
         },
         "angular": {
-          "raw": 9012,
-          "gzip": 3685
+          "raw": 9126,
+          "gzip": 3720
         },
         "qwik": {
           "raw": 4347,
           "gzip": 3007
         },
         "astro": {
-          "raw": 1252,
-          "gzip": 797
+          "raw": 1363,
+          "gzip": 820
         }
       }
     },
     "teleport/root": {
-      "time": 5.32,
+      "time": 5.13,
       "sizes": {
         "react": {
           "raw": 1740,
@@ -8835,13 +8835,13 @@
           "gzip": 1935
         },
         "astro": {
-          "raw": 787,
-          "gzip": 553
+          "raw": 810,
+          "gzip": 563
         }
       }
     },
     "teleport/siblings": {
-      "time": 15.19,
+      "time": 14.74,
       "sizes": {
         "react": {
           "raw": 3748,
@@ -8872,13 +8872,13 @@
           "gzip": 2471
         },
         "astro": {
-          "raw": 1190,
-          "gzip": 757
+          "raw": 1213,
+          "gzip": 765
         }
       }
     },
     "theming/dark-theme": {
-      "time": 1.53,
+      "time": 1.39,
       "sizes": {
         "react": {
           "raw": 714,
@@ -8915,7 +8915,7 @@
       }
     },
     "theming/data-theme": {
-      "time": 2.06,
+      "time": 1.94,
       "sizes": {
         "react": {
           "raw": 810,
@@ -8938,21 +8938,21 @@
           "gzip": 339
         },
         "angular": {
-          "raw": 3042,
-          "gzip": 1333
+          "raw": 3146,
+          "gzip": 1366
         },
         "qwik": {
           "raw": 633,
           "gzip": 510
         },
         "astro": {
-          "raw": 546,
-          "gzip": 377
+          "raw": 566,
+          "gzip": 380
         }
       }
     },
     "transitions/appear": {
-      "time": 6.41,
+      "time": 6.1,
       "sizes": {
         "react": {
           "raw": 4181,
@@ -8983,13 +8983,13 @@
           "gzip": 1756
         },
         "astro": {
-          "raw": 1012,
-          "gzip": 700
+          "raw": 1035,
+          "gzip": 707
         }
       }
     },
     "transitions/directive": {
-      "time": 6.24,
+      "time": 6.17,
       "sizes": {
         "react": {
           "raw": 5784,
@@ -9020,13 +9020,13 @@
           "gzip": 3312
         },
         "astro": {
-          "raw": 604,
-          "gzip": 393
+          "raw": 627,
+          "gzip": 398
         }
       }
     },
     "transitions/enter": {
-      "time": 5.28,
+      "time": 5.06,
       "sizes": {
         "react": {
           "raw": 4156,
@@ -9057,13 +9057,13 @@
           "gzip": 1984
         },
         "astro": {
-          "raw": 576,
-          "gzip": 381
+          "raw": 599,
+          "gzip": 389
         }
       }
     },
     "transitions/leave": {
-      "time": 5.52,
+      "time": 5.17,
       "sizes": {
         "react": {
           "raw": 4267,
@@ -9094,13 +9094,13 @@
           "gzip": 1999
         },
         "astro": {
-          "raw": 679,
-          "gzip": 414
+          "raw": 702,
+          "gzip": 421
         }
       }
     },
     "transitions/nested": {
-      "time": 5.47,
+      "time": 5.18,
       "sizes": {
         "react": {
           "raw": 4055,
@@ -9131,13 +9131,13 @@
           "gzip": 2005
         },
         "astro": {
-          "raw": 679,
-          "gzip": 420
+          "raw": 702,
+          "gzip": 427
         }
       }
     },
     "transitions/outer": {
-      "time": 6.41,
+      "time": 6.22,
       "sizes": {
         "react": {
           "raw": 4042,
@@ -9168,13 +9168,13 @@
           "gzip": 2069
         },
         "astro": {
-          "raw": 731,
-          "gzip": 432
+          "raw": 754,
+          "gzip": 439
         }
       }
     },
     "transitions/reverse": {
-      "time": 7.16,
+      "time": 6.94,
       "sizes": {
         "react": {
           "raw": 4443,
@@ -9205,13 +9205,13 @@
           "gzip": 2099
         },
         "astro": {
-          "raw": 698,
-          "gzip": 426
+          "raw": 721,
+          "gzip": 436
         }
       }
     },
     "transitions/swap": {
-      "time": 8.92,
+      "time": 8.35,
       "sizes": {
         "react": {
           "raw": 4697,
@@ -9242,13 +9242,13 @@
           "gzip": 2602
         },
         "astro": {
-          "raw": 701,
-          "gzip": 405
+          "raw": 724,
+          "gzip": 413
         }
       }
     },
     "types/child-type-import": {
-      "time": 4.88,
+      "time": 4.49,
       "sizes": {
         "react": {
           "raw": 1152,
@@ -9279,13 +9279,13 @@
           "gzip": 916
         },
         "astro": {
-          "raw": 946,
-          "gzip": 648
+          "raw": 969,
+          "gzip": 655
         }
       }
     },
     "types/exported-types": {
-      "time": 2.6,
+      "time": 2.41,
       "sizes": {
         "react": {
           "raw": 741,
@@ -9316,13 +9316,13 @@
           "gzip": 452
         },
         "astro": {
-          "raw": 465,
-          "gzip": 318
+          "raw": 482,
+          "gzip": 324
         }
       }
     },
     "types/extends-chain": {
-      "time": 2.68,
+      "time": 2.64,
       "sizes": {
         "react": {
           "raw": 553,
@@ -9345,21 +9345,21 @@
           "gzip": 312
         },
         "angular": {
-          "raw": 3024,
-          "gzip": 1341
+          "raw": 3193,
+          "gzip": 1382
         },
         "qwik": {
           "raw": 561,
           "gzip": 493
         },
         "astro": {
-          "raw": 476,
-          "gzip": 362
+          "raw": 493,
+          "gzip": 369
         }
       }
     },
     "types/imported-interface": {
-      "time": 2.4,
+      "time": 2.28,
       "sizes": {
         "react": {
           "raw": 720,
@@ -9396,7 +9396,7 @@
       }
     },
     "types/intersection-props": {
-      "time": 3.31,
+      "time": 2.95,
       "sizes": {
         "react": {
           "raw": 756,
@@ -9433,7 +9433,7 @@
       }
     },
     "types/package-types": {
-      "time": 3.84,
+      "time": 3.53,
       "sizes": {
         "react": {
           "raw": 533,
@@ -9470,7 +9470,7 @@
       }
     },
     "types/re-export-only": {
-      "time": 1.57,
+      "time": 1.47,
       "sizes": {
         "react": {
           "raw": 643,
@@ -9507,7 +9507,7 @@
       }
     },
     "types/shared-type": {
-      "time": 4.73,
+      "time": 4.48,
       "sizes": {
         "react": {
           "raw": 1422,
@@ -9544,7 +9544,7 @@
       }
     },
     "types/utility-types": {
-      "time": 3.47,
+      "time": 3.46,
       "sizes": {
         "react": {
           "raw": 678,
