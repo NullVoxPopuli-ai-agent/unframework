@@ -34,23 +34,6 @@
     "target": "astro"
   },
   {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 27,
-      "offset": 314
-    },
-    "end": {
-      "line": 8,
-      "column": 65,
-      "offset": 352
-    },
-    "target": "ember"
-  },
-  {
     "code": "UF3042",
     "severity": "error",
     "message": "`v-model` on a component binds a model by its name: Choice declares `picked`.",

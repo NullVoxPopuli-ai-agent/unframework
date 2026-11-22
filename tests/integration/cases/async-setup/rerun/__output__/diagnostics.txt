@@ -16,14 +16,3 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    | ^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> async-setup/rerun/Note.uf.tsx:12:3
-   |
-12 |   onMounted(() => {
-   |   ^^^^^^^^^^^^^^^^^
-   | ...
-15 |   });
-   | ^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001

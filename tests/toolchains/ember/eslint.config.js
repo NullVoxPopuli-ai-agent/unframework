@@ -26,6 +26,14 @@ export default [
       "ember/template-no-inline-styles": "off",
       "ember/template-no-positive-tabindex": "off",
       "ember/template-require-input-label": "off",
+      // Judge the author's listeners, which every target adds as written: one on a `<div>`, one
+      // for `pointerdown`, a click listener on a submit button.
+      "ember/template-no-action-on-submit-button": "off",
+      "ember/template-no-invalid-interactive": "off",
+      "ember/template-no-pointer-down-event-binding": "off",
+      // A state the author seeds from a prop is a copy of its first value, as Vue's `ref(props.x)`
+      // is: the source asks for it.
+      "ember/no-tracked-properties-from-args": "off",
       // Judges text that holds `}}`, which Glimmer renders as written; the `{{` of the author's
       // text is escaped (`\{{`), so no mustache opens there.
       "ember/template-no-unbalanced-curlies": "off",

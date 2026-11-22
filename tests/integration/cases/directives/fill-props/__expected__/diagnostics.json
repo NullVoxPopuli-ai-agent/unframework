@@ -53,7 +53,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support directive: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/fill-props/Page.uf.tsx",
     "start": {
       "line": 13,
@@ -100,22 +100,5 @@
       "offset": 945
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "directives/fill-props/Picker.uf.tsx",
-    "start": {
-      "line": 24,
-      "column": 9,
-      "offset": 781
-    },
-    "end": {
-      "line": 28,
-      "column": 10,
-      "offset": 945
-    },
-    "target": "ember"
   }
 ]

@@ -35,11 +35,3 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |                                          ^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> bindings/style-expression/Notice.uf.tsx:56:42
-   |
-56 |       <button type="button" style={vars} onClick={toggle}>
-   |                                          ^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001

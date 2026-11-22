@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support use-id: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "ids/radio-group/SizePicker.uf.tsx",
     "start": {
       "line": 9,
@@ -32,22 +32,5 @@
       "offset": 730
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "ids/radio-group/SizePicker.uf.tsx",
-    "start": {
-      "line": 28,
-      "column": 13,
-      "offset": 701
-    },
-    "end": {
-      "line": 28,
-      "column": 42,
-      "offset": 730
-    },
-    "target": "ember"
   }
 ]

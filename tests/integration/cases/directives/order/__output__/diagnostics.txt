@@ -6,13 +6,21 @@ info[UF4001] (astro): The astro target does not support directive: A directive's
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support directive: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
  --> directives/order/Note.uf.tsx:6:26
   |
 6 |     <em data-name="note" v-note="note">
   |                          ^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/order/Tree.uf.tsx:23:63
+   |
+23 |     <section class="tree" aria-label="Tree" data-name="outer" v-trace="outer">
+   |                                                               ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/order/Tree.uf.tsx:27:7
@@ -23,14 +31,6 @@ error[UF4001] (ember): The ember target does not support component: Child compon
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> directives/order/Tree.uf.tsx:42:29
-   |
-42 |       <button type="button" onClick={() => (shown.value = !shown.value)}>
-   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
   --> directives/order/Tree.uf.tsx:42:29
    |
 42 |       <button type="button" onClick={() => (shown.value = !shown.value)}>

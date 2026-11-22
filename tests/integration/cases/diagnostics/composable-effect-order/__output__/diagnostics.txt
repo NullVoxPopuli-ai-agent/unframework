@@ -9,14 +9,11 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> diagnostics/composable-effect-order/Clock.uf.tsx:11:3
+error[UF4001] (ember): The ember target does not support composable-effect-order: Composables are not emitted yet. See uxfront-com/unframework#236.
+  --> diagnostics/composable-effect-order/Clock.uf.tsx:15:3
    |
-11 |   onMounted(() => {
-   |   ^^^^^^^^^^^^^^^^^
-   | ...
-13 |   });
-   | ^^^^^
+15 |   const { started } = useClock();
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 

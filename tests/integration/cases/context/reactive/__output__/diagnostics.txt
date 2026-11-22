@@ -30,14 +30,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> context/reactive/Counter.uf.tsx:14:29
-   |
-14 |       <button type="button" onClick={() => (count.value += 1)}>
-   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
  --> context/reactive/Display.uf.tsx:7:3
   |

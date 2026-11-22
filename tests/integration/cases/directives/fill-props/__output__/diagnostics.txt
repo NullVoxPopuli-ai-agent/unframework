@@ -28,7 +28,7 @@ info[UF4001] (astro): The astro target does not support directive: A directive's
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support directive: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/fill-props/Page.uf.tsx:13:53
    |
 13 |             <span data-name={`option-${option.id}`} v-trace={option.label}>
@@ -45,17 +45,6 @@ error[UF4001] (ember): The ember target does not support scoped-slot: Child comp
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> directives/fill-props/Picker.uf.tsx:24:9
-   |
-24 |         onClick={() =>
-   |         ^^^^^^^^^^^^^^
-   | ...
-28 |         }
-   | ^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
   --> directives/fill-props/Picker.uf.tsx:24:9
    |
 24 |         onClick={() =>

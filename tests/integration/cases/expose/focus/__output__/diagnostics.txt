@@ -14,7 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> expose/focus/Header.uf.tsx:9:20
   |
 9 |       <SearchField ref={search} label="Find" />
@@ -22,15 +22,15 @@ error[UF4001] (ember): The ember target does not support interactivity: Listener
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> expose/focus/SearchField.uf.tsx:12:14
-   |
-12 |       <input ref={input} type="search" />
-   |              ^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+error[UF4001] (ember): The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+ --> expose/focus/SearchField.uf.tsx:8:3
+  |
+8 |   defineExpose({ focus });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> expose/focus/SearchField.uf.tsx:12:14
    |
 12 |       <input ref={input} type="search" />

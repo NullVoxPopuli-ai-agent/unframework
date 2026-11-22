@@ -136,12 +136,40 @@ describe("ember target", () => {
     `);
   });
 
-  it("emits nothing for a module that needs a capability it does not emit yet", async () => {
+  it("emits a listener as `{{on}}` with a member that holds its handler", async () => {
     const { codes, files } = await emberOf(`
       import { ref } from "@uxfront/unframework";
-      export default function Card() {
+      export default function Counter() {
         const count = ref(0);
         return <button type="button" onClick={() => count.value++}>{count.value}</button>;
+      }
+    `);
+    expect(codes).toEqual([]);
+    expect(files[0]?.contents).toMatchInlineSnapshot(`
+      "import Component from "@glimmer/component";
+      import { tracked } from "@glimmer/tracking";
+
+      export interface CounterSignature {
+        Element: HTMLElementTagNameMap["button"];
+      }
+
+      export default class Counter extends Component<CounterSignature> {
+        @tracked count = 0;
+
+        listener1 = () => this.count++;
+
+        <template><button type="button" {{on "click" this.listener1}} ...attributes>{{this.count}}</button></template>
+      }
+      "
+    `);
+  });
+
+  it("emits nothing for a module that needs a capability it does not emit yet", async () => {
+    const { codes, files } = await emberOf(`
+      import { useId } from "@uxfront/unframework";
+      export default function Card() {
+        const id = useId();
+        return <p id={id}>Hi</p>;
       }
     `);
     expect(codes).toEqual(["UF4001 error"]);

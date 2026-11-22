@@ -9,13 +9,10 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> effects/async-overlap/InboxLookup.uf.tsx:46:3
-   |
-46 |   watch(sender, async (value, previous, onCleanup) => {
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-57 |   });
-   | ^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
+error[UF4001] (ember): The ember target does not support next-tick: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+   --> effects/async-overlap/InboxLookup.uf.tsx:111:11
+    |
+111 |     await nextTick();
+    |           ^^^^^^^^
+    |
+    = see: https://unframework.dev/diagnostics/UF4001

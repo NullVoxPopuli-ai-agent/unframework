@@ -15,22 +15,5 @@
       "offset": 984
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "state/identity-and-clone/FruitPicker.uf.tsx",
-    "start": {
-      "line": 38,
-      "column": 15,
-      "offset": 957
-    },
-    "end": {
-      "line": 38,
-      "column": 42,
-      "offset": 984
-    },
-    "target": "ember"
   }
 ]

@@ -1,0 +1,84 @@
+import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { isDestroying, registerDestructor } from "@ember/destroyable";
+import { renderSettled } from "@ember/renderer";
+
+export interface AutoRefreshProps {
+  /** Milliseconds between two refreshes. */
+  interval: number;
+}
+
+export interface AutoRefreshEvents {
+  onRefresh?: (count: number) => void;
+}
+
+export interface AutoRefreshSignature {
+  Args: AutoRefreshProps & AutoRefreshEvents;
+  Element: HTMLElementTagNameMap["section"];
+}
+
+export default class AutoRefresh extends Component<AutoRefreshSignature> {
+  tick = () => {
+    this.refreshes += 1;
+    this.args.onRefresh?.(this.refreshes);
+  };
+
+  toggle = () => {
+    if (this.enabled) {
+      clearInterval(this.timer);
+      this.enabled = false;
+    } else {
+      this.timer = setInterval(this.tick, this.args.interval);
+      this.enabled = true;
+    }
+  };
+
+  @tracked enabled = false;
+
+  timer: ReturnType<typeof setInterval> | undefined;
+
+  refreshes = 0;
+
+  #mounted = false;
+
+  /** Called at the template's end: the hooks run once the component has rendered. */
+  onMounted = (): undefined => {
+    if (!this.#mounted) {
+      this.#mounted = true;
+      afterRender(this, () =>
+        registerDestructor(this, () => {
+          clearInterval(this.timer);
+        }),
+      );
+    }
+    return undefined;
+  };
+
+  get value1() {
+    return this.enabled ? "Refreshing" : "Paused";
+  }
+
+  <template><section
+      class="auto-refresh"
+      aria-label="Auto-refresh"
+      ...attributes
+    ><button
+      type="button"
+      aria-pressed={{enumeratedValue this.enabled}}
+      {{on "click" this.toggle}}
+    >Auto-refresh</button><p role="status">{{this.value1}}</p></section>{{(this.onMounted)}}</template>
+}
+
+/** Runs `run` once the render settles, unless its component is gone by then. */
+function afterRender(owner: object, run: () => unknown): void {
+  void renderSettled().then(() => {
+    if (!isDestroying(owner)) void run();
+  });
+}
+
+/** An enumerated attribute's value: a boolean as its name, any other value as it is. */
+function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
+  return typeof value === "boolean"
+    ? (String(value) as "true" | "false")
+    : (value as Exclude<T, boolean>);
+}

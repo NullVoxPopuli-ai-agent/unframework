@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support use-id: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> hydration/use-id/Field.uf.tsx:10:3
    |
 10 |   const inputId = useId();

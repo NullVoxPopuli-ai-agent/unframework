@@ -14,7 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> semantics/composable-unmount-order/Board.uf.tsx:16:39
    |
 16 |       {showA.value && <Panel name="a" onClosed={record} />}

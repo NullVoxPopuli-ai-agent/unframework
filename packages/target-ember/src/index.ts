@@ -44,6 +44,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     note: "A Glimmer `class` is one string, so an inline helper, classNames, joins the static names, toggles and dynamic parts, and reads an array's entries and an object's keys as Vue's normalizeClass does.",
   },
   // A Glimmer `style` is one string, which Ember asks to be marked safe.
+  interactivity: {
+    support: "emulated",
+    helper: "Watcher",
+    note: "State, derived values, listeners and template refs are tracked fields, getters, `{{on}}` and an inline modifier. Glimmer has no effects, so a watcher and a watchEffect go through inline helpers, Watcher and Effect, that the template calls before and after its content: a watcher calls back right after the render that sees a change, with Vue's previous value, change test and cleanup timing, and an effect runs once the render settles. The lifecycle hooks run once the first render settles, and never on the server.",
+  },
   "style-binding": {
     support: "emulated",
     helper: "styleText",
@@ -72,19 +77,21 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "attribute-spread",
   "raw-html",
   "svg",
+  // `{{on}}` adds the listener to its element, with `addEventListener`'s options, and the
+  // handler runs as the event is dispatched.
+  "interactivity",
+  "event-capture",
+  "event-once",
+  "event-passive",
+  "event-semantics",
+  "conditional-event-control",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Listeners, template refs, watchers and hooks are not emitted yet.",
+    reason: "Ids, `nextTick`, models and directives are not emitted yet.",
     names: [
-      "interactivity",
-      "event-capture",
-      "event-once",
-      "event-passive",
-      "event-semantics",
-      "conditional-event-control",
       "use-id",
       "next-tick",
       "late-prop",

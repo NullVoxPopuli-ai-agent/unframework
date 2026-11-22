@@ -6,7 +6,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support two-way-binding: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
  --> models/text-field/ContactForm.uf.tsx:9:21
   |
 9 |         Name <input v-model={name.value} />

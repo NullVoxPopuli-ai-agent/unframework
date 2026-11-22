@@ -1,6 +1,23 @@
 [
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "directives/rows/Menu.uf.tsx",
+    "start": {
+      "line": 24,
+      "column": 49,
+      "offset": 996
+    },
+    "end": {
+      "line": 24,
+      "column": 69,
+      "offset": 1016
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "directives/rows/Menu.uf.tsx",
@@ -15,23 +32,6 @@
       "offset": 1698
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "directives/rows/Menu.uf.tsx",
-    "start": {
-      "line": 47,
-      "column": 13,
-      "offset": 1665
-    },
-    "end": {
-      "line": 47,
-      "column": 46,
-      "offset": 1698
-    },
-    "target": "ember"
   },
   {
     "code": "UF4001",
@@ -100,22 +100,5 @@
       "offset": 804
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "directives/rows/Picker.uf.tsx",
-    "start": {
-      "line": 22,
-      "column": 29,
-      "offset": 742
-    },
-    "end": {
-      "line": 22,
-      "column": 91,
-      "offset": 804
-    },
-    "target": "ember"
   }
 ]

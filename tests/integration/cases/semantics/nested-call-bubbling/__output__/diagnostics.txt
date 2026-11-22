@@ -1,12 +1,12 @@
-info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> semantics/nested-call-bubbling/Picker.uf.tsx:46:48
+error[UF4001] (ember): The ember target does not support next-tick: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+  --> semantics/nested-call-bubbling/Picker.uf.tsx:35:11
    |
-46 |       <div class="choices" role="presentation" onClick={report}>
-   |                                                ^^^^^^^^^^^^^^^^
+35 |     await nextTick();
+   |           ^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> semantics/nested-call-bubbling/Picker.uf.tsx:46:48
    |
 46 |       <div class="choices" role="presentation" onClick={report}>

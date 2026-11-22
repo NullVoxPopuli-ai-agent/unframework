@@ -1,0 +1,172 @@
+import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { isDestroying, registerDestructor } from "@ember/destroyable";
+import { renderSettled } from "@ember/renderer";
+
+export interface NameSorterEvents {
+  onStarted?: (text: string) => void;
+  onFirstSeen?: (text: string) => void;
+  onSecondSeen?: (count: number) => void;
+  onTotal?: (letters: number) => void;
+}
+
+export interface NameSorterSignature {
+  Args: NameSorterEvents;
+  Element: HTMLElementTagNameMap["section"];
+}
+
+export default class NameSorter extends Component<NameSorterSignature> {
+  compare = (a: string, b: string): number => {
+    return a < b ? -1 : a > b ? 1 : 0;
+  };
+
+  describe = (): string => {
+    return `doubled ${this.doubled}`;
+  };
+
+  add = (name: string) => {
+    this.names = [...this.names, name].toSorted(this.compare);
+    this.count += 1;
+  };
+
+  report = () => {
+    this.args.onTotal?.(this.letters);
+  };
+
+  @tracked names = ["Cy", "Al"].toSorted((a, b) => this.compare(a, b));
+
+  @tracked count = 0;
+
+  readonly watcher1 = new Watcher(
+    this,
+    () => this.count,
+    () => {
+      this.args.onFirstSeen?.(this.describe());
+    },
+  );
+
+  readonly watcher2 = new Watcher(
+    this,
+    () => this.count,
+    (value) => {
+      this.args.onSecondSeen?.(value);
+    },
+  );
+
+  get doubled() {
+    return this.count * 2;
+  }
+
+  get letters() {
+    return this.names.join("").length;
+  }
+
+  #mounted = false;
+
+  /** Called at the template's end: the hooks run once the component has rendered. */
+  onMounted = (): undefined => {
+    if (!this.#mounted) {
+      this.#mounted = true;
+      afterRender(this, () => {
+        this.args.onStarted?.(`first ${this.describe()}`);
+      });
+      afterRender(this, () => {
+        this.args.onStarted?.("second");
+      });
+    }
+    return undefined;
+  };
+
+  get value1() {
+    return this.names.join(", ");
+  }
+
+  listener1 = () => this.add("Bo");
+
+  <template>{{(this.watcher1.flush)}}{{(this.watcher2.flush)}}<section
+      class="name-sorter"
+      aria-label="Names"
+      ...attributes
+    ><p>Names: {{this.value1}}</p><p>Added: {{this.count}}</p><button
+      type="button"
+      {{on "click" this.listener1}}
+    >Add Bo</button><button type="button" {{on "click" this.report}}>Report</button></section>{{(this.onMounted)}}</template>
+}
+
+/**
+ * Vue's `watch`: the template calls `flush` before anything else, so it sees a change of a
+ * source in the render that follows it, and the callback runs right after that render, or once
+ * the render settles for a `post` watcher. A cleanup the callback registers runs before its
+ * next run, and when the component is destroyed.
+ */
+class Watcher<T> {
+  readonly #owner: object;
+  readonly #source: () => T;
+  readonly #callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown;
+  readonly #options: { array?: boolean; immediate?: boolean; post?: boolean };
+  #started = false;
+  #value: T | undefined;
+  #cleanup: (() => void) | undefined;
+
+  constructor(
+    owner: object,
+    source: () => T,
+    callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
+    options: { array?: boolean; immediate?: boolean; post?: boolean } = {},
+  ) {
+    this.#owner = owner;
+    this.#source = source;
+    this.#callback = callback;
+    this.#options = options;
+    registerDestructor(owner, () => this.#cleanup?.());
+  }
+
+  readonly flush = (): undefined => {
+    const value = this.#source();
+    const started = this.#started;
+    if (started && this.#same(value, this.#value as T)) return undefined;
+    const previous = (started ? this.#value : this.#options.array ? [] : undefined) as T;
+    this.#started = true;
+    this.#value = value;
+    if (!started && !this.#options.immediate) return undefined;
+    const run = () => {
+      const cleanup = this.#cleanup;
+      this.#cleanup = undefined;
+      cleanup?.();
+      void this.#callback(value, previous, (each) => {
+        this.#cleanup = each;
+      });
+    };
+    // The render that calls `flush` has read what the callback may write, so the callback
+    // runs right after it, or once the render settles for a `post` watcher.
+    const later = () => {
+      if (!isDestroying(this.#owner)) run();
+    };
+    if (this.#options.post) void renderSettled().then(later);
+    else {
+      callbacks.pending += 1;
+      queueMicrotask(() => {
+        callbacks.pending -= 1;
+        later();
+      });
+    }
+    return undefined;
+  };
+
+  #same(value: T, previous: T): boolean {
+    if (!this.#options.array) return Object.is(value, previous);
+    const values = value as unknown[];
+    const previousValues = previous as unknown[];
+    return values.every((each, index) => Object.is(each, previousValues[index]));
+  }
+}
+
+/** Runs `run` once the render settles, unless its component is gone by then. */
+function afterRender(owner: object, run: () => unknown): void {
+  void renderSettled().then(() => {
+    if (!isDestroying(owner)) void run();
+  });
+}
+
+/** How many watchers' callbacks are to run once the current render is done. */
+const callbacks = { pending: 0 };

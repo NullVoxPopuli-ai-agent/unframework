@@ -19,17 +19,17 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support next-tick: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "effects/async-loop/ImportQueue.uf.tsx",
     "start": {
-      "line": 13,
-      "column": 3,
-      "offset": 341
+      "line": 21,
+      "column": 13,
+      "offset": 589
     },
     "end": {
-      "line": 15,
-      "column": 6,
-      "offset": 454
+      "line": 21,
+      "column": 21,
+      "offset": 597
     },
     "target": "ember"
   }

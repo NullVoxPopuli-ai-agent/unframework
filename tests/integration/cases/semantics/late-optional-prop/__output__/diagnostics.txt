@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support late-prop: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support late-prop: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> semantics/late-optional-prop/PageCount.uf.tsx:11:40
    |
 11 |   const label = computed(() => `Page ${page} of ${total}`);
@@ -15,17 +15,6 @@ warning[UF4001] (qwik): The qwik target does not support late-prop: Qwik subscri
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> semantics/late-optional-prop/PageCount.uf.tsx:13:3
-   |
-13 |   watch(
-   |   ^^^^^^
-   | ...
-18 |   );
-   | ^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
   --> semantics/late-optional-prop/PageCount.uf.tsx:13:3
    |
 13 |   watch(

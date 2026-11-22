@@ -36,23 +36,6 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "semantics/models/Disclosure.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 56,
-      "offset": 280
-    },
-    "end": {
-      "line": 7,
-      "column": 98,
-      "offset": 322
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
     "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "semantics/models/Panels.uf.tsx",
     "start": {
@@ -83,23 +66,6 @@
       "offset": 266
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "semantics/models/Panels.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 36,
-      "offset": 237
-    },
-    "end": {
-      "line": 9,
-      "column": 65,
-      "offset": 266
-    },
-    "target": "ember"
   },
   {
     "code": "UF4001",

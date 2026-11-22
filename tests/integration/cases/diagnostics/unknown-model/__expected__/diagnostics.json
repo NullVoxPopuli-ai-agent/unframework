@@ -34,23 +34,6 @@
     "target": "astro"
   },
   {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "diagnostics/unknown-model/Survey.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 27,
-      "offset": 325
-    },
-    "end": {
-      "line": 8,
-      "column": 65,
-      "offset": 363
-    },
-    "target": "ember"
-  },
-  {
     "code": "UF3037",
     "severity": "error",
     "message": "Choice declares no model `pikced`. Did you mean `picked`?",

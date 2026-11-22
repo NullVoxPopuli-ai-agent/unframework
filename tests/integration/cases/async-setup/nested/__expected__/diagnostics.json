@@ -35,6 +35,23 @@
   },
   {
     "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "async-setup/nested/Member.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 3,
+      "offset": 370
+    },
+    "end": {
+      "line": 14,
+      "column": 26,
+      "offset": 393
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "async-setup/nested/Member.uf.tsx",
@@ -52,23 +69,6 @@
   },
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "async-setup/nested/Member.uf.tsx",
-    "start": {
-      "line": 19,
-      "column": 29,
-      "offset": 491
-    },
-    "end": {
-      "line": 19,
-      "column": 59,
-      "offset": 521
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "async-setup/nested/Team.uf.tsx",
@@ -83,23 +83,6 @@
       "offset": 522
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "async-setup/nested/Team.uf.tsx",
-    "start": {
-      "line": 14,
-      "column": 29,
-      "offset": 486
-    },
-    "end": {
-      "line": 14,
-      "column": 65,
-      "offset": 522
-    },
-    "target": "ember"
   },
   {
     "code": "UF4001",
@@ -115,6 +98,23 @@
       "line": 17,
       "column": 38,
       "offset": 591
+    },
+    "target": "ember"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "file": "async-setup/nested/Team.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 15,
+      "offset": 568
+    },
+    "end": {
+      "line": 17,
+      "column": 26,
+      "offset": 579
     },
     "target": "ember"
   },

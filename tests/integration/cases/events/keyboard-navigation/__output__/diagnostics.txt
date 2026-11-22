@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support use-id: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> events/keyboard-navigation/CityPicker.uf.tsx:10:3
    |
 10 |   const listId = useId();
@@ -15,14 +15,6 @@ error[UF4001] (qwik): The qwik target does not support conditional-event-control
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> events/keyboard-navigation/CityPicker.uf.tsx:65:52
-   |
-65 |       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
-   |                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
   --> events/keyboard-navigation/CityPicker.uf.tsx:65:52
    |
 65 |       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>

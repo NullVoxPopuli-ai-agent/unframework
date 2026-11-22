@@ -21,6 +21,8 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
+    // `@tracked` is typed as a legacy decorator, as `@ember/app-tsconfig` compiles it.
+    "experimentalDecorators": true,
     "types": ["ember-source/types", "@glint/ember-tsc/types"],
     // The outputs sit in tests/integration, where Glint's own modules do not resolve: Glint's
     // generated code imports its DSL, which this directory installs.

@@ -14,14 +14,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Choice.uf.tsx:12:29
-   |
-12 |       <button type="button" onClick={() => (first.value = !first.value)}>
-   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/List.uf.tsx:11:24
    |
@@ -52,6 +44,14 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
+error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+  --> directives/repeated/Page.uf.tsx:21:35
+   |
+21 |             <span data-name="row" v-trace={label.value}>
+   |                                   ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
 error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Page.uf.tsx:38:11
    |
@@ -71,14 +71,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Page.uf.tsx:45:10
-   |
-45 |       <p ref={note} data-name="note" v-trace={label.value}>
-   |          ^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Rows.uf.tsx:13:26
    |
@@ -88,14 +80,6 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> directives/repeated/Rows.uf.tsx:18:9
-   |
-18 |         onClick={() => (items.value = [...items.value, items.value.length + 1])}
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Rows.uf.tsx:18:9
    |
 18 |         onClick={() => (items.value = [...items.value, items.value.length + 1])}

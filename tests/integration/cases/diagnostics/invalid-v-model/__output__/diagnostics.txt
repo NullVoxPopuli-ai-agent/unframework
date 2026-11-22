@@ -14,14 +14,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
- --> diagnostics/invalid-v-model/Survey.uf.tsx:8:27
-  |
-8 |     <button type="button" onClick={() => (picked.value = "yes")}>
-  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF3042]: `v-model` on a component binds a model by its name: Choice declares `picked`.
   --> diagnostics/invalid-v-model/Survey.uf.tsx:18:15
    |

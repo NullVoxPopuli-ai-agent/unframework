@@ -38,14 +38,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> transitions/directive/Banner.uf.tsx:12:29
-   |
-12 |       <button type="button" onClick={() => (shown.value = false)}>
-   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support transition: A `<Transition>`'s classes never run: its child renders settled on Astro: components render on the server only, and nothing runs in the browser.
   --> transitions/directive/Banner.uf.tsx:15:7
    |
@@ -65,5 +57,13 @@ error[UF4001] (ember): The ember target does not support transition: Child compo
    | ...
 21 |       </Transition>
    | ^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+  --> transitions/directive/Banner.uf.tsx:17:29
+   |
+17 |           <p class="banner" v-mark="banner">
+   |                             ^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001

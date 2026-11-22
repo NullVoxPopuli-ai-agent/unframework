@@ -11,6 +11,7 @@ import {
   staticStyleValue,
 } from "@unframework.dev/codegen";
 import type { MarkupDialect, TextPosition } from "@unframework.dev/codegen";
+import type { EventAttribute } from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
 export interface DialectHost {
@@ -23,6 +24,10 @@ export interface DialectHost {
   rowName(name: string): string;
   /** The module helper that writes an enumerated attribute's boolean as its name. */
   enumerated(): string;
+  /** The modifier that holds an element in a template ref's member. */
+  templateRef(name: string): string;
+  /** The handler a listener's `{{on}}` takes: a member, or a call of one with row variables. */
+  listener(attribute: EventAttribute, at: object): string;
   /** What holds a node of the template: a branch's `If`, an element's parent. */
   parentOf(node: object): object | undefined;
 }
@@ -162,8 +167,17 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     },
     // What a capability cell leaves unsupported prints nothing: the compile reports UF4001 as an
     // error there, so the case has no Ember output.
-    eventAttribute: () => [],
-    refAttribute: () => [],
+    // `on` is a keyword of strict mode, which takes `addEventListener`'s options as named
+    // arguments.
+    eventAttribute: ({ attribute }, { element }) => {
+      const options = (["capture", "once", "passive"] as const)
+        .filter((option) => attribute[option])
+        .map((option) => ` ${option}=true`)
+        .join("");
+      const handler = host.listener(attribute, element);
+      return [{ name: "on", text: `{{on "${attribute.event}" ${handler}${options}}}` }];
+    },
+    refAttribute: ({ name }) => [{ name: "ref", text: host.templateRef(name) }],
     directiveAttribute: () => [],
     propAttribute: () => [],
     componentEvent: () => [],

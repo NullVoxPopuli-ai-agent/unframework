@@ -17,14 +17,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Base.uf.tsx:27:7
-   |
-27 |       onClick={press}
-   |       ^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4002] (angular): The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.
  --> fallthrough/dynamic-root/Page.uf.tsx:3:1
   |
@@ -106,7 +98,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Page.uf.tsx:23:9
    |
 23 |         onPress={() => (pressed.value = "docs")}
@@ -152,7 +144,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Primary.uf.tsx:22:7
    |
 22 |       onPress={() => emit("press")}

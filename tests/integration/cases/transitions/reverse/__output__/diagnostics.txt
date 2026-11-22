@@ -38,14 +38,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support interactivity: Listeners, template refs, watchers and hooks are not emitted yet. See uxfront-com/unframework#236.
-  --> transitions/reverse/Menu.uf.tsx:20:56
-   |
-20 |       <button type="button" aria-expanded={open.value} onClick={refresh}>
-   |                                                        ^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support transition: A `<Transition>`'s classes never run: its child renders settled on Astro: components render on the server only, and nothing runs in the browser.
   --> transitions/reverse/Menu.uf.tsx:24:7
    |
