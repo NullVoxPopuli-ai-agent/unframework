@@ -386,6 +386,19 @@
             "root": "element",
             "rootTag": "span",
             "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "tag"
+                },
+                {
+                  "name": "style",
+                  "value": "padding: 2px 6px; color: rgb(30, 30, 30)"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "span"
           }
         ],

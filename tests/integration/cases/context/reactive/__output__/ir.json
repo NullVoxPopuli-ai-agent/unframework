@@ -207,6 +207,10 @@
             "root": "element",
             "rootTag": "output",
             "fallthroughTag": "output",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "output"
           }
         ],

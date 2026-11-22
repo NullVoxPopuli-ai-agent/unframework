@@ -179,6 +179,10 @@
             "root": "element",
             "rootTag": "label",
             "fallthroughTag": "label",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "label"
           }
         ],

@@ -254,6 +254,23 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "role",
+                  "value": "note"
+                },
+                {
+                  "name": "aria-label",
+                  "value": null
+                },
+                {
+                  "name": "class",
+                  "value": "notice"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],

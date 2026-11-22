@@ -231,6 +231,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "lang",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],

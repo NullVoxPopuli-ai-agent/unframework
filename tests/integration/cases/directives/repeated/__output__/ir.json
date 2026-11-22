@@ -699,6 +699,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "choice"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],
@@ -750,6 +759,10 @@
             "root": "element",
             "rootTag": "ol",
             "fallthroughTag": "ol",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "ol"
           }
         ],
@@ -823,6 +836,19 @@
             "root": "element",
             "rootTag": "section",
             "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "wrapper"
+                },
+                {
+                  "name": "aria-label",
+                  "value": "Rows"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "section"
           }
         ],

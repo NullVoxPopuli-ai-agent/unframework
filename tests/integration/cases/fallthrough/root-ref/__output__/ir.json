@@ -374,6 +374,21 @@
             "root": "element",
             "rootTag": "input",
             "fallthroughTag": "input",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "name",
+                  "value": "name"
+                },
+                {
+                  "name": "aria-label",
+                  "value": null
+                }
+              ],
+              "listeners": [
+                "focus"
+              ]
+            },
             "refTag": "input"
           }
         ],

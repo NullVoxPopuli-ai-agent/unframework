@@ -7,7 +7,7 @@ interface Fruit {
 }
 
 export default component$<
-  { fruits: Fruit[] } & Omit<PropsOf<"ul">, "fruits" | "class" | "style"> & {
+  { fruits: Fruit[] } & Omit<PropsOf<"ul">, "fruits" | "class" | "style" | "items" | "item$"> & {
       class?: ClassList;
       style?: CSSProperties;
     }

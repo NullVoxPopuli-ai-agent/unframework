@@ -266,6 +266,10 @@
             ],
             "rootTag": "ul",
             "fallthroughTag": "ul",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "ul"
           }
         ],

@@ -227,6 +227,15 @@
             "root": "element",
             "rootTag": "article",
             "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "card"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "article"
           }
         ],

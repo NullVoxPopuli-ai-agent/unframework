@@ -306,6 +306,15 @@
             "root": "element",
             "rootTag": "label",
             "fallthroughTag": "input",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "name",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "label"
           }
         ],

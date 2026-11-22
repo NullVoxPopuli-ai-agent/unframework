@@ -230,6 +230,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "note-box"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],

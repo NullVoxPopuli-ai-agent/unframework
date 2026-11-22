@@ -103,6 +103,15 @@
             "root": "element",
             "rootTag": "span",
             "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "badge"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "span"
           }
         ],
@@ -160,6 +169,19 @@
             "async": true,
             "rootTag": "section",
             "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "panel"
+                },
+                {
+                  "name": "aria-label",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "section"
           }
         ],

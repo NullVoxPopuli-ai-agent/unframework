@@ -193,6 +193,15 @@
             "root": "element",
             "rootTag": "section",
             "fallthroughTag": "section",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "aria-label",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "section"
           }
         ],

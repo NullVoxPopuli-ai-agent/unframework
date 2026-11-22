@@ -160,6 +160,15 @@
             "root": "element",
             "rootTag": "p",
             "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "hint"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "p"
           }
         ],

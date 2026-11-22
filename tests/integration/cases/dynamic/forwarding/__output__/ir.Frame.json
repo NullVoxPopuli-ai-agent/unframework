@@ -276,6 +276,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "card"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],
@@ -320,6 +329,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "panel"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],

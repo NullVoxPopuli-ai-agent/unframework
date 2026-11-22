@@ -136,6 +136,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "level"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],
@@ -181,6 +190,15 @@
             "root": "element",
             "rootTag": "p",
             "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "step"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "p"
           }
         ],
@@ -220,6 +238,15 @@
             "root": "element",
             "rootTag": "p",
             "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "note"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "p"
           }
         ],

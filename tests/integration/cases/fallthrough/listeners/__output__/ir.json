@@ -565,6 +565,21 @@
             "root": "element",
             "rootTag": "button",
             "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "chip"
+                }
+              ],
+              "listeners": [
+                "click"
+              ]
+            },
             "refTag": "button"
           }
         ],

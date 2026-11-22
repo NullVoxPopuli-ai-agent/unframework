@@ -603,6 +603,15 @@
             "async": true,
             "rootTag": "li",
             "fallthroughTag": "li",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "li"
           }
         ],

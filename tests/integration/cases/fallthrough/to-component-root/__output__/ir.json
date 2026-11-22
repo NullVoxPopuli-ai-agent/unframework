@@ -124,6 +124,19 @@
             "inheritAttrs": true,
             "root": "component",
             "fallthroughTag": "button",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "type",
+                  "value": "button"
+                },
+                {
+                  "name": "class",
+                  "value": "base"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "button",
             "rootDeclarations": [
               {

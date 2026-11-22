@@ -209,6 +209,15 @@
             "root": "element",
             "rootTag": "h3",
             "fallthroughTag": "h3",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "heading"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "h3"
           }
         ],

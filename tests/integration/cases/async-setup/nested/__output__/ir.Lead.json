@@ -139,7 +139,16 @@
             "root": "element",
             "async": true,
             "rootTag": "article",
-            "fallthroughTag": "article"
+            "fallthroughTag": "article",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "member"
+                }
+              ],
+              "listeners": []
+            }
           }
         ],
         "keys": []

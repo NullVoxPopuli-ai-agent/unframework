@@ -268,6 +268,15 @@
             "root": "element",
             "rootTag": "p",
             "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "field"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "p"
           }
         ],

@@ -605,6 +605,33 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "role",
+                  "value": "dialog"
+                },
+                {
+                  "name": "aria-modal",
+                  "value": "true"
+                },
+                {
+                  "name": "aria-labelledby",
+                  "value": null
+                },
+                {
+                  "name": "tabindex",
+                  "value": "-1"
+                },
+                {
+                  "name": "class",
+                  "value": "dialog"
+                }
+              ],
+              "listeners": [
+                "keydown"
+              ]
+            },
             "refTag": "div"
           }
         ],

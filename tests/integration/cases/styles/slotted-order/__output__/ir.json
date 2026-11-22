@@ -374,6 +374,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "amber"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div",
             "styles": {
               "scopeId": "c97301b3",
@@ -422,6 +431,15 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "blue"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div",
             "styles": {
               "scopeId": "721c504a",

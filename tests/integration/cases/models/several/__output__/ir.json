@@ -366,6 +366,10 @@
             "root": "element",
             "rootTag": "fieldset",
             "fallthroughTag": "fieldset",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "fieldset"
           }
         ],

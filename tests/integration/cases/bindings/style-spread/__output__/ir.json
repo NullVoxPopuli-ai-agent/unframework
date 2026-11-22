@@ -458,6 +458,10 @@
             "root": "element",
             "rootTag": "small",
             "fallthroughTag": "small",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "small"
           }
         ],

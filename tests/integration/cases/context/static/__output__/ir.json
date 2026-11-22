@@ -128,6 +128,15 @@
             "root": "element",
             "rootTag": "span",
             "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "span"
           }
         ],

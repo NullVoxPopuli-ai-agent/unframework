@@ -744,6 +744,19 @@
             "root": "element",
             "rootTag": "span",
             "fallthroughTag": "span",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "badge"
+                },
+                {
+                  "name": "style",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "span"
           }
         ],
@@ -794,6 +807,19 @@
             "root": "element",
             "rootTag": "em",
             "fallthroughTag": "em",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "class",
+                  "value": "tag"
+                },
+                {
+                  "name": "style",
+                  "value": "color: rgb(120, 30, 30); padding: 1px 4px"
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "em"
           }
         ],

@@ -553,6 +553,19 @@
             "root": "element",
             "rootTag": "div",
             "fallthroughTag": "div",
+            "fallthroughOwn": {
+              "attributes": [
+                {
+                  "name": "role",
+                  "value": "listitem"
+                },
+                {
+                  "name": "class",
+                  "value": null
+                }
+              ],
+              "listeners": []
+            },
             "refTag": "div"
           }
         ],

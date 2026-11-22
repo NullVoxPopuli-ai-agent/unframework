@@ -233,6 +233,10 @@
             "root": "element",
             "rootTag": "p",
             "fallthroughTag": "p",
+            "fallthroughOwn": {
+              "attributes": [],
+              "listeners": []
+            },
             "refTag": "p"
           }
         ],
