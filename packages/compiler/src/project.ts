@@ -113,39 +113,27 @@ interface Child {
   shapes: [string, TypeShape][];
 }
 
-/** A child's analysis, and whether a cycle cut it short: a child of it read no API. */
+/** A child's analysis. */
 interface Analysed {
   child: Child;
-  partial: boolean;
 }
-
-/** What an import back to a child being resolved on the same path reads: no API (UF1205). */
-const CYCLE = Symbol("cycle");
 
 /**
- * A child's analysis in a project's session: its result once read, while `pending` reads it, and
- * the children it waits on meanwhile, which tell a cycle from a child another path is reading.
+ * What an import reads where its child imports, through its own children, the importer back:
+ * no API (UF1205). Every edge of a cycle is cut, whatever imports the cycle first or when, so a
+ * child's API depends on the graph alone (P8).
  */
+const CYCLE = Symbol("cycle");
+
+/** A child's analysis in a project's session, shared by every path that reads it meanwhile. */
 interface Analysis {
   pending: Promise<Analysed | undefined>;
-  result?: Analysed | undefined;
-  waits: Set<string>;
 }
 
-/** Whether the analysis of `from` waits, through the ones it waits on, on the analysis of `file`. */
-function waitsOn(from: string, file: string, memo: ReadonlyMap<string, Analysis>): boolean {
-  const queue = [from];
-  const seen = new Set(queue);
-  for (let index = 0; index < queue.length; index++) {
-    const each = queue[index]!;
-    if (each === file) return true;
-    for (const next of memo.get(each)?.waits ?? []) {
-      if (seen.has(next)) continue;
-      seen.add(next);
-      queue.push(next);
-    }
-  }
-  return false;
+/** A project's session: the children analysed in it, and each file's component imports. */
+interface Session {
+  analyses: Map<string, Analysis>;
+  imports: Map<string, Promise<string[]>>;
 }
 
 /**
@@ -184,10 +172,11 @@ export function createProject(options: ProjectOptions): Project {
    * A session lasts while a compile, an update or a resolve is in flight, so it sees each file
    * as it is then, and an update starts a fresh one.
    */
-  let session: Map<string, Analysis> | undefined;
+  let session: Session | undefined;
   let active = 0;
+  const newSession = (): Session => ({ analyses: new Map(), imports: new Map() });
   const inSession = async <T>(run: () => Promise<T>, fresh = false): Promise<T> => {
-    if (fresh || !session) session = new Map();
+    if (fresh || !session) session = newSession();
     active++;
     try {
       return await run();
@@ -195,13 +184,46 @@ export function createProject(options: ProjectOptions): Project {
       if (--active === 0) session = undefined;
     }
   };
-  const memoOf = () => session ?? new Map<string, Analysis>();
+  const memoOf = () => session ?? newSession();
+
+  /** The files a child imports components from, read once in the session. */
+  const importsOf = (path: string, memo: Session): Promise<string[]> => {
+    let found = memo.imports.get(path);
+    if (!found) {
+      found = readPath(path).then((source) =>
+        source === undefined
+          ? []
+          : componentImportNames(parseModule(path, source)).flatMap(({ specifier }) => {
+              const file = joinPath(directoryOf(path), specifier);
+              return file === undefined ? [] : [file];
+            }),
+      );
+      memo.imports.set(path, found);
+    }
+    return found;
+  };
+
+  /** Whether `from` imports `to`, through its children's imports (or is it). */
+  const reaches = async (from: string, to: string, memo: Session): Promise<boolean> => {
+    const queue = [from];
+    const seen = new Set(queue);
+    for (let index = 0; index < queue.length; index++) {
+      const each = queue[index]!;
+      if (each === to) return true;
+      for (const next of await importsOf(each, memo)) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        queue.push(next);
+      }
+    }
+    return false;
+  };
 
   /** A child's API, with its own children's (ADR-0118), as the session reads it. */
   const resolveChild = async (request: ResolveRequest): Promise<Child | undefined> => {
     const path = joinPath(directoryOf(request.importer), request.specifier);
-    const analysed = path === undefined ? undefined : await analysisOf(path, [], memoOf());
-    if (!analysed || analysed === CYCLE) return undefined;
+    const analysed = path === undefined ? undefined : await analysisOf(path, memoOf());
+    if (!analysed) return undefined;
     const { api } = analysed.child;
     return {
       api: api && { ...api, file: relativePath(directoryOf(request.importer), path!) },
@@ -210,66 +232,37 @@ export function createProject(options: ProjectOptions): Project {
   };
 
   /**
-   * A child's analysis in the session `memo`: the one it holds, the one another path is reading,
-   * or a new one. `ancestors` are the children being analysed above it on this path, the nearest
-   * last. `CYCLE` where the child is one of them (UF1205), or where the analysis another path is
-   * reading waits on this path's, as a cycle reached from two places at once does: awaiting it
-   * would never end. A result that a cycle cut short is not kept, since another path reads the
-   * cycle from elsewhere.
+   * A child's analysis in the session `memo`: the one another path is reading or has read, or a
+   * new one. Awaiting another path's never deadlocks: a child waits only on children outside its
+   * own cycles, which `analyseChild` cuts.
    */
-  const analysisOf = async (
-    path: string,
-    ancestors: readonly string[],
-    memo: Map<string, Analysis>,
-  ): Promise<Analysed | typeof CYCLE | undefined> => {
-    if (ancestors.includes(path)) return CYCLE;
-    const importer = ancestors.at(-1);
-    const waiting = importer === undefined ? undefined : memo.get(importer);
-    const known = memo.get(path);
-    if (known && "result" in known) return known.result;
-    if (known && importer !== undefined && waitsOn(path, importer, memo)) return CYCLE;
-    let entry = known;
+  const analysisOf = (path: string, memo: Session): Promise<Analysed | undefined> => {
+    let entry = memo.analyses.get(path);
     if (!entry) {
-      const created: Analysis = {
-        waits: new Set(),
+      entry = {
         pending: readPath(path).then((source) =>
-          source === undefined ? undefined : analyseChild(path, source, [...ancestors, path], memo),
+          source === undefined ? undefined : analyseChild(path, source, memo),
         ),
       };
-      entry = created;
-      memo.set(path, created);
-      const forget = () => {
-        if (memo.get(path) === created) memo.delete(path);
-      };
-      created.pending.then((result) => {
-        if (result?.partial) forget();
-        else created.result = result;
-      }, forget);
+      memo.analyses.set(path, entry);
+      const created = entry;
+      created.pending.catch(() => {
+        if (memo.analyses.get(path) === created) memo.analyses.delete(path);
+      });
     }
-    waiting?.waits.add(path);
-    try {
-      return await entry.pending;
-    } finally {
-      waiting?.waits.delete(path);
-    }
+    return entry.pending;
   };
 
-  const analyseChild = async (
-    path: string,
-    source: string,
-    ancestors: readonly string[],
-    memo: Map<string, Analysis>,
-  ): Promise<Analysed> => {
+  const analyseChild = async (path: string, source: string, memo: Session): Promise<Analysed> => {
     const parsed = parseModule(path, source);
     const edges = new Set<string>();
-    let partial = false;
     // The child's own children, whose APIs give a root component's fallthrough and ref tags
     // (ADR-0118): each is an edge, so an edit to it reaches the parent.
     const imports = new Map<string, ModuleApi | undefined>();
     for (const { specifier } of componentImportNames(parsed)) {
       const file = joinPath(directoryOf(path), specifier);
-      const analysed = file === undefined ? undefined : await analysisOf(file, ancestors, memo);
-      if (analysed === CYCLE || analysed?.partial) partial = true;
+      const cyclic = file !== undefined && (await reaches(file, path, memo));
+      const analysed = file === undefined || cyclic ? CYCLE : await analysisOf(file, memo);
       const api = analysed && analysed !== CYCLE ? analysed.child.api : undefined;
       imports.set(specifier, api && { ...api, file: relativePath(directoryOf(path), file!) });
       if (file !== undefined) edges.add(file);
@@ -307,7 +300,7 @@ export function createProject(options: ProjectOptions): Project {
       cached = { key, child: { api: analysis.api, shapes: [...shapes] } };
       children.set(path, cached);
     }
-    return { child: cached.child, partial };
+    return { child: cached.child };
   };
 
   const readStylesheet = async (

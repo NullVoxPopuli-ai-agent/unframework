@@ -715,6 +715,53 @@ describe("a child's own children (ADR-0118)", () => {
     expect(apis.map((api) => api?.file)).toEqual(["Wrap.uf.tsx", "../Wrap.uf.tsx"]);
   });
 
+  it("cuts a cycle where the graph says, however concurrent compiles reach it (P8)", async () => {
+    // C1 ↔ C3, C3 → C4 → C3 and C0 ↔ C2 are cycles; Page sits outside them, and passes each a `title`.
+    const component = (name: string, imports: string[], root: string) =>
+      `${imports.map((each) => `import ${each} from "./${each}.uf.tsx";\n`).join("")}export default function ${name}() {\n  return ${root};\n}\n`;
+    const initial = {
+      "C0.uf.tsx": component("C0", ["C2"], "<C2 />"),
+      "C1.uf.tsx": component("C1", ["C4", "C3"], "<div><C4 /><C3 /></div>"),
+      "C2.uf.tsx": component("C2", ["C0"], "<section><C0 /></section>"),
+      "C3.uf.tsx": component("C3", ["C4", "C1"], "<C1 />"),
+      "C4.uf.tsx": component("C4", ["C0", "C3"], "<C0 />"),
+      "Page.uf.tsx": component(
+        "Page",
+        ["C0", "C1", "C2", "C3", "C4"],
+        '<main><C0 title="t" /><C1 title="t" /><C2 title="t" /><C3 title="t" /><C4 title="t" /></main>',
+      ),
+    };
+    const files = new Map(
+      Object.entries(initial).map(([path, text]) => [`/project/${path}`, text]),
+    );
+    // A seeded generator, so each run's read delays differ and the test is the same each time.
+    let seed = 7;
+    const delay = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return new Promise((resolve) => setTimeout(resolve, seed % 7));
+    };
+    const codes = (result: { diagnostics: readonly { code: string; span: { start: number } }[] }) =>
+      result.diagnostics.map((each) => `${each.code}@${each.span.start}`);
+    const fresh = (delayed: boolean) =>
+      createProject({
+        root: "/project",
+        readFile: async (path) => {
+          if (delayed) await delay();
+          return files.get(path);
+        },
+        targets: [],
+      });
+    const alone = codes(await fresh(false).compile("Page.uf.tsx"));
+    for (let run = 0; run < 40; run++) {
+      const project = fresh(true);
+      const [, page] = await Promise.all([
+        project.compile(`C${run % 5}.uf.tsx`),
+        project.compile("Page.uf.tsx"),
+      ]);
+      expect(codes(page)).toEqual(alone);
+    }
+  });
+
   it("ends a cycle that concurrent resolves enter from both of its ends", async () => {
     const { project } = counted({
       "Ping.uf.tsx":
