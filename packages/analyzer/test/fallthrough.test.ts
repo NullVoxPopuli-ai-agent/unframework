@@ -305,7 +305,7 @@ describe("what a parent cannot pass, and how it is told", () => {
     expect(apiOf(result, "Wrap").exposingRoot).toBe("SearchField");
     expect(codes(result.diagnostics)).toEqual(["UF3046"]);
     expect(result.diagnostics[0]!.message).toBe(
-      "`Wrap`'s root, `SearchField`, exposes functions, so a ref on `Wrap` holds neither its element nor those functions.",
+      "`Wrap`'s root, `SearchField`, exposes functions, which `Wrap` does not expose: a ref on `Wrap` would hold those functions on most targets and its root element on Vue.",
     );
   });
 

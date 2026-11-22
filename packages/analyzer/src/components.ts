@@ -252,10 +252,10 @@ function componentRefProblem(
     // that element's DOM interface.
     const element = api.refTag === undefined ? undefined : ELEMENT_INTERFACES.get(api.refTag);
     if (element === undefined && api.exposingRoot !== undefined) {
-      // The targets would hand the parent the root component's exposed functions, which this
-      // component does not expose, and no element (ADR-0118).
+      // Vue's ref would hold the root element, the other targets' the root component's exposed
+      // functions, which this component does not expose (ADR-0118).
       return report(
-        `\`${info.name}\`'s root, \`${api.exposingRoot}\`, exposes functions, so a ref on \`${info.name}\` holds neither its element nor those functions.`,
+        `\`${info.name}\`'s root, \`${api.exposingRoot}\`, exposes functions, which \`${info.name}\` does not expose: a ref on \`${info.name}\` would hold those functions on most targets and its root element on Vue.`,
         `Expose from ${info.name} with \`defineExpose({ … })\`, or give it an element root.`,
       );
     }
