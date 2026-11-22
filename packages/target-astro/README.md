@@ -118,11 +118,11 @@ per component (ADR-0034, ADR-0046):
   - the other attributes a consumer passes that the component does not declare fall through as
     the rest of its props (ADR-0118, `src/fallthrough.ts`): `Props` extends the root element's
     `HTMLAttributes<"button">` from `astro/types`, the names it declares omitted, the frontmatter
-    reads `const { title, class: className, style, type = "button", ...attrs } = Astro.props;`,
-    and the root spreads `{...attrs}`. Astro writes every attribute it is given, a spread's
-    included, and the browser keeps the first of two, so the root reads each of its own
-    attributes from the props, its own value the default (`type={type}`), or the fallback of a
-    bound one (`aria-label={ariaLabel ?? label}`): the consumer's wins. Every declared name is
+    reads `const { title, class: className, style, type, ...attrs } = Astro.props;`, and the
+    root spreads `{...attrs}`. Astro writes every attribute it is given, a spread's included,
+    and the browser keeps the first of two, so the root reads each of its own attributes from
+    the props whenever the consumer passes the key, even `undefined`, which removes it as on Vue:
+    `type={"type" in Astro.props ? type : "button"}`. The consumer's wins. Every declared name is
     destructured, `_name` where nothing reads it, so none falls through. A listener that falls
     through is dropped (`interactivity`, inert);
   - with `inheritAttrs` off, the props' rest, `{...rest}`, is the same `attrs` on its element,
