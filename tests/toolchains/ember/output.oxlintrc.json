@@ -29,7 +29,7 @@
       {
         "patterns": [
           {
-            "group": ["*", "!@ember/*", "!@glimmer/*", "!virtual:*", "!./**", "!../**"],
+            "group": ["*", "!@ember/**", "!@glimmer/*", "!virtual:*", "!./**", "!../**"],
             "message": "An output imports only its framework (P7).",
             "allowTypeImports": true
           }

@@ -1,12 +1,8 @@
 import type { Toolchain } from "@unframework.dev/codegen";
-import {
-  lintWithEslint,
-  lintWithOxlint,
-  mergeLintResults,
-} from "@unframework.dev/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { frameworkCompile, frameworkEmit } from "./framework-compile.ts";
+import { lint } from "./lint.ts";
 import { typecheck } from "./typecheck.ts";
 
 /**
@@ -35,18 +31,8 @@ export const toolchain: Toolchain = {
   frameworkCompile,
   frameworkEmit,
   typecheck,
-  // L5 (ADR-0042): ESLint with eslint-plugin-ember and typescript-eslint over the `.gts` files,
-  // which oxlint does not parse, and oxlint's shared baseline over a `.ts` module beside them.
-  lint: async (files, context) => {
-    const components = files.filter((file) => file.endsWith(".gts"));
-    const modules = files.filter((file) => !file.endsWith(".gts"));
-    return mergeLintResults(
-      await Promise.all([
-        ...(components.length ? [lintWithEslint(components, context)] : []),
-        ...(modules.length ? [lintWithOxlint(modules, context)] : []),
-      ]),
-    );
-  },
+  // L5 (ADR-0042): ESLint with eslint-plugin-ember, and oxlint's shared baseline.
+  lint,
 };
 
 export default toolchain;
