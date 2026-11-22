@@ -1712,7 +1712,7 @@ function widenProps(file: OutputFile, target: string): string {
  * `fallthroughAttributes` adds the attributes of the root, and of an element that binds
  * `v-bind="$attrs"`, to what a consumer may pass, and the props type it builds from them drops
  * the widened props' index signature. A declared prop that the root also takes (`title`), or a
- * misspelled one (`titel`), would then still be checked. `inheritAttrs: false` turns the root's
+ * misspelt one (`titel`), would then still be checked. `inheritAttrs: false` turns the root's
  * off, and `v-bind="{ ...$attrs }"` binds what `$attrs` binds, as an expression vue-tsc does not
  * type from.
  */

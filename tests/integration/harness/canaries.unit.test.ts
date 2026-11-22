@@ -944,7 +944,7 @@ describe("canaries", () => {
 
   it("L4-consumer turns off the attributes Vue's checker types from the root, or a `$attrs` element", async () => {
     // vue-tsc's `fallthroughAttributes` would check a declared prop the root also takes, and a
-    // misspelled one, against the root's attributes (ADR-0118).
+    // misspelt one, against the root's attributes (ADR-0118).
     const vue = async (input: string) =>
       (await compileWith("L4-consumer", "vue", input)).outputs.vue![0]!.contents;
     const card = await vue(source);
