@@ -70,8 +70,10 @@ are native: `{{on}}` calls `addEventListener` on its element. `use-id` is native
 `renderSettled()` from `@ember/renderer`, which resolves once the pending render has run, as
 Vue's resolves once its pending flush has. `keyed-identity` and `listbox` follow from Glimmer.
 `late-prop` is unsupported by design, as a warning: an Ember parent names each argument in its
-template, so it passes every argument from the start. Models, directives,
-composition, composables, scoped styles and hydration are unsupported for now (`src/index.ts`).
+template, so it passes every argument from the start. `scoped-styles` and `sheet-order` are native: the module imports the sheet `compile()` scopes
+(`import "./Card.uf.tsx.css"`, ADR-0063), and each element carries its `data-uf-…` attribute.
+Models, directives, composition, composables, a child's scope and hydration are unsupported for
+now (`src/index.ts`).
 
 ## The toolchain
 

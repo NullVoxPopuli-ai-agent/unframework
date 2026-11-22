@@ -6,22 +6,6 @@ info[UF4002] (angular): The angular target does not support sheet-order: Angular
   |
   = see: https://unframework.dev/diagnostics/UF4002
 
-error[UF4001] (ember): The ember target does not support scoped-styles: Scoped stylesheets are not emitted yet. See uxfront-com/unframework#236.
- --> transitions/directive/Banner.uf.tsx:1:1
-  |
-1 | import "./Banner.css";
-  | ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support sheet-order: Scoped stylesheets are not emitted yet. See uxfront-com/unframework#236.
- --> transitions/directive/Banner.uf.tsx:1:1
-  |
-1 | import "./Banner.css";
-  | ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4002] (qwik): The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.
  --> transitions/directive/Banner.uf.tsx:1:1
   |

@@ -108,6 +108,9 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // opens, before its options.
   "keyed-identity",
   "listbox",
+  // The module imports the sheet `compile()` scopes, and each element carries its attribute.
+  "scoped-styles",
+  "sheet-order",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -146,8 +149,8 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: ["composables", "composable-effect-order"],
   },
   {
-    reason: "Scoped stylesheets are not emitted yet.",
-    names: ["scoped-styles", "child-root-scope", "slotted-styles", "sheet-order"],
+    reason: "A child's root and slot content do not take a parent's scope yet.",
+    names: ["child-root-scope", "slotted-styles"],
   },
   {
     reason: "The toolchain does not rehydrate a server render yet.",

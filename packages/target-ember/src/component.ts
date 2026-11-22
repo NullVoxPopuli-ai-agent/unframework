@@ -441,6 +441,12 @@ class ComponentPlan {
       }
     }
     const declarations = imports.toDeclarations();
+    // The sheet `compile()` writes beside the source, already scoped (ADR-0063): the markup
+    // printer gives each element the sheet's `data-uf-…` attribute.
+    if (component.styles) {
+      const file = module.file;
+      declarations.push(js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, []));
+    }
     if (declarations.length) lines.push(printProgram(js.program(declarations)).trim());
     return { text: lines.join("\n"), reads };
   }
