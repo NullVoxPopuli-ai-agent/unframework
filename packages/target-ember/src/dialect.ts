@@ -11,7 +11,7 @@ import {
   staticStyleValue,
 } from "@unframework.dev/codegen";
 import type { MarkupDialect, TextPosition } from "@unframework.dev/codegen";
-import type { EventAttribute } from "@unframework.dev/ir";
+import type { ElementNode, EventAttribute, ModelAttribute } from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
 export interface DialectHost {
@@ -24,6 +24,15 @@ export interface DialectHost {
   rowName(name: string): string;
   /** The module helper that writes an enumerated attribute's boolean as its name. */
   enumerated(): string;
+  /** A form control's `v-model`: what shows the state, and what writes it back. */
+  model(attribute: ModelAttribute, value: string, element: ElementNode): string[];
+  /**
+   * What an `<option>` of a `v-model`'s `<select>` adds beside its value: whether the state
+   * holds it, `selected={{…}}`, or nothing for any other option.
+   */
+  optionSelected(element: ElementNode, value: string): string;
+  /** A `<textarea>`'s text: its state's first value, which `modelText` makes its value. */
+  modelContent(value: string): string;
   /** The modifier that holds an element in a template ref's member. */
   templateRef(name: string): string;
   /** The handler a listener's `{{on}}` takes: a member, or a call of one with row variables. */
@@ -97,17 +106,25 @@ export function emberDialect(host: DialectHost): MarkupDialect {
   return {
     name: "ember",
     escapeText,
-    attribute: (name, value) => `${name}="${attributeValue(value)}"`,
+    attribute: (name, value, _tag, context) => {
+      const text = `${name}="${attributeValue(value)}"`;
+      if (name !== "value" || context?.element.tag !== "option") return text;
+      return `${text}${host.optionSelected(context.element, JSON.stringify(value))}`;
+    },
     voidElement: "html",
     stripsWhitespaceBetweenElements: false,
     stripsEdgeWhitespace: false,
     interpolation: (code, position) => `{{${host.value(code, false, position.container)}}}`,
     // Glimmer writes `true` as an empty attribute and leaves `false` out, where an ARIA or an
     // enumerated attribute takes the boolean's name (`aria-expanded="false"`).
-    boundAttribute: (name, code, { element }) =>
-      isEnumerated(name)
-        ? `${name}={{${host.enumerated()} ${host.value(code, true, element)}}}`
-        : `${name}={{${host.value(code, false, element)}}}`,
+    boundAttribute: (name, code, { element }) => {
+      if (isEnumerated(name)) {
+        return `${name}={{${host.enumerated()} ${host.value(code, true, element)}}}`;
+      }
+      const text = `${name}={{${host.value(code, false, element)}}}`;
+      if (name !== "value" || element.tag !== "option") return text;
+      return `${text}${host.optionSelected(element, code)}`;
+    },
     classAttribute: (parts, { element }) => [
       {
         name: "class",
@@ -181,7 +198,11 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     directiveAttribute: () => [],
     propAttribute: () => [],
     componentEvent: () => [],
-    modelAttribute: () => [],
+    // Ember's server writes a `<textarea>`'s `value` as an attribute: its text is the state's
+    // first value, as Vue's server renders it, and `modelText` writes the property in the browser.
+    modelContent: ({ value }) => host.modelContent(value),
+    modelAttribute: ({ attribute, value }, { element }) =>
+      host.model(attribute, value, element).map((text) => ({ name: "model", text })),
     modelBinding: () => [],
     fills: () => [],
     slotOutlet: () => [],

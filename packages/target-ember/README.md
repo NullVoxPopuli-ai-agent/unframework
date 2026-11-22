@@ -72,8 +72,11 @@ Vue's resolves once its pending flush has. `keyed-identity` and `listbox` follow
 `late-prop` is unsupported by design, as a warning: an Ember parent names each argument in its
 template, so it passes every argument from the start. `scoped-styles` and `sheet-order` are native: the module imports the sheet `compile()` scopes
 (`import "./Card.uf.tsx.css"`, ADR-0063), and each element carries its `data-uf-…` attribute.
-Models, directives, composition, composables, a child's scope and hydration are unsupported for
-now (`src/index.ts`).
+`two-way-binding`, `model-array` and `model-modifiers` are emulated: a `v-model` is the control's
+property and a listener, `toggle` adds or removes a checkbox group's value, and an inline
+modifier, `modelText`, follows Vue's `vModelText` for modifiers, number fields and `<textarea>`s.
+Directives, composition, composables, a child's scope and hydration are unsupported for now
+(`src/index.ts`).
 
 ## The toolchain
 

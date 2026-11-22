@@ -15,22 +15,5 @@
       "offset": 259
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support two-way-binding: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "models/radio/Billing.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 57,
-      "offset": 239
-    },
-    "end": {
-      "line": 9,
-      "column": 77,
-      "offset": 259
-    },
-    "target": "ember"
   }
 ]

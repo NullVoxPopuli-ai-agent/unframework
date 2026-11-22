@@ -63,6 +63,21 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "Watcher",
     note: "State, derived values, listeners and template refs are tracked fields, getters, `{{on}}` and an inline modifier. Glimmer has no effects, so a watcher and a watchEffect go through inline helpers, Watcher and Effect, that the template calls before and after its content: a watcher calls back right after the render that sees a change, with Vue's previous value, change test and cleanup timing, and an effect runs once the render settles. The lifecycle hooks run once the first render settles, and never on the server.",
   },
+  "two-way-binding": {
+    support: "emulated",
+    helper: "toggle",
+    note: "A `v-model` is the control's property and a listener that writes it back, as Vue's directives bind each control: `value` and `input` for a text field, `checked` and `change` for a checkbox, an option's `selected` and `change` for a `<select>`.",
+  },
+  "model-array": {
+    support: "emulated",
+    helper: "toggle",
+    note: "A checkbox group's array goes through an inline helper, `toggle`, as Vue's `vModelCheckbox` does, and a `<select multiple>` writes its selected options' values.",
+  },
+  "model-modifiers": {
+    support: "emulated",
+    helper: "modelText",
+    note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline modifier, `modelText`.",
+  },
   "style-binding": {
     support: "emulated",
     helper: "styleText",
@@ -111,13 +126,16 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // The module imports the sheet `compile()` scopes, and each element carries its attribute.
   "scoped-styles",
   "sheet-order",
+  "two-way-binding",
+  "model-array",
+  "model-modifiers",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Models and directives are not emitted yet.",
-    names: ["two-way-binding", "model-array", "model-modifiers", "directive"],
+    reason: "Directives are not emitted yet.",
+    names: ["directive"],
   },
   {
     reason:

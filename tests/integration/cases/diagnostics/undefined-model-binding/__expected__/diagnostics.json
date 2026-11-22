@@ -34,23 +34,6 @@
     "target": "astro"
   },
   {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support two-way-binding: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "diagnostics/undefined-model-binding/Search.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 51,
-      "offset": 420
-    },
-    "end": {
-      "line": 8,
-      "column": 72,
-      "offset": 441
-    },
-    "target": "ember"
-  },
-  {
     "code": "UF3050",
     "severity": "error",
     "message": "SearchField's model `query` can be `undefined`, as its type `string | undefined` says, and `term.value` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.",

@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/click-outside/ProfileMenu.uf.tsx:18:25
    |
 18 |       <div class="menu" v-click-outside={close}>

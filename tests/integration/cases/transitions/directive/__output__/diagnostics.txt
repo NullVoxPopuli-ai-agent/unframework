@@ -44,7 +44,7 @@ error[UF4001] (ember): The ember target does not support transition: Child compo
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.
   --> transitions/directive/Banner.uf.tsx:17:29
    |
 17 |           <p class="banner" v-mark="banner">

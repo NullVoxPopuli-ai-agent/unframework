@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/shapes/Profile.uf.tsx:37:24
    |
 37 |       {user.value ? <p v-mark={user.value.name}>{user.value.name}</p> : null}
@@ -7,14 +7,6 @@ error[UF4001] (ember): The ember target does not support directive: Models and d
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> directives/shapes/Profile.uf.tsx:41:35
-   |
-41 |       <textarea aria-label="Note" v-model={note.value} v-mark={note.value} v-selectable={true} />
-   |                                   ^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support two-way-binding: Models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/shapes/Profile.uf.tsx:41:35
    |
 41 |       <textarea aria-label="Note" v-model={note.value} v-mark={note.value} v-selectable={true} />

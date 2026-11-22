@@ -53,23 +53,6 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support two-way-binding: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "generics/select/Select.uf.tsx",
-    "start": {
-      "line": 14,
-      "column": 15,
-      "offset": 426
-    },
-    "end": {
-      "line": 14,
-      "column": 36,
-      "offset": 447
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
     "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "generics/select/SizeForm.uf.tsx",
     "start": {

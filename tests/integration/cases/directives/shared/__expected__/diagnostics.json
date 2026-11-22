@@ -19,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/shared/Badge.uf.tsx",
     "start": {
       "line": 9,
@@ -70,7 +70,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/shared/Tag.uf.tsx",
     "start": {
       "line": 9,

@@ -25,11 +25,13 @@ import { js } from "@unframework.dev/codegen";
 import type {
   Binding,
   BindingReference,
+  ElementNode,
   EventAttribute,
   Expression,
   FunctionCode,
   IfBranch,
   IfNode,
+  ModelAttribute,
   Prop,
   TypeDeclaration,
   UfComponent,
@@ -53,7 +55,7 @@ interface Hoisted {
 }
 
 /** What a hoisted member holds: a value the template reads, or a listener `{{on}}` takes. */
-type HoistedKind = "value" | "listener";
+type HoistedKind = "value" | "listener" | "initial";
 
 /** Prints one component's `.gts` module. */
 export function emitComponent(component: UfComponent, context: EmitContext): string {
@@ -68,7 +70,7 @@ class ComponentPlan {
   /** The members the template's expressions became, by their code and row variables. */
   readonly #hoisted = new Map<string, Hoisted>();
   /** How many members of each kind the template's expressions became. */
-  readonly #counts: Record<HoistedKind, number> = { value: 0, listener: 0 };
+  readonly #counts: Record<HoistedKind, number> = { value: 0, listener: 0, initial: 0 };
   /** The printed members the template's expressions became, in template order. */
   readonly #hoistedMembers: string[] = [];
   /** Each row variable's type, by name, for the lists printed so far. */
@@ -99,6 +101,10 @@ class ComponentPlan {
   }
 
   /** How the class spells a reference to a binding: the same for every site. */
+  get component(): UfComponent {
+    return this.#component;
+  }
+
   get rules(): RewriteRules {
     return {
       binding: (reference, binding) => this.#spell(reference, binding),
@@ -112,6 +118,109 @@ class ComponentPlan {
       emit: (emit, _binding, parts) =>
         `this.args.${eventArgument(emit.event)}?.(${parts.arguments.join(", ")})`,
     };
+  }
+
+  /**
+   * A form control's `v-model`, as Vue's directives bind each control: the state shown through
+   * the control's property, and a listener that writes it back. A field with a modifier, or a
+   * number field, goes through `modelText`, Vue's `vModelText`.
+   */
+  model(attribute: ModelAttribute, value: string, element: ElementNode): string[] {
+    const write = (code: string, parameters = "") =>
+      this.#listener(`(${parameters}) => {\n  ${value} = ${code};\n}`, element);
+    const target = (type: string, property: string) =>
+      `(event.currentTarget as ${type}).${property}`;
+    const textarea = attribute.control === "textarea";
+    if (
+      textarea ||
+      attribute.trim ||
+      attribute.lazy ||
+      attribute.number ||
+      attribute.control === "number"
+    ) {
+      this.#helpers.add("modelText");
+      const setter = this.#listener(`(next: typeof ${value}) => {\n  ${value} = next;\n}`, element);
+      const options = [
+        attribute.trim ? " trim=true" : "",
+        attribute.lazy ? " lazy=true" : "",
+        attribute.number || attribute.control === "number" ? " number=true" : "",
+      ].join("");
+      const bind = `{{modelText ${this.value(value, true, element)} ${setter}${options}}}`;
+      // A `<textarea>`'s text is its first value (`modelContent`).
+      if (textarea) return [bind];
+      // The first value, which the server renders: `modelText` shows the next ones.
+      const initial = this.#hoist(value, "initial", element);
+      return [`value={{this.${initial.name}}}`, bind];
+    }
+    switch (attribute.control) {
+      case "text":
+        return [
+          `value={{${this.value(value, false, element)}}}`,
+          `{{on "input" ${write(target("HTMLInputElement", "value"), "event: Event")}}}`,
+        ];
+      case "checkbox":
+        return [
+          `checked={{${this.value(value, false, element)}}}`,
+          `{{on "change" ${write(target("HTMLInputElement", "checked"), "event: Event")}}}`,
+        ];
+      case "radio": {
+        const own = ownValue(element, this);
+        return [
+          `checked={{${this.value(`${value} === ${own}`, false, element)}}}`,
+          `{{on "change" ${write(own)}}}`,
+        ];
+      }
+      case "checkbox-group": {
+        this.#helpers.add("toggle");
+        const own = ownValue(element, this);
+        return [
+          `checked={{${this.value(`${value}.includes(${own})`, false, element)}}}`,
+          `{{on "change" ${write(`toggle(${value}, ${own}, ${target("HTMLInputElement", "checked")})`, "event: Event")}}}`,
+        ];
+      }
+      // Each option is `selected` where it holds the state (`optionSelected`), which the server
+      // renders too.
+      case "select":
+        return [`{{on "change" ${write(target("HTMLSelectElement", "value"), "event: Event")}}}`];
+      case "select-multiple":
+        return [
+          `{{on "change" ${write(`Array.from(${target("HTMLSelectElement", "selectedOptions")}, (option) => option.value)`, "event: Event")}}}`,
+        ];
+      case "textarea":
+        throw new Error("A `<textarea>` goes through modelText.");
+      default:
+        return attribute.control satisfies never;
+    }
+  }
+
+  modelContent(value: string): string {
+    return `{{this.${this.#hoist(value, "initial", undefined).name}}}`;
+  }
+
+  /** Whether an option of a `v-model`'s `<select>` holds the state: see the dialect. */
+  optionSelected(element: ElementNode, value: string): string {
+    let select: ElementNode | undefined;
+    for (let node = this.#parents.get(element); node; node = this.#parents.get(node)) {
+      if ((node as ElementNode).kind === "Element" && (node as ElementNode).tag === "select") {
+        select = node as ElementNode;
+        break;
+      }
+    }
+    const model = select?.attributes.find((each): each is ModelAttribute => each.kind === "Model");
+    if (!model) return "";
+    const state = rewriteExpression(model.value, this.#component, this.rules, "render");
+    const test =
+      model.control === "select-multiple"
+        ? `${state}.includes(${value})`
+        : `String(${state}) === ${value}`;
+    return ` selected={{${this.value(test, false, element)}}}`;
+  }
+
+  /** A listener's member for code, called with the row variables it reads. */
+  #listener(code: string, at: object): string {
+    const { name, parameters } = this.#hoist(code, "listener", at);
+    if (!parameters.length) return `this.${name}`;
+    return `(this.${name} ${parameters.map((each) => each.name).join(" ")})`;
   }
 
   /** The handler a template ref's modifier is given: the member that holds the element. */
@@ -269,7 +378,9 @@ class ComponentPlan {
         ? `${name} = (${list}) => ${code};`
         : kind === "listener"
           ? `${name} = ${code};`
-          : `get ${name}() {\n  return ${code};\n}`,
+          : kind === "initial"
+            ? `readonly ${name} = ${code};`
+            : `get ${name}() {\n  return ${code};\n}`,
     );
     return hoisted;
   }
@@ -708,6 +819,19 @@ const KEYWORDS: ReadonlySet<string> = new Set([
   "yield",
 ]);
 
+/** A checkbox's or a radio's own value: its `value` attribute, or `"on"`, as the DOM's. */
+function ownValue(element: ElementNode, plan: ComponentPlan): string {
+  for (const attribute of element.attributes) {
+    if (attribute.kind === "Static" && attribute.name === "value") {
+      return JSON.stringify(attribute.value === true ? "" : attribute.value);
+    }
+    if (attribute.kind === "Bound" && attribute.name === "value") {
+      return `(${rewriteExpression(attribute.value, plan.component, plan.rules, "render")})`;
+    }
+  }
+  return '"on"';
+}
+
 /** The argument a parent passes to listen to an event: `onChange` for `change`. */
 function eventArgument(event: string): string {
   return `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
@@ -813,12 +937,14 @@ type HelperName =
   | "callbacks"
   | "classNames"
   | "Effect"
+  | "modelText"
   | "enumeratedValue"
   | "registerDestructor"
   | "renderSettled"
   | "sources"
   | "styleText"
   | "templateRef"
+  | "toggle"
   | "uniqueId"
   | "Watcher";
 
@@ -835,6 +961,11 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   registerDestructor: { "@ember/destroyable": ["registerDestructor"] },
   renderSettled: { "@ember/renderer": ["renderSettled"] },
   uniqueId: { "@ember/helper": ["uniqueId"] },
+  modelText: {
+    "@ember/modifier": ["capabilities", "setModifierManager"],
+    "@glint/template": ["type ModifierLike"],
+  },
+  toggle: {},
   sources: {},
   styleText: {},
   templateRef: {
@@ -858,6 +989,89 @@ function afterRender(owner: object, run: () => unknown): void {
   registerDestructor: "",
   renderSettled: "",
   uniqueId: "",
+  toggle: `/** The values with \`value\` added when \`checked\`, and removed otherwise. */
+function toggle<T>(values: readonly T[], value: T, checked: boolean): T[] {
+  return checked ? values.concat([value]) : values.filter((each) => each !== value);
+}`,
+  modelText: `/**
+ * A modifier that binds a text field as Vue's \`vModelText\` does: it writes what the user types,
+ * trimmed or cast as \`looseToNumber\` casts it, on \`input\` or, when lazy, on \`change\`, and
+ * shows each new value of the state, except where the text already reads as it, or while the
+ * user types in a trimmed field what it reads as trimmed.
+ */
+const modelText = setModifierManager(
+  () => ({
+    capabilities: capabilities("3.22"),
+    createModifier: (): ModelTextState => ({ setValue: () => {} }),
+    installModifier(state: ModelTextState, element: Element, { positional, named }: ModelTextArgs) {
+      const field = element as HTMLInputElement | HTMLTextAreaElement;
+      state.field = field;
+      // A \`<textarea>\`'s text is its first value, for the server: in the browser it is the
+      // value, as Vue writes it, with the caret after it.
+      if (field instanceof HTMLTextAreaElement) {
+        const text = field.value;
+        field.textContent = "";
+        field.value = text;
+      }
+      state.setValue = positional[1];
+      const read = () => {
+        const text = named.trim ? field.value.trim() : field.value;
+        return named.number ? looseToNumber(text) : text;
+      };
+      field.addEventListener(named.lazy ? "change" : "input", () => state.setValue(read()));
+      if (named.trim || named.number) {
+        field.addEventListener("change", () => {
+          field.value = String(read());
+        });
+      }
+      show(field, positional[0], named);
+    },
+    updateModifier(state: ModelTextState, { positional, named }: ModelTextArgs) {
+      state.setValue = positional[1];
+      if (state.field) show(state.field, positional[0], named);
+    },
+    destroyModifier() {},
+  }),
+  {},
+) as unknown as ModifierLike<{
+  Element: HTMLInputElement | HTMLTextAreaElement;
+  Args: {
+    Positional: [value: unknown, setValue: (value: never) => void];
+    Named: { trim?: boolean; lazy?: boolean; number?: boolean };
+  };
+}>;
+
+/** What \`modelText\` keeps of its field. */
+interface ModelTextState {
+  field?: HTMLInputElement | HTMLTextAreaElement;
+  setValue: (value: unknown) => void;
+}
+
+/** What \`modelText\`'s manager is given. */
+interface ModelTextArgs {
+  positional: readonly [unknown, (value: unknown) => void];
+  named: { trim?: boolean; lazy?: boolean; number?: boolean };
+}
+
+/** A text as a number where it reads as one, as Vue's \`looseToNumber\` casts it. */
+function looseToNumber(text: string): string | number {
+  const number = Number.parseFloat(text);
+  return Number.isNaN(number) ? text : number;
+}
+
+/** Shows a state's value in a field, as \`vModelText\`'s update does. */
+function show(
+  field: HTMLInputElement | HTMLTextAreaElement,
+  value: unknown,
+  named: { trim?: boolean; number?: boolean },
+): void {
+  const next = value ?? "";
+  const shown = named.number && !/^0\\d/.test(field.value) ? looseToNumber(field.value) : field.value;
+  if (shown === next) return;
+  const typing = document.activeElement === field && field.type !== "range";
+  if (typing && named.trim && field.value.trim() === next) return;
+  field.value = String(next);
+}`,
   callbacks: `/** How many watchers' callbacks are to run once the current render is done. */
 const callbacks = { pending: 0 };`,
   sources: `/** An array of watch sources, typed as a tuple. */
