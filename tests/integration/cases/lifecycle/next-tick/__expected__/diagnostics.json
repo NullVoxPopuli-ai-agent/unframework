@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support next-tick: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "lifecycle/next-tick/ShippingDetails.uf.tsx",
-    "start": {
-      "line": 11,
-      "column": 11,
-      "offset": 339
-    },
-    "end": {
-      "line": 11,
-      "column": 19,
-      "offset": 347
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "lifecycle/next-tick/ShippingDetails.uf.tsx",

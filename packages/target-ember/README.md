@@ -65,7 +65,11 @@ an ARIA or enumerated attribute as its name, as Vue does, where Glimmer writes `
 attribute and leaves `false` out. `class-binding` goes through `classNames`, and `style-binding`
 through `styleText`, which marks the style safe with `htmlSafe`. `contextual-root` is native: a
 Glimmer component has no host element. `interactivity` and the listeners' options and semantics
-are native: `{{on}}` calls `addEventListener` on its element. Ids, `nextTick`, models, directives,
+are native: `{{on}}` calls `addEventListener` on its element. `use-id` is native: `useId()` is
+`uf-id-` and `uniqueId()` from `@ember/helper`. `next-tick` is native: `nextTick()` is
+`renderSettled()` from `@ember/renderer`, which resolves once the pending render has run, as
+Vue's resolves once its pending flush has. `keyed-identity` and `listbox` follow from Glimmer.
+Late props, models, directives,
 composition, composables, scoped styles and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain

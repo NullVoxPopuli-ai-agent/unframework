@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/rows/Menu.uf.tsx:24:49
    |
 24 |           <li key={item.id} data-name={item.id} v-trace={item.label}>

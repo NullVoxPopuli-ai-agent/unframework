@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support late-prop: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support late-prop: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> semantics/late-optional-prop/PageCount.uf.tsx:11:40
    |
 11 |   const label = computed(() => `Page ${page} of ${total}`);

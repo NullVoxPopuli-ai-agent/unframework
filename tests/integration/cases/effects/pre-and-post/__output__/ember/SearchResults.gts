@@ -1,0 +1,199 @@
+import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { isDestroying, registerDestructor } from "@ember/destroyable";
+import { capabilities, setModifierManager } from "@ember/modifier";
+import { renderSettled } from "@ember/renderer";
+import type { ModifierLike } from "@glint/template";
+
+export interface SearchResultsEvents {
+  onReady?: (text: string) => void;
+  onRendered?: (count: number) => void;
+  onShown?: (text: string) => void;
+}
+
+export interface SearchResultsSignature {
+  Args: SearchResultsEvents;
+  Element: HTMLElementTagNameMap["section"];
+}
+
+export default class SearchResults extends Component<SearchResultsSignature> {
+  addOne = async () => {
+    this.count += 1;
+    await renderSettled();
+    this.args.onShown?.(this.total?.textContent ?? "");
+  };
+
+  @tracked status = "Loading";
+
+  @tracked query = "";
+
+  @tracked results: string[] = [];
+
+  @tracked count = 0;
+
+  @tracked doubled = 0;
+
+  @tracked banner: HTMLParagraphElement | null = null;
+
+  @tracked list: HTMLUListElement | null = null;
+
+  @tracked total: HTMLOutputElement | null = null;
+
+  readonly watcher1 = new Watcher(
+    this,
+    () => this.query,
+    (value) => {
+      this.results = value === "" ? [] : [value, `${value} docs`];
+    },
+  );
+
+  readonly watcher2 = new Watcher(
+    this,
+    () => this.query,
+    () => {
+      this.args.onRendered?.(this.list?.childElementCount ?? -1);
+    },
+    { post: true },
+  );
+
+  readonly watcher3 = new Watcher(
+    this,
+    () => this.count,
+    (value) => {
+      this.doubled = value * 2;
+    },
+  );
+
+  #mounted = false;
+
+  /** Called at the template's end: the hooks run once the component has rendered. */
+  onMounted = (): undefined => {
+    if (!this.#mounted) {
+      this.#mounted = true;
+      afterRender(this, async () => {
+        this.status = "Ready";
+        await renderSettled();
+        this.args.onReady?.(this.banner?.textContent ?? "");
+      });
+    }
+    return undefined;
+  };
+
+  listener1 = (event: HTMLElementEventMap["input"]) =>
+    (this.query = (event.currentTarget as HTMLInputElement).value);
+
+  <template>{{(this.watcher1.flush)}}{{(this.watcher2.flush)}}{{(this.watcher3.flush)}}<section
+      class="search-results"
+      aria-label="Search"
+      ...attributes
+    ><p {{templateRef this "banner"}}>{{this.status}}</p><label>Query<input
+      name="query"
+      {{on "input" this.listener1}}
+    ></label><ul
+      {{templateRef this "list"}}
+      aria-label="Results"
+    >{{#each this.results key="@identity" as |result|}}<li>{{result}}</li>{{/each}}</ul><output
+      {{templateRef this "total"}}
+    >{{this.doubled}}</output><button type="button" {{on "click" this.addOne}}>Add one</button></section>{{(this.onMounted)}}</template>
+}
+
+/**
+ * Vue's `watch`: the template calls `flush` before anything else, so it sees a change of a
+ * source in the render that follows it, and the callback runs right after that render, or once
+ * the render settles for a `post` watcher. A cleanup the callback registers runs before its
+ * next run, and when the component is destroyed.
+ */
+class Watcher<T> {
+  readonly #owner: object;
+  readonly #source: () => T;
+  readonly #callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown;
+  readonly #options: { array?: boolean; immediate?: boolean; post?: boolean };
+  #started = false;
+  #value: T | undefined;
+  #cleanup: (() => void) | undefined;
+
+  constructor(
+    owner: object,
+    source: () => T,
+    callback: (value: T, previous: T, onCleanup: (cleanup: () => void) => void) => unknown,
+    options: { array?: boolean; immediate?: boolean; post?: boolean } = {},
+  ) {
+    this.#owner = owner;
+    this.#source = source;
+    this.#callback = callback;
+    this.#options = options;
+    registerDestructor(owner, () => this.#cleanup?.());
+  }
+
+  readonly flush = (): undefined => {
+    const value = this.#source();
+    const started = this.#started;
+    if (started && this.#same(value, this.#value as T)) return undefined;
+    const previous = (started ? this.#value : this.#options.array ? [] : undefined) as T;
+    this.#started = true;
+    this.#value = value;
+    if (!started && !this.#options.immediate) return undefined;
+    const run = () => {
+      const cleanup = this.#cleanup;
+      this.#cleanup = undefined;
+      cleanup?.();
+      void this.#callback(value, previous, (each) => {
+        this.#cleanup = each;
+      });
+    };
+    // The render that calls `flush` has read what the callback may write, so the callback
+    // runs right after it, or once the render settles for a `post` watcher.
+    const later = () => {
+      if (!isDestroying(this.#owner)) run();
+    };
+    if (this.#options.post) void renderSettled().then(later);
+    else {
+      callbacks.pending += 1;
+      queueMicrotask(() => {
+        callbacks.pending -= 1;
+        later();
+      });
+    }
+    return undefined;
+  };
+
+  #same(value: T, previous: T): boolean {
+    if (!this.#options.array) return Object.is(value, previous);
+    const values = value as unknown[];
+    const previousValues = previous as unknown[];
+    return values.every((each, index) => Object.is(each, previousValues[index]));
+  }
+}
+
+/** Runs `run` once the render settles, unless its component is gone by then. */
+function afterRender(owner: object, run: () => unknown): void {
+  void renderSettled().then(() => {
+    if (!isDestroying(owner)) void run();
+  });
+}
+
+/** How many watchers' callbacks are to run once the current render is done. */
+const callbacks = { pending: 0 };
+
+/** A modifier that sets a member of its component to its element while the element is rendered. */
+const templateRef = setModifierManager(
+  () => ({
+    capabilities: capabilities("3.22"),
+    createModifier: () => ({}),
+    installModifier(
+      _state: object,
+      element: Element,
+      { positional }: { positional: readonly unknown[] },
+    ) {
+      Reflect.set(positional[0] as object, positional[1] as string, element);
+    },
+    updateModifier() {},
+    destroyModifier(_state: object, { positional }: { positional: readonly unknown[] }) {
+      Reflect.set(positional[0] as object, positional[1] as string, null);
+    },
+  }),
+  {},
+) as unknown as ModifierLike<{
+  Element: Element;
+  Args: { Positional: [owner: object, name: string] };
+}>;

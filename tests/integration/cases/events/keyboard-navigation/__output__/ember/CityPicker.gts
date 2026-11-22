@@ -1,0 +1,156 @@
+import Component from "@glimmer/component";
+import { tracked } from "@glimmer/tracking";
+import { uniqueId } from "@ember/helper";
+
+export interface CityPickerProps {
+  cities: string[];
+}
+
+export interface CityPickerEvents {
+  onChose?: (city: string) => void;
+  onNoted?: (text: string) => void;
+}
+
+export interface CityPickerSignature {
+  Args: CityPickerProps & CityPickerEvents;
+  Element: HTMLElementTagNameMap["section"];
+}
+
+export default class CityPicker extends Component<CityPickerSignature> {
+  choose = (city: string) => {
+    this.chosen = city;
+    this.open = false;
+    this.active = -1;
+    this.args.onChose?.(city);
+  };
+
+  onCityKeydown = (event: KeyboardEvent) => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        this.open = true;
+        this.active = Math.min(this.active + 1, this.matches.length - 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        this.active = Math.max(this.active - 1, 0);
+        break;
+      case "Enter": {
+        event.preventDefault();
+        const city = this.matches[this.active];
+        if (this.open && city !== undefined) this.choose(city);
+        break;
+      }
+      case "Escape":
+        event.preventDefault();
+        this.open = false;
+        this.active = -1;
+        break;
+    }
+  };
+
+  onNoteKeydown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      const field = event.target as HTMLTextAreaElement;
+      this.notes = [...this.notes, field.value];
+      this.args.onNoted?.(field.value);
+      field.value = "";
+    }
+  };
+
+  readonly listId = `uf-id-${uniqueId()}`;
+
+  @tracked query = "";
+
+  @tracked open = false;
+
+  @tracked active = -1;
+
+  @tracked chosen = "";
+
+  @tracked notes: string[] = [];
+
+  get matches() {
+    return this.args.cities.filter((city) =>
+      city.toLowerCase().startsWith(this.query.toLowerCase()),
+    );
+  }
+
+  get value1() {
+    return this.open ? this.listId : undefined;
+  }
+
+  get value2() {
+    return this.open && this.active >= 0 ? `${this.listId}-${this.active}` : undefined;
+  }
+
+  listener1 = (event: HTMLElementEventMap["input"]) => {
+    this.query = (event.currentTarget as HTMLInputElement).value;
+    this.open = true;
+    this.active = -1;
+  };
+
+  listener2 = () => (this.open = false);
+
+  value3 = (index: number) => `${this.listId}-${index}`;
+
+  value4 = (index: number) => index === this.active;
+
+  listener3 = (event: HTMLElementEventMap["mousedown"]) => event.preventDefault();
+
+  listener4 = (city: NonNullable<this["matches"]>[number]) => () => this.choose(city);
+
+  listener5 = (event: HTMLElementEventMap["submit"]) => event.preventDefault();
+
+  get value5() {
+    return this.chosen === "" ? "No city chosen" : `Chosen: ${this.chosen}`;
+  }
+
+  <template><section
+      class="city-picker"
+      aria-label="Trip"
+      ...attributes
+    ><form
+      role="search"
+      aria-label="Destination"
+      {{on "submit" this.listener5}}
+    ><label>City<input
+      type="search"
+      name="city"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-controls={{this.value1}}
+      aria-expanded={{enumeratedValue this.open}}
+      aria-activedescendant={{this.value2}}
+      {{on "input" this.listener1}}
+      {{on "keydown" this.onCityKeydown}}
+      {{on "blur" this.listener2}}
+    ></label>{{#if this.open}}<div
+      id={{this.listId}}
+      role="listbox"
+      aria-label="Cities"
+    >{{#each this.matches key="@identity" as |city index|}}<button
+      type="button"
+      id={{this.value3 index}}
+      role="option"
+      tabindex="-1"
+      aria-selected={{enumeratedValue (this.value4 index)}}
+      {{on "mousedown" this.listener3}}
+      {{on "click" (this.listener4 city)}}
+    >{{city}}</button>{{/each}}</div>{{/if}}<button type="submit">Search</button></form><p
+      role="status"
+    >{{this.value5}}</p><label>Note<textarea
+      name="note"
+      {{on "keydown" this.onNoteKeydown}}
+    ></textarea></label><ul
+      aria-label="Notes"
+    >{{#each this.notes key="@index" as |note|}}<li>{{note}}</li>{{/each}}</ul></section></template>
+}
+
+/** An enumerated attribute's value: a boolean as its name, any other value as it is. */
+function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
+  return typeof value === "boolean"
+    ? (String(value) as "true" | "false")
+    : (value as Exclude<T, boolean>);
+}

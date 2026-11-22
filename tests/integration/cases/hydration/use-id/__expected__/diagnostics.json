@@ -2,23 +2,6 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "hydration/use-id/Field.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 3,
-      "offset": 260
-    },
-    "end": {
-      "line": 10,
-      "column": 27,
-      "offset": 284
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
     "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "hydration/use-id/Signup.uf.tsx",
     "start": {

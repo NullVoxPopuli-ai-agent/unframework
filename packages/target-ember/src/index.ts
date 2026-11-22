@@ -86,25 +86,21 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "event-passive",
   "event-semantics",
   "conditional-event-control",
+  // `uniqueId` from `@ember/helper`, once per `useId`.
+  "use-id",
+  // `renderSettled` from `@ember/renderer`, which resolves once the pending render has run.
+  "next-tick",
+  // `{{#each}}` keeps a keyed row's element, and a `<select>`'s `size` is set when the element
+  // opens, before its options.
+  "keyed-identity",
+  "listbox",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Ids, `nextTick`, models and directives are not emitted yet.",
-    names: [
-      "use-id",
-      "next-tick",
-      "late-prop",
-      "two-way-binding",
-      "model-array",
-      "model-modifiers",
-      "directive",
-      // `{{#each}}` keeps a keyed row's element, and `<select>` sets `size` before its options,
-      // but the cases that show it type or pick in the browser.
-      "keyed-identity",
-      "listbox",
-    ],
+    reason: "Late props, models and directives are not emitted yet.",
+    names: ["late-prop", "two-way-binding", "model-array", "model-modifiers", "directive"],
   },
   {
     reason:

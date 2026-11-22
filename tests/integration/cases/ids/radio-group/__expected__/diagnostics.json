@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "ids/radio-group/SizePicker.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 3,
-      "offset": 202
-    },
-    "end": {
-      "line": 9,
-      "column": 25,
-      "offset": 224
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "ids/radio-group/SizePicker.uf.tsx",

@@ -28,7 +28,7 @@ info[UF4001] (astro): The astro target does not support directive: A directive's
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support directive: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/fill-props/Page.uf.tsx:13:53
    |
 13 |             <span data-name={`option-${option.id}`} v-trace={option.label}>

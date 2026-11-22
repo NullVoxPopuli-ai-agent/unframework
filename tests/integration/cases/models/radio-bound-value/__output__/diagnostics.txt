@@ -6,7 +6,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support two-way-binding: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support two-way-binding: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> models/radio-bound-value/Delivery.uf.tsx:17:60
    |
 17 |             <input type="radio" name="speed" value={value} v-model={speed.value} /> {value}
@@ -14,7 +14,7 @@ error[UF4001] (ember): The ember target does not support two-way-binding: Ids, `
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support model-array: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model-array: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> models/radio-bound-value/Delivery.uf.tsx:25:50
    |
 25 |             <input type="checkbox" value={extra} v-model={chosen.value} /> {extra}

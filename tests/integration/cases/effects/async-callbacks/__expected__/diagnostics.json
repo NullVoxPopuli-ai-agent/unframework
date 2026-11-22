@@ -15,22 +15,5 @@
       "offset": 735
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support next-tick: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "effects/async-callbacks/Mailbox.uf.tsx",
-    "start": {
-      "line": 63,
-      "column": 11,
-      "offset": 1429
-    },
-    "end": {
-      "line": 63,
-      "column": 19,
-      "offset": 1437
-    },
-    "target": "ember"
   }
 ]

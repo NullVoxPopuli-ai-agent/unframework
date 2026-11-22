@@ -6,7 +6,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support model-modifiers: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model-modifiers: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> models/modifiers/Profile.uf.tsx:10:21
    |
 10 |         Name <input v-model_trim={name.value} />
@@ -14,7 +14,7 @@ error[UF4001] (ember): The ember target does not support model-modifiers: Ids, `
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support two-way-binding: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support two-way-binding: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> models/modifiers/Profile.uf.tsx:10:21
    |
 10 |         Name <input v-model_trim={name.value} />

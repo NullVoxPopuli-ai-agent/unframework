@@ -1,11 +1,3 @@
-error[UF4001] (ember): The ember target does not support use-id: Ids, `nextTick`, models and directives are not emitted yet. See uxfront-com/unframework#236.
- --> teleport/dialog/ConfirmDialog.uf.tsx:9:3
-  |
-9 |   const titleId = useId();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> teleport/dialog/ConfirmDialog.uf.tsx:13:3
    |

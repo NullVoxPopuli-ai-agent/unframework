@@ -103,6 +103,11 @@ class ComponentPlan {
     return {
       binding: (reference, binding) => this.#spell(reference, binding),
       import: (reference) => this.#local(reference.name),
+      // Vue's `nextTick` resolves once its pending flush has run: Ember's is `renderSettled`.
+      api: () => {
+        this.#helpers.add("renderSettled");
+        return "renderSettled";
+      },
       // A parent listens to an event through an argument, `@onChange`, as Ember passes actions.
       emit: (emit, _binding, parts) =>
         `this.args.${eventArgument(emit.event)}?.(${parts.arguments.join(", ")})`,
@@ -533,6 +538,11 @@ class ComponentPlan {
           const name = bindingName(component, item.binding);
           return `@tracked ${name}: ${item.type?.code ?? "Element"} | null = null;`;
         }
+        // `uniqueId` gives each call an id unique to the application, so each instance's differ.
+        case "Id": {
+          this.#helpers.add("uniqueId");
+          return `readonly ${bindingName(component, item.binding)} = \`uf-id-\${uniqueId()}\`;`;
+        }
         case "Watch": {
           this.#helpers.add("Watcher");
           this.#helpers.add("callbacks");
@@ -799,9 +809,11 @@ type HelperName =
   | "Effect"
   | "enumeratedValue"
   | "registerDestructor"
+  | "renderSettled"
   | "sources"
   | "styleText"
   | "templateRef"
+  | "uniqueId"
   | "Watcher";
 
 /** What each module helper imports from Ember, by module: a `type ` name is a type. */
@@ -815,6 +827,8 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   },
   enumeratedValue: {},
   registerDestructor: { "@ember/destroyable": ["registerDestructor"] },
+  renderSettled: { "@ember/renderer": ["renderSettled"] },
+  uniqueId: { "@ember/helper": ["uniqueId"] },
   sources: {},
   styleText: {},
   templateRef: {
@@ -836,6 +850,8 @@ function afterRender(owner: object, run: () => unknown): void {
   });
 }`,
   registerDestructor: "",
+  renderSettled: "",
+  uniqueId: "",
   callbacks: `/** How many watchers' callbacks are to run once the current render is done. */
 const callbacks = { pending: 0 };`,
   sources: `/** An array of watch sources, typed as a tuple. */
