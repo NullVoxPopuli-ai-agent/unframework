@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support directive: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/shapes/Profile.uf.tsx:37:24
    |
 37 |       {user.value ? <p v-mark={user.value.name}>{user.value.name}</p> : null}
@@ -14,7 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support two-way-binding: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support two-way-binding: Models and directives are not emitted yet. See uxfront-com/unframework#236.
   --> directives/shapes/Profile.uf.tsx:41:35
    |
 41 |       <textarea aria-label="Note" v-model={note.value} v-mark={note.value} v-selectable={true} />

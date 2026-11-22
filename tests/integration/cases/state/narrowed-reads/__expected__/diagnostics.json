@@ -1,8 +1,8 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support late-prop: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "severity": "warning",
+    "message": "The ember target does not support late-prop: An Ember parent names each argument in its template, so it never adds one after mount, and the target does not make a component follow one that appears later: a parent that would add an argument late passes it from the start, `undefined` while it has no value.",
     "file": "state/narrowed-reads/TeamInvite.uf.tsx",
     "start": {
       "line": 31,

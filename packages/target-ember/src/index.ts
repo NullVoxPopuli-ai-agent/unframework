@@ -23,6 +23,20 @@ function notYet(reason: string): CapabilityCell {
 
 const NATIVE: CapabilityCell = { support: "native" };
 
+/**
+ * The cells the target leaves unsupported by design, as warnings: the component compiles, and
+ * only what the cell names behaves differently.
+ */
+const BY_DESIGN: Partial<Record<CapabilityName, CapabilityCell>> = {
+  "late-prop": {
+    support: "unsupported",
+    code: "UF4001",
+    severity: "warning",
+    reason:
+      "An Ember parent names each argument in its template, so it never adds one after mount, and the target does not make a component follow one that appears later: a parent that would add an argument late passes it from the start, `undefined` while it has no value.",
+  },
+};
+
 /** The cells whose feature the output builds with an inline helper, by capability. */
 const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
   // Glimmer writes `true` as an empty attribute and leaves `false` out, where Vue writes an
@@ -99,8 +113,8 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Late props, models and directives are not emitted yet.",
-    names: ["late-prop", "two-way-binding", "model-array", "model-modifiers", "directive"],
+    reason: "Models and directives are not emitted yet.",
+    names: ["two-way-binding", "model-array", "model-modifiers", "directive"],
   },
   {
     reason:
@@ -151,7 +165,7 @@ function reasonFor(name: CapabilityName): string {
 const CAPABILITIES = Object.fromEntries(
   CAPABILITY_NAMES.map((name) => [
     name,
-    EMULATED[name] ?? (SUPPORTED.has(name) ? NATIVE : notYet(reasonFor(name))),
+    BY_DESIGN[name] ?? EMULATED[name] ?? (SUPPORTED.has(name) ? NATIVE : notYet(reasonFor(name))),
   ]),
 ) as Capabilities;
 
@@ -167,7 +181,7 @@ function emits(module: UfModule): boolean {
   if (known === undefined) {
     known = true;
     for (const name of requiredCapabilities(module).keys()) {
-      if (!SUPPORTED.has(name)) known = false;
+      if (!SUPPORTED.has(name) && !(name in BY_DESIGN)) known = false;
     }
     supported.set(module, known);
   }

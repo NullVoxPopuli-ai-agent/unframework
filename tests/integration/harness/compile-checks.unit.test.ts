@@ -91,7 +91,7 @@ describe("checkFixes (L1)", () => {
     expect(diagnostics.map(({ code, fixes }) => [code, fixes?.length])).toEqual([["UF2007", 1]]);
     const after = await recompile(applyFixes(snapshot, diagnostics[0]!.fixes!));
     expect(after.map(({ code, severity, target }) => [code, severity, target])).toEqual([
-      ["UF4001", "error", "ember"],
+      ["UF4001", "warning", "ember"],
       ["UF4001", "warning", "qwik"],
     ]);
     for (const target of TARGET_NAMES) {

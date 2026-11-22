@@ -69,7 +69,8 @@ are native: `{{on}}` calls `addEventListener` on its element. `use-id` is native
 `uf-id-` and `uniqueId()` from `@ember/helper`. `next-tick` is native: `nextTick()` is
 `renderSettled()` from `@ember/renderer`, which resolves once the pending render has run, as
 Vue's resolves once its pending flush has. `keyed-identity` and `listbox` follow from Glimmer.
-Late props, models, directives,
+`late-prop` is unsupported by design, as a warning: an Ember parent names each argument in its
+template, so it passes every argument from the start. Models, directives,
 composition, composables, scoped styles and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain

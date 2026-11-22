@@ -19,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support directive: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/order/Note.uf.tsx",
     "start": {
       "line": 6,
@@ -36,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support directive: Late props, models and directives are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support directive: Models and directives are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/order/Tree.uf.tsx",
     "start": {
       "line": 23,
