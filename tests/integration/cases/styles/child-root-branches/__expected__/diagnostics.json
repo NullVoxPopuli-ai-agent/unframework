@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/child-root-branches/Heading.uf.tsx",
     "start": {
       "line": 5,
@@ -71,23 +71,6 @@
     "code": "UF4001",
     "severity": "error",
     "message": "The ember target does not support child-root-scope: A child's root and slot content do not take a parent's scope yet. See uxfront-com/unframework#236.",
-    "file": "styles/child-root-branches/Panel.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 7,
-      "offset": 180
-    },
-    "end": {
-      "line": 8,
-      "column": 44,
-      "offset": 217
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/child-root-branches/Panel.uf.tsx",
     "start": {
       "line": 8,

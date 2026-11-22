@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/presence/Card.uf.tsx",
     "start": {
       "line": 8,
@@ -36,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot-presence: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot-presence: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/presence/Card.uf.tsx",
     "start": {
       "line": 9,
@@ -70,7 +70,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/presence/Card.uf.tsx",
     "start": {
       "line": 9,
@@ -87,24 +87,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "slots/presence/Cards.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 110
-    },
-    "end": {
-      "line": 8,
-      "column": 14,
-      "offset": 221
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/presence/Cards.uf.tsx",
     "start": {
       "line": 7,
@@ -121,7 +104,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/presence/Cards.uf.tsx",
     "start": {
       "line": 7,

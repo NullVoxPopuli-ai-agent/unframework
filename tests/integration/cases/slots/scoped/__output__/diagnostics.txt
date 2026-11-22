@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> slots/scoped/List.uf.tsx:9:24
   |
 9 |         <li key={item}>{slots.item?.({ item, index })}</li>
@@ -6,18 +6,7 @@ error[UF4001] (ember): The ember target does not support scoped-slot: Child comp
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> slots/scoped/Ranking.uf.tsx:6:7
-   |
- 6 |       <List items={names} label="Podium">
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-14 |       </List>
-   | ^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> slots/scoped/Ranking.uf.tsx:8:11
    |
  8 |           item: ({ item, index }) => (

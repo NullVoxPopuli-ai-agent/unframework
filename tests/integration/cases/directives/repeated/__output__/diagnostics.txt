@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Choice.uf.tsx:11:25
    |
 11 |       {first.value ? <b>{slots.body?.()}</b> : <i>{slots.body?.()}</i>}
@@ -14,7 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/List.uf.tsx:11:24
    |
 11 |         <li key={item}>{slots.item?.({ item })}</li>
@@ -22,18 +22,7 @@ error[UF4001] (ember): The ember target does not support scoped-slot: Child comp
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Page.uf.tsx:18:7
-   |
-18 |       <Wrapper>
-   |       ^^^^^^^^^
-   | ...
-26 |       </Wrapper>
-   | ^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Page.uf.tsx:20:11
    |
 20 |           row: () => (
@@ -52,7 +41,7 @@ error[UF4001] (ember): The ember target does not support directive: Directives a
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Page.uf.tsx:38:11
    |
 38 |           item: ({ item }) => (
@@ -71,7 +60,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Rows.uf.tsx:13:26
    |
 13 |           <li key={item}>{slots.row?.()}</li>
@@ -87,15 +76,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/repeated/Wrapper.uf.tsx:12:7
-   |
-12 |       <Rows>{{ row: slots.row }}</Rows>
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Wrapper.uf.tsx:12:16
    |
 12 |       <Rows>{{ row: slots.row }}</Rows>
@@ -103,7 +84,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-forwarding: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-forwarding: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/repeated/Wrapper.uf.tsx:12:16
    |
 12 |       <Rows>{{ row: slots.row }}</Rows>

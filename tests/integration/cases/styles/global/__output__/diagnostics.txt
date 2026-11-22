@@ -29,11 +29,3 @@ error[UF4001] (ember): The ember target does not support child-root-scope: A chi
   |       ^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> styles/global/Banner.uf.tsx:7:7
-  |
-7 |       <Hint text={tip} />
-  |       ^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

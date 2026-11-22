@@ -1,7 +1,0 @@
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> components/recursion/Countdown.uf.tsx:6:19
-  |
-6 |       {from > 0 ? <Countdown from={from - 1} /> : <strong>Liftoff</strong>}
-  |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

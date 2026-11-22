@@ -32,22 +32,5 @@
       "offset": 285
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "sourcemaps/mounted-throws/ReportPanel.uf.tsx",
-    "start": {
-      "line": 17,
-      "column": 21,
-      "offset": 346
-    },
-    "end": {
-      "line": 17,
-      "column": 30,
-      "offset": 355
-    },
-    "target": "ember"
   }
 ]

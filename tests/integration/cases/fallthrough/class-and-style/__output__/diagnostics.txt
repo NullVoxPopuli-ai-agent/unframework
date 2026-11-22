@@ -1,12 +1,4 @@
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> fallthrough/class-and-style/Tags.uf.tsx:9:7
-  |
-9 |       <Tag label="plain" />
-  |       ^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support fallthrough: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/class-and-style/Tags.uf.tsx:10:25
    |
 10 |       <Tag label="wide" class="wide" style="margin-left: 8px" />

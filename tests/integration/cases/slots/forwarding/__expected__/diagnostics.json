@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Box.uf.tsx",
     "start": {
       "line": 8,
@@ -19,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support slot-fallback: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support slot-fallback: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Box.uf.tsx",
     "start": {
       "line": 8,
@@ -36,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Box.uf.tsx",
     "start": {
       "line": 9,
@@ -53,24 +53,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "slots/forwarding/Frame.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 7,
-      "offset": 340
-    },
-    "end": {
-      "line": 10,
-      "column": 66,
-      "offset": 399
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
       "line": 10,
@@ -104,7 +87,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot-presence: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot-presence: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
       "line": 10,
@@ -121,7 +104,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
       "line": 10,
@@ -138,7 +121,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support slot-forwarding: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support slot-forwarding: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
       "line": 10,
@@ -172,24 +155,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "slots/forwarding/Gallery.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 100
-    },
-    "end": {
-      "line": 8,
-      "column": 15,
-      "offset": 214
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Gallery.uf.tsx",
     "start": {
       "line": 7,
@@ -206,7 +172,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "slots/forwarding/Gallery.uf.tsx",
     "start": {
       "line": 7,

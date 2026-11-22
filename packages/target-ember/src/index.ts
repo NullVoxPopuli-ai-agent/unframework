@@ -129,6 +129,9 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "two-way-binding",
   "model-array",
   "model-modifiers",
+  // A child is its output's component, which the template's lexical scope holds.
+  "component",
+  "component-event",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -138,11 +141,8 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: ["directive"],
   },
   {
-    reason:
-      "Child components, slots, models, context and the built-in components are not emitted yet.",
+    reason: "Slots, component models, context and the built-in components are not emitted yet.",
     names: [
-      "component",
-      "component-event",
       "default-slot",
       "named-slot",
       "scoped-slot",

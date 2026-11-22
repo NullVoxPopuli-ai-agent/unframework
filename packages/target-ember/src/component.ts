@@ -5,6 +5,7 @@
 // reads (`{{this.label item}}`).
 import {
   addTypeImports,
+  childImports,
   componentTypes,
   exportsOf,
   expressionNames,
@@ -20,17 +21,25 @@ import {
   typeDeclarationCode,
   typeExportsCode,
 } from "@unframework.dev/codegen";
-import type { ClassPart, EmitContext, RewriteRules, StylePart } from "@unframework.dev/codegen";
+import type {
+  ChildImport,
+  ClassPart,
+  EmitContext,
+  RewriteRules,
+  StylePart,
+} from "@unframework.dev/codegen";
 import { js } from "@unframework.dev/codegen";
 import type {
   Binding,
   BindingReference,
+  ComponentNode,
   ElementNode,
   EventAttribute,
   Expression,
   FunctionCode,
   IfBranch,
   IfNode,
+  ListenerAttribute,
   ModelAttribute,
   Prop,
   TypeDeclaration,
@@ -88,6 +97,10 @@ class ComponentPlan {
   get #hasEffects(): boolean {
     return this.#component.setup.some((item) => item.kind === "WatchEffect");
   }
+  /** The children the template renders, by the name it writes them with. */
+  readonly #children: ReadonlyMap<string, ChildImport>;
+  /** The events interface of each child an inline handler listens to, by the child's name. */
+  readonly #eventTypes = new Map<string, { specifier: string; name: string; self: boolean }>();
   /** The tags the template writes. */
   readonly #tags: ReadonlySet<string>;
   /** Each node of the template, branch included, by what holds it. */
@@ -98,6 +111,9 @@ class ComponentPlan {
     this.#parents = parentsOf(component.render);
     this.#tags = tagsOf(component.render);
     this.#module = module;
+    this.#children = new Map(
+      childImports(component, module, (name) => `${name}.gts`).map((each) => [each.local, each]),
+    );
   }
 
   /** How the class spells a reference to a binding: the same for every site. */
@@ -277,7 +293,7 @@ class ComponentPlan {
    * code. `subexpression` writes a member call in parentheses, where Glimmer takes a value
    * (`{{#if (this.open item)}}`), and bare where a mustache calls it (`{{this.label item}}`).
    */
-  value(code: string, subexpression: boolean, at?: object): string {
+  value(code: string, subexpression: boolean, at?: object, typed = false): string {
     const literal = glimmerLiteral(code);
     if (literal !== undefined) return literal;
     const conditions = this.#conditions(code, at);
@@ -285,8 +301,11 @@ class ComponentPlan {
     // Glint narrows a path under `{{#if}}` of a path, as TypeScript narrows the source; under any
     // other condition, a member reads the path under that condition.
     if (path !== undefined && conditions.every((each) => this.#narrowsAsPath(each))) return path;
+    // Where a type checks the value, a child's argument, the other side is never read: the
+    // branch holds wherever the template reads it.
+    const otherwise = typed ? "(undefined as never)" : "undefined";
     const guarded = conditions.length
-      ? `${conditions.map((each) => `(${each})`).join(" && ")} ? ${code} : undefined`
+      ? `${conditions.map((each) => `(${each})`).join(" && ")} ? ${code} : ${otherwise}`
       : code;
     const { name, parameters } = this.#hoist(guarded, "value", at);
     if (!parameters.length) return `this.${name}`;
@@ -403,6 +422,36 @@ class ComponentPlan {
     const { handler } = attribute;
     if (handler.kind === "Function") return `this.${bindingName(this.#component, handler.binding)}`;
     const fn = typedEvent(handler.function, `HTMLElementEventMap["${attribute.event}"]`);
+    return this.#inline(fn, at);
+  }
+
+  /**
+   * The handler of a child's event (ADR-0053): the setup function it names, or a member that
+   * holds the inline one, its parameters typed by the child's events (`FieldEvents`).
+   */
+  componentListener(attribute: ListenerAttribute, node: ComponentNode): string {
+    const { handler } = attribute;
+    if (handler.kind === "Function") return `this.${bindingName(this.#component, handler.binding)}`;
+    const child = this.#children.get(node.component);
+    if (!child) throw new Error(`No output imports \`${node.component}\`.`);
+    const events = `${child.name}Events`;
+    this.#eventTypes.set(child.local, {
+      specifier: child.specifier,
+      name: events,
+      self: child.self,
+    });
+    return this.#inline(
+      handler.function,
+      node,
+      `NonNullable<${events}["${eventArgument(attribute.event)}"]>`,
+    );
+  }
+
+  /**
+   * A member that holds an inline handler, called with the row variables it reads. `type`
+   * types its parameters, through \`satisfies\`, where the source leaves them to the context.
+   */
+  #inline(fn: FunctionCode, at: object, type?: string): string {
     let code = functionText(fn, this.#component, this.rules, "client");
     // The branches around the listener narrow what it reads in the source, which a field does
     // not: it tests them again, as they hold whenever its element is rendered.
@@ -412,9 +461,8 @@ class ComponentPlan {
       const test = conditions.map((each) => `(${each})`).join(" && ");
       code = `${fn.async ? "async " : ""}(${parametersText(fn)}) => {\n  if (!(${test})) return;\n${indent(body)}\n}`;
     }
-    const own = new Set(
-      handler.function.parameters.flatMap((each) => each.name ?? each.pattern?.names ?? []),
-    );
+    if (type !== undefined) code = `(${code}) satisfies ${type}`;
+    const own = new Set(fn.parameters.flatMap((each) => each.name ?? each.pattern?.names ?? []));
     const { name, parameters } = this.#hoist(code, "listener", at, own);
     if (!parameters.length) return `this.${name}`;
     return `(this.${name} ${parameters.map((each) => each.name).join(" ")})`;
@@ -545,6 +593,16 @@ class ComponentPlan {
     const imports = new ImportSet(module.components.map((each) => each.name));
     addTypeImports(component, module, imports, (name) => `${name}.gts`);
     const reads = moduleReads(component, module, imports);
+    // Each child's output, a sibling `.gts` file, under the source's name (ADR-0053).
+    for (const child of this.#children.values()) {
+      if (child.self) continue;
+      if (child.export === "default")
+        imports.addDefault(child.specifier, child.local, { exact: true });
+      else imports.add(child.specifier, child.name, { local: child.local, exact: true });
+    }
+    for (const { specifier, name, self } of this.#eventTypes.values()) {
+      if (!self) imports.add(specifier, name, { type: true, exact: true });
+    }
     for (const { specifier, names } of passThroughImports(component, module)) {
       if (!names.length) imports.addPassThrough(specifier);
       for (const { imported, local } of names) {

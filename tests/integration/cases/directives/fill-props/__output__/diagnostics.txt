@@ -1,15 +1,4 @@
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/fill-props/Page.uf.tsx:10:7
-   |
-10 |       <Picker>
-   |       ^^^^^^^^
-   | ...
-18 |       </Picker>
-   | ^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/fill-props/Page.uf.tsx:12:11
    |
 12 |           option: ({ option }) => (
@@ -36,7 +25,7 @@ error[UF4001] (ember): The ember target does not support directive: Directives a
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/fill-props/Picker.uf.tsx:19:31
    |
 19 |           <li key={option.id}>{slots.option?.({ option })}</li>

@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> dynamic/forwarding/Card.uf.tsx:8:11
   |
 8 |       <h3>{slots.title?.() ?? "Untitled"}</h3>
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-fallback: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-fallback: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> dynamic/forwarding/Card.uf.tsx:8:11
   |
 8 |       <h3>{slots.title?.() ?? "Untitled"}</h3>
@@ -14,7 +14,7 @@ error[UF4001] (ember): The ember target does not support slot-fallback: Child co
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> dynamic/forwarding/Frame.uf.tsx:11:7
    |
 11 |       <component is={wide ? Panel : Card}>{{ title: slots.title }}</component>
@@ -22,7 +22,7 @@ error[UF4001] (ember): The ember target does not support dynamic-component: Chil
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> dynamic/forwarding/Frame.uf.tsx:11:46
    |
 11 |       <component is={wide ? Panel : Card}>{{ title: slots.title }}</component>
@@ -30,7 +30,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-forwarding: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-forwarding: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> dynamic/forwarding/Frame.uf.tsx:11:46
    |
 11 |       <component is={wide ? Panel : Card}>{{ title: slots.title }}</component>
@@ -38,18 +38,7 @@ error[UF4001] (ember): The ember target does not support slot-forwarding: Child 
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> dynamic/forwarding/Gallery.uf.tsx:6:7
-  |
-6 |       <Frame label="Card" wide={false}>
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  | ...
-8 |       </Frame>
-  | ^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> dynamic/forwarding/Gallery.uf.tsx:7:12
   |
 7 |         {{ title: () => <>Sunset</> }}
@@ -57,7 +46,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> dynamic/forwarding/Panel.uf.tsx:8:11
   |
 8 |       <h4>{slots.title?.() ?? "Untitled"}</h4>
@@ -65,7 +54,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-fallback: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-fallback: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> dynamic/forwarding/Panel.uf.tsx:8:11
   |
 8 |       <h4>{slots.title?.() ?? "Untitled"}</h4>

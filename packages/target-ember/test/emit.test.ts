@@ -166,11 +166,9 @@ describe("ember target", () => {
 
   it("emits nothing for a module that needs a capability it does not emit yet", async () => {
     const { codes, files } = await emberOf(`
-      function Badge() {
-        return <b>Hi</b>;
-      }
+      import { Teleport } from "@uxfront/unframework";
       export default function Card() {
-        return <p><Badge /></p>;
+        return <p><Teleport to="body"><b>Hi</b></Teleport></p>;
       }
     `);
     expect(codes).toEqual(["UF4001 error"]);

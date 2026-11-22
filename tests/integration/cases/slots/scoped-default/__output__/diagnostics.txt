@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> slots/scoped-default/Names.uf.tsx:9:24
   |
 9 |         <li key={item}>{slots.default?.({ item })}</li>
@@ -6,15 +6,7 @@ error[UF4001] (ember): The ember target does not support scoped-slot: Child comp
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> slots/scoped-default/Roster.uf.tsx:4:10
-  |
-4 |   return <Names names={names}>{{ default: ({ item }) => <b>{item}!</b> }}</Names>;
-  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> slots/scoped-default/Roster.uf.tsx:4:34
   |
 4 |   return <Names names={names}>{{ default: ({ item }) => <b>{item}!</b> }}</Names>;

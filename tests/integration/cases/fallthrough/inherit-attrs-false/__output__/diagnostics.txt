@@ -1,7 +1,0 @@
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
- --> fallthrough/inherit-attrs-false/Form.uf.tsx:6:7
-  |
-6 |       <Field label="Email" />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

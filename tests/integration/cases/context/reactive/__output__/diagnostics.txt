@@ -6,19 +6,11 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> context/reactive/Counter.uf.tsx:10:3
    |
 10 |   provide(CountKey, count);
    |   ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> context/reactive/Counter.uf.tsx:13:7
-   |
-13 |       <Display />
-   |       ^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
@@ -38,7 +30,7 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> context/reactive/Display.uf.tsx:7:3
   |
 7 |   const count = inject(CountKey, none);

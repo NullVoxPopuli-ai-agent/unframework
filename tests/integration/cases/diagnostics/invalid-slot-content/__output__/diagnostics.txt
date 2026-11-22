@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support named-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support named-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> diagnostics/invalid-slot-content/Page.uf.tsx:10:11
    |
 10 |       <h1>{slots.title?.()}</h1>
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support named-slot: Child compo
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> diagnostics/invalid-slot-content/Page.uf.tsx:11:7
    |
 11 |       {slots.default?.()}

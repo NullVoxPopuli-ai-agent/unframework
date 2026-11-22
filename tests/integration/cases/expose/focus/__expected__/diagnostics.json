@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "expose/focus/Header.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 239
-    },
-    "end": {
-      "line": 9,
-      "column": 48,
-      "offset": 280
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "expose/focus/Header.uf.tsx",
@@ -36,7 +19,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support expose: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "expose/focus/Header.uf.tsx",
     "start": {
       "line": 9,
@@ -53,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support expose: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support expose: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "expose/focus/SearchField.uf.tsx",
     "start": {
       "line": 8,

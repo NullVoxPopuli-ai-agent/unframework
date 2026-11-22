@@ -75,8 +75,10 @@ template, so it passes every argument from the start. `scoped-styles` and `sheet
 `two-way-binding`, `model-array` and `model-modifiers` are emulated: a `v-model` is the control's
 property and a listener, `toggle` adds or removes a checkbox group's value, and an inline
 modifier, `modelText`, follows Vue's `vModelText` for modifiers, number fields and `<textarea>`s.
-Directives, composition, composables, a child's scope and hydration are unsupported for now
-(`src/index.ts`).
+`component` and `component-event` are native: a child is its output's component, imported under
+the source's name, its props are its arguments (`@label="Name"`), and a listener of its `clear`
+event is `@onClear`. Directives, slots, context, composables, a child's scope and hydration are
+unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

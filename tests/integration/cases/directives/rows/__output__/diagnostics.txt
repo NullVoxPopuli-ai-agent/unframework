@@ -14,18 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> directives/rows/Menu.uf.tsx:66:7
-   |
-66 |       <Picker>
-   |       ^^^^^^^^
-   | ...
-74 |       </Picker>
-   | ^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/rows/Menu.uf.tsx:68:11
    |
 68 |           option: ({ option }) => (
@@ -36,7 +25,7 @@ error[UF4001] (ember): The ember target does not support scoped-slot: Child comp
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support scoped-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support scoped-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> directives/rows/Picker.uf.tsx:19:31
    |
 19 |           <li key={option.id}>{slots.option?.({ option })}</li>

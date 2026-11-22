@@ -6,14 +6,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> teleport/components/Board.uf.tsx:28:9
-   |
-28 |         <Tip key={row.id} label={row.label} />
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>` renders nothing on Astro: components render on the server only, and nothing runs in the browser.
   --> teleport/components/Board.uf.tsx:31:9
    |
@@ -25,7 +17,7 @@ info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>`
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support teleport: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/components/Board.uf.tsx:31:9
    |
 31 |         <Teleport to="body">
@@ -36,7 +28,7 @@ error[UF4001] (ember): The ember target does not support teleport: Child compone
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/components/Board.uf.tsx:38:9
    |
 38 |         <Teleport to="body">
@@ -55,7 +47,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/components/Card.uf.tsx:12:40
    |
 12 |       {open.value && <div class="body">{slots.default?.()}</div>}
@@ -74,7 +66,7 @@ info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>`
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support teleport: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/components/Tip.uf.tsx:9:5
    |
  9 |     <Teleport to="body">

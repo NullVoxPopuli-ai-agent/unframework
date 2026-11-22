@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Base.uf.tsx:21:5
    |
 21 |     <component
@@ -55,18 +55,7 @@ error[UF4001] (ember): The ember target does not support child-root-scope: A chi
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Page.uf.tsx:17:7
-   |
-17 |       <Primary
-   |       ^^^^^^^^
-   | ...
-24 |       />
-   | ^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support fallthrough: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Page.uf.tsx:21:9
    |
 21 |         class="wide"
@@ -82,15 +71,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Page.uf.tsx:23:9
-   |
-23 |         onPress={() => (pressed.value = "docs")}
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Page.uf.tsx:35:13
    |
 35 |             <component
@@ -101,18 +82,7 @@ error[UF4001] (ember): The ember target does not support dynamic-component: Chil
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Primary.uf.tsx:17:5
-   |
-17 |     <Base
-   |     ^^^^^
-   | ...
-23 |     />
-   | ^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support fallthrough: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support fallthrough: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Primary.uf.tsx:21:7
    |
 21 |       class="primary"
@@ -121,14 +91,6 @@ error[UF4001] (ember): The ember target does not support fallthrough: Child comp
    = see: https://unframework.dev/diagnostics/UF4001
 
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
-  --> fallthrough/dynamic-root/Primary.uf.tsx:22:7
-   |
-22 |       onPress={() => emit("press")}
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> fallthrough/dynamic-root/Primary.uf.tsx:22:7
    |
 22 |       onPress={() => emit("press")}

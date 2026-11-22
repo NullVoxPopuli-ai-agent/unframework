@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "components/list-rows/Tasks.uf.tsx",
-    "start": {
-      "line": 26,
-      "column": 11,
-      "offset": 636
-    },
-    "end": {
-      "line": 26,
-      "column": 66,
-      "offset": 691
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "components/list-rows/Tasks.uf.tsx",

@@ -11,11 +11,17 @@ import {
   staticStyleValue,
 } from "@unframework.dev/codegen";
 import type { MarkupDialect, TextPosition } from "@unframework.dev/codegen";
-import type { ElementNode, EventAttribute, ModelAttribute } from "@unframework.dev/ir";
+import type {
+  ComponentNode,
+  ElementNode,
+  EventAttribute,
+  ListenerAttribute,
+  ModelAttribute,
+} from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
 export interface DialectHost {
-  value(code: string, subexpression: boolean, at?: object): string;
+  value(code: string, subexpression: boolean, at?: object, typed?: boolean): string;
   row(source: string, item: string, index: string | undefined, at: object): string;
   classCode(parts: Parameters<MarkupDialect["classAttribute"]>[0]): string;
   styleCode(parts: Parameters<MarkupDialect["styleAttribute"]>[0]): string;
@@ -33,6 +39,8 @@ export interface DialectHost {
   optionSelected(element: ElementNode, value: string): string;
   /** A `<textarea>`'s text: its state's first value, which `modelText` makes its value. */
   modelContent(value: string): string;
+  /** The handler of a child's event, which its `@onChange` argument takes. */
+  componentListener(attribute: ListenerAttribute, node: ComponentNode): string;
   /** The modifier that holds an element in a template ref's member. */
   templateRef(name: string): string;
   /** The handler a listener's `{{on}}` takes: a member, or a call of one with row variables. */
@@ -196,8 +204,21 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     },
     refAttribute: ({ name }) => [{ name: "ref", text: host.templateRef(name) }],
     directiveAttribute: () => [],
-    propAttribute: () => [],
-    componentEvent: () => [],
+    // A child's props and events are its arguments (ADR-0053): `@label="Name"`,
+    // `@count={{this.total}}`, and `@onClear={{this.reset}}` for its `clear` event.
+    propAttribute: ({ name, code, literal }, { component }) => [
+      {
+        name: `@${name}`,
+        text:
+          literal !== undefined
+            ? `@${name}="${attributeValue(literal)}"`
+            : `@${name}={{${host.value(code, false, component, true)}}}`,
+      },
+    ],
+    componentEvent: ({ attribute }, { component }) => {
+      const name = `@on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`;
+      return [{ name, text: `${name}={{${host.componentListener(attribute, component)}}}` }];
+    },
     // Ember's server writes a `<textarea>`'s `value` as an attribute: its text is the state's
     // first value, as Vue's server renders it, and `modelText` writes the property in the browser.
     modelContent: ({ value }) => host.modelContent(value),
@@ -209,7 +230,6 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     dynamic: () => [],
     teleport: () => [],
     transition: () => [],
-    component: () => [],
     rawHtmlContent: (code) => host.rawHtml(code),
   };
 }

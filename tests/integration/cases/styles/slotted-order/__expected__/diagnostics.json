@@ -36,7 +36,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/slotted-order/Amber.uf.tsx",
     "start": {
       "line": 7,
@@ -87,7 +87,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/slotted-order/Blue.uf.tsx",
     "start": {
       "line": 7,
@@ -104,24 +104,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "styles/slotted-order/Shelf.uf.tsx",
-    "start": {
-      "line": 14,
-      "column": 7,
-      "offset": 482
-    },
-    "end": {
-      "line": 16,
-      "column": 14,
-      "offset": 541
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/slotted-order/Shelf.uf.tsx",
     "start": {
       "line": 15,
@@ -155,7 +138,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support dynamic-component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support dynamic-component: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "styles/slotted-order/Shelf.uf.tsx",
     "start": {
       "line": 22,

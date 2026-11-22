@@ -28,7 +28,7 @@ info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>`
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support teleport: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support teleport: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/dialog/Files.uf.tsx:25:9
    |
 25 |         <Teleport to="body">
@@ -36,24 +36,5 @@ error[UF4001] (ember): The ember target does not support teleport: Child compone
    | ...
 33 |         </Teleport>
    | ^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> teleport/dialog/Files.uf.tsx:27:13
-   |
-27 |             <ConfirmDialog
-   |             ^^^^^^^^^^^^^^
-   | ...
-31 |             />
-   | ^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support component-event: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> teleport/dialog/Files.uf.tsx:29:15
-   |
-29 |               onConfirm={confirm}
-   |               ^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001

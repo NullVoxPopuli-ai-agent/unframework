@@ -6,7 +6,7 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support context: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support context: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> context/nested/Level.uf.tsx:8:3
   |
 8 |   const depth = inject(DepthKey, 0);
@@ -14,7 +14,7 @@ error[UF4001] (ember): The ember target does not support context: Child componen
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> context/nested/Level.uf.tsx:15:7
    |
 15 |       {slots.default?.()}
@@ -22,18 +22,7 @@ error[UF4001] (ember): The ember target does not support default-slot: Child com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> context/nested/Outline.uf.tsx:5:5
-   |
- 5 |     <Level title="Book">
-   |     ^^^^^^^^^^^^^^^^^^^^
-   | ...
-10 |     </Level>
-   | ^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> context/nested/Outline.uf.tsx:6:7
   |
 6 |       <Level title="Part">

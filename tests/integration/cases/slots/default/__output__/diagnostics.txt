@@ -1,15 +1,4 @@
-error[UF4001] (ember): The ember target does not support component: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> slots/default/Greeting.uf.tsx:5:5
-   |
- 5 |     <Panel title="Welcome">
-   |     ^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-10 |     </Panel>
-   | ^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> slots/default/Greeting.uf.tsx:6:7
   |
 6 |       <p>
@@ -20,7 +9,7 @@ error[UF4001] (ember): The ember target does not support default-slot: Child com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support default-slot: Child components, slots, models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support default-slot: Slots, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> slots/default/Panel.uf.tsx:9:7
   |
 9 |       {slots.default?.()}
