@@ -47,6 +47,9 @@ export async function compileGts(code: string, id: string, root: string): Promis
     babelrc: false,
     configFile: false,
     sourceMaps: true,
+    // content-tag adds the template compiler's import at the top: Babel maps back through it to
+    // the `.gts` module, line for line.
+    inputSourceMap: JSON.parse(preprocessed.map) as TransformOptions["inputSourceMap"],
     presets: [[require.resolve("@babel/preset-typescript"), { allowDeclareFields: true }]],
     plugins: [
       [require.resolve("babel-plugin-ember-template-compilation"), { compiler }],
