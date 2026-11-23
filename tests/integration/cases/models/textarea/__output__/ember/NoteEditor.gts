@@ -1,7 +1,5 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
-import { capabilities, setModifierManager } from "@ember/modifier";
-import type { ModifierLike } from "@glint/template";
 
 export interface NoteEditorSignature {
   Element: HTMLElementTagNameMap["section"];
@@ -10,10 +8,8 @@ export interface NoteEditorSignature {
 export default class NoteEditor extends Component<NoteEditorSignature> {
   @tracked note = "Buy milk";
 
-  readonly initial1 = this.note;
-
-  listener1 = (next: typeof this.note) => {
-    this.note = next;
+  listener1 = (event: Event) => {
+    this.note = (event.currentTarget as HTMLTextAreaElement).value;
   };
 
   listener2 = () => (this.note = "");
@@ -21,89 +17,8 @@ export default class NoteEditor extends Component<NoteEditorSignature> {
   <template><section
       aria-label="Note"
       ...attributes
-    ><textarea aria-label="Text" {{modelText this.note this.listener1}}>{{this.initial1}}</textarea><output>{{this.note.length}} characters</output><button
+    ><textarea aria-label="Text" value={{this.note}} {{on "input" this.listener1}}></textarea><output>{{this.note.length}} characters</output><button
       type="button"
       {{on "click" this.listener2}}
     >Discard</button></section></template>
-}
-
-/**
- * A modifier that binds a text field as Vue's `vModelText` does: it writes what the user types,
- * trimmed or cast as `looseToNumber` casts it, on `input` or, when lazy, on `change`, and
- * shows each new value of the state, except where the text already reads as it, or while the
- * user types in a trimmed field what it reads as trimmed.
- */
-const modelText = setModifierManager(
-  () => ({
-    capabilities: capabilities("3.22"),
-    createModifier: (): ModelTextState => ({ setValue: () => {} }),
-    installModifier(state: ModelTextState, element: Element, { positional, named }: ModelTextArgs) {
-      const field = element as HTMLInputElement | HTMLTextAreaElement;
-      state.field = field;
-      // A `<textarea>`'s text is its first value, for the server: in the browser it is the
-      // value, as Vue writes it, with the caret after it.
-      if (field instanceof HTMLTextAreaElement) {
-        const text = field.value;
-        field.textContent = "";
-        field.value = text;
-      }
-      state.setValue = positional[1];
-      const read = () => {
-        const text = named.trim ? field.value.trim() : field.value;
-        return named.number ? looseToNumber(text) : text;
-      };
-      field.addEventListener(named.lazy ? "change" : "input", () => state.setValue(read()));
-      if (named.trim || named.number) {
-        field.addEventListener("change", () => {
-          field.value = String(read());
-        });
-      }
-      show(field, positional[0], named);
-    },
-    updateModifier(state: ModelTextState, { positional, named }: ModelTextArgs) {
-      state.setValue = positional[1];
-      if (state.field) show(state.field, positional[0], named);
-    },
-    destroyModifier() {},
-  }),
-  {},
-) as unknown as ModifierLike<{
-  Element: HTMLInputElement | HTMLTextAreaElement;
-  Args: {
-    Positional: [value: unknown, setValue: (value: never) => void];
-    Named: { trim?: boolean; lazy?: boolean; number?: boolean };
-  };
-}>;
-
-/** What `modelText` keeps of its field. */
-interface ModelTextState {
-  field?: HTMLInputElement | HTMLTextAreaElement;
-  setValue: (value: unknown) => void;
-}
-
-/** What `modelText`'s manager is given. */
-interface ModelTextArgs {
-  positional: readonly [unknown, (value: unknown) => void];
-  named: { trim?: boolean; lazy?: boolean; number?: boolean };
-}
-
-/** A text as a number where it reads as one, as Vue's `looseToNumber` casts it. */
-function looseToNumber(text: string): string | number {
-  const number = Number.parseFloat(text);
-  return Number.isNaN(number) ? text : number;
-}
-
-/** Shows a state's value in a field, as `vModelText`'s update does. */
-function show(
-  field: HTMLInputElement | HTMLTextAreaElement,
-  value: unknown,
-  named: { trim?: boolean; number?: boolean },
-): void {
-  const next = value ?? "";
-  const shown =
-    named.number && !/^0\d/.test(field.value) ? looseToNumber(field.value) : field.value;
-  if (shown === next) return;
-  const typing = document.activeElement === field && field.type !== "range";
-  if (typing && named.trim && field.value.trim() === next) return;
-  field.value = String(next);
 }

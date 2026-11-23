@@ -1,34 +1,71 @@
 // `ember-source` publishes its modules' types as ambient declarations.
 /// <reference types="ember-source/types" />
-import { renderComponent } from "@ember/renderer";
-import createDocument from "@simple-dom/document";
-import Serializer from "@simple-dom/serializer";
-import voidMap from "@simple-dom/void-map";
+import { get } from "@ember/helper";
+import { renderSettled } from "@ember/renderer";
+import Route from "@ember/routing/route";
+import EmberRouter from "@ember/routing/router";
+import { template } from "@ember/template-compiler/runtime";
 import type { SsrRenderer } from "@unframework.dev/codegen";
+import EmberApp from "ember-strict-application-resolver";
+import { createEmberApp } from "vite-ember-ssr/server";
+
+/** The router of the app that renders one component: its one route is the application's. */
+class Router extends EmberRouter {
+  override location = "none";
+  override rootURL = "/";
+}
 
 /**
- * Renders a compiled Ember component on the server: `renderComponent` into a simple-dom
- * document, which is what FastBoot renders into, without a DOM and without running client code,
- * then serialised. Only the component's HTML: the container is not part of it.
+ * What the render waits for before it serializes: the render again for what an immediate watcher
+ * writes, as Vue's render shows it. A render error reaches Node as an unhandled rejection a timer
+ * later, so this waits a timer first, as `@ember/test-helpers`' `settled` does, and the render
+ * reports the error.
  */
-/** What Node has for `Element`: nothing is one. */
-const NoElement = { [Symbol.hasInstance]: (): boolean => false };
+async function settled(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve));
+  await renderSettled();
+}
 
+/**
+ * Renders a compiled Ember component on the server as an app renders it there: vite-ember-ssr
+ * boots an application under a happy-dom window and serialises what it renders. The app's
+ * application template invokes the component with the props as its arguments, read from the
+ * route's model, and returns only the component's HTML: the body holds nothing else.
+ */
 export const renderToString: SsrRenderer = async (component, { props = {} }) => {
-  // `renderComponent` tests `into instanceof Element` before it clears a browser container. Node
-  // has no `Element`, and a simple-dom element is no browser one.
-  globalThis.Element ??= NoElement as unknown as typeof Element;
-  const document = createDocument();
-  const into = document.createElement("div");
-  document.body.appendChild(into);
-  // A fresh owner for each render: the renderer it caches is bound to one document.
-  const result = renderComponent(component as object, {
-    owner: {},
-    into,
-    args: { ...props },
-    env: { document: document as unknown as Document, isInteractive: false, hasDOM: false },
+  // Glimmer spreads no arguments, so the template names each prop the case passes.
+  const args = Object.keys(props)
+    .map((name) => `@${name}={{get @model ${JSON.stringify(name)}}}`)
+    .join(" ");
+  const application = template(`<Component ${args} />`, {
+    scope: () => ({ Component: component, get }),
   });
-  const html = new Serializer(voidMap).serializeChildren(into);
-  result.destroy();
-  return html;
+  class ApplicationRoute extends Route {
+    override model(): Record<string, unknown> {
+      return props;
+    }
+  }
+  class App extends EmberApp {
+    modulePrefix = "uf-ssr";
+    override modules = {
+      "./router": Router,
+      "./routes/application": ApplicationRoute,
+      "./templates/application": application,
+    };
+  }
+  const app = await createEmberApp("uf-ssr", {
+    dev: {
+      ssrLoadModule: async () => ({
+        createSsrApp: () => App.create({ autoboot: false }),
+        settled,
+      }),
+    },
+  });
+  try {
+    const { body, error } = await app.renderRoute("/");
+    if (error) throw error;
+    return body;
+  } finally {
+    await app.destroy();
+  }
 };

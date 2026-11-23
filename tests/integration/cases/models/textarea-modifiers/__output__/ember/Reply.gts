@@ -12,28 +12,30 @@ export default class Reply extends Component<ReplySignature> {
 
   @tracked signature = "Ada";
 
-  readonly initial1 = this.message;
-
   listener1 = (next: typeof this.message) => {
     this.message = next;
   };
 
-  readonly initial2 = this.signature;
+  readonly initial1 = this.message;
 
   listener2 = (next: typeof this.signature) => {
     this.signature = next;
   };
+
+  readonly initial2 = this.signature;
 
   <template><form
       aria-label="Reply"
       ...attributes
     ><textarea
       aria-label="Message"
+      value={{this.initial1}}
       {{modelText this.message this.listener1 trim=true}}
-    >{{this.initial1}}</textarea><textarea
+    ></textarea><textarea
       aria-label="Signature"
+      value={{this.initial2}}
       {{modelText this.signature this.listener2 lazy=true}}
-    >{{this.initial2}}</textarea><output>[{{this.message}}] from {{this.signature}}</output></form></template>
+    ></textarea><output>[{{this.message}}] from {{this.signature}}</output></form></template>
 }
 
 /**
@@ -49,13 +51,6 @@ const modelText = setModifierManager(
     installModifier(state: ModelTextState, element: Element, { positional, named }: ModelTextArgs) {
       const field = element as HTMLInputElement | HTMLTextAreaElement;
       state.field = field;
-      // A `<textarea>`'s text is its first value, for the server: in the browser it is the
-      // value, as Vue writes it, with the caret after it.
-      if (field instanceof HTMLTextAreaElement) {
-        const text = field.value;
-        field.textContent = "";
-        field.value = text;
-      }
       state.setValue = positional[1];
       const read = () => {
         const text = named.trim ? field.value.trim() : field.value;

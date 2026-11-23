@@ -144,9 +144,6 @@ catalog:
   "@playwright/test": 1.63.0
   "@qwik.dev/core": 2.0.0-rc.5
   "@qwik.dev/optimizer": 2.1.0-rc.11
-  "@simple-dom/document": 1.4.0
-  "@simple-dom/serializer": 1.4.0
-  "@simple-dom/void-map": 1.4.0
   "@standard-schema/spec": ^1.1.0
   "@styleframe/runtime": 3.2.2
   "@styleframe/theme": 3.10.0
@@ -174,6 +171,7 @@ catalog:
   decorator-transforms: 2.4.0
   ember-eslint-parser: 0.16.1
   ember-source: 7.4.1
+  ember-strict-application-resolver: 0.1.1
   eslint: 10.11.0
   eslint-plugin-astro: 3.2.1
   eslint-plugin-ember: 13.11.2
@@ -211,6 +209,7 @@ catalog:
   typescript-eslint: 8.71.0
   unplugin: ^3.4.0
   vite: 8.3.1
+  vite-ember-ssr: 0.7.0
   vite-plugin-solid: 2.11.14
   vitest: 5.0.3
   vue: 3.5.43
@@ -231,3 +230,7 @@ patchedDependencies:
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes
   # out the same nodes as a union. Drop it once TypeScript or the package fixes the type.
   postcss-selector-parser@7.1.6: patches/postcss-selector-parser@7.1.6.patch
+  # A happy-dom render serializes a form control's attributes, not the value, checked and
+  # selected properties Glimmer writes, so a server-rendered field arrives empty. The patch
+  # writes each to its attribute too. Drop it once evoactivity/vite-ember-ssr#46 is released.
+  vite-ember-ssr@0.7.0: patches/vite-ember-ssr@0.7.0.patch

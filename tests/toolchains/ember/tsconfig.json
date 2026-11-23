@@ -23,7 +23,8 @@
     "allowImportingTsExtensions": true,
     // `@tracked` is typed as a legacy decorator, as `@ember/app-tsconfig` compiles it.
     "experimentalDecorators": true,
-    "types": ["ember-source/types", "@glint/ember-tsc/types"],
+    // `vite/client` types `import.meta.env.SSR`, which the output reads to skip browser-only code.
+    "types": ["ember-source/types", "@glint/ember-tsc/types", "vite/client"],
     // The outputs sit in tests/integration, where Glint's own modules do not resolve: Glint's
     // generated code imports its DSL, which this directory installs.
     "paths": {

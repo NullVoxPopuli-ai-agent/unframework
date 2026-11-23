@@ -156,14 +156,7 @@ class ComponentPlan {
       this.#listener(`(${parameters}) => {\n  ${value} = ${code};\n}`, element);
     const target = (type: string, property: string) =>
       `(event.currentTarget as ${type}).${property}`;
-    const textarea = attribute.control === "textarea";
-    if (
-      textarea ||
-      attribute.trim ||
-      attribute.lazy ||
-      attribute.number ||
-      attribute.control === "number"
-    ) {
+    if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
       this.#helpers.add("modelText");
       const setter = this.#listener(`(next: typeof ${value}) => {\n  ${value} = next;\n}`, element);
       const options = [
@@ -171,18 +164,19 @@ class ComponentPlan {
         attribute.lazy ? " lazy=true" : "",
         attribute.number || attribute.control === "number" ? " number=true" : "",
       ].join("");
-      const bind = `{{modelText ${this.value(value, true, element)} ${setter}${options}}}`;
-      // A `<textarea>`'s text is its first value (`modelContent`).
-      if (textarea) return [bind];
       // The first value, which the server renders: `modelText` shows the next ones.
       const initial = this.#hoist(value, "initial", element);
-      return [`value={{this.${initial.name}}}`, bind];
+      return [
+        `value={{this.${initial.name}}}`,
+        `{{modelText ${this.value(value, true, element)} ${setter}${options}}}`,
+      ];
     }
     switch (attribute.control) {
       case "text":
+      case "textarea":
         return [
           `value={{${this.value(value, false, element)}}}`,
-          `{{on "input" ${write(target("HTMLInputElement", "value"), "event: Event")}}}`,
+          `{{on "input" ${write(target(element.tag === "textarea" ? "HTMLTextAreaElement" : "HTMLInputElement", "value"), "event: Event")}}}`,
         ];
       case "checkbox":
         return [
@@ -212,15 +206,9 @@ class ComponentPlan {
         return [
           `{{on "change" ${write(`Array.from(${target("HTMLSelectElement", "selectedOptions")}, (option) => option.value)`, "event: Event")}}}`,
         ];
-      case "textarea":
-        throw new Error("A `<textarea>` goes through modelText.");
       default:
         return attribute.control satisfies never;
     }
-  }
-
-  modelContent(value: string): string {
-    return `{{this.${this.#hoist(value, "initial", undefined).name}}}`;
   }
 
   /** Whether an option of a `v-model`'s `<select>` holds the state: see the dialect. */
@@ -1179,6 +1167,8 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
 const HELPERS: Record<HelperName, string> = {
   afterRender: `/** Runs \`run\` once the render settles, unless its component is gone by then. */
 function afterRender(owner: object, run: () => unknown): void {
+  // A component on the server never mounts, as Vue registers no hook in a server render.
+  if (import.meta.env.SSR) return;
   void renderSettled().then(() => {
     if (!isDestroying(owner)) void run();
   });
@@ -1203,13 +1193,6 @@ const modelText = setModifierManager(
     installModifier(state: ModelTextState, element: Element, { positional, named }: ModelTextArgs) {
       const field = element as HTMLInputElement | HTMLTextAreaElement;
       state.field = field;
-      // A \`<textarea>\`'s text is its first value, for the server: in the browser it is the
-      // value, as Vue writes it, with the caret after it.
-      if (field instanceof HTMLTextAreaElement) {
-        const text = field.value;
-        field.textContent = "";
-        field.value = text;
-      }
       state.setValue = positional[1];
       const read = () => {
         const text = named.trim ? field.value.trim() : field.value;
@@ -1321,6 +1304,8 @@ class Watcher<T> {
   readonly flush = (): undefined => {
     const value = this.#source();
     const started = this.#started;
+    // On the server a watcher runs at most its immediate first run, as Vue's does.
+    if (import.meta.env.SSR && started) return undefined;
     if (started && this.#same(value, this.#value as T)) return undefined;
     const previous = (started ? this.#value : this.#options.array ? [] : undefined) as T;
     this.#started = true;

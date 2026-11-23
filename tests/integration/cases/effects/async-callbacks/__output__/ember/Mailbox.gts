@@ -201,6 +201,8 @@ class Watcher<T> {
   readonly flush = (): undefined => {
     const value = this.#source();
     const started = this.#started;
+    // On the server a watcher runs at most its immediate first run, as Vue's does.
+    if (import.meta.env.SSR && started) return undefined;
     if (started && this.#same(value, this.#value as T)) return undefined;
     const previous = (started ? this.#value : this.#options.array ? [] : undefined) as T;
     this.#started = true;
@@ -240,6 +242,8 @@ class Watcher<T> {
 
 /** Runs `run` once the render settles, unless its component is gone by then. */
 function afterRender(owner: object, run: () => unknown): void {
+  // A component on the server never mounts, as Vue registers no hook in a server render.
+  if (import.meta.env.SSR) return;
   void renderSettled().then(() => {
     if (!isDestroying(owner)) void run();
   });

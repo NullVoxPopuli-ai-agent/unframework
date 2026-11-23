@@ -38,8 +38,8 @@ it reads; the signature; the component; the inline helpers it calls.
   runs nothing, as on Vue. It calls each `watchEffect`'s
   `flush` after everything else, from the first render that settles in the browser. And it calls
   `onMounted` last: the `onMounted` hooks run once the first render settles, and the `onUnmounted`
-  hooks are registered as destructors then. A component destroyed first, as a server render is,
-  runs none of them. Cleanups run before the next run and when the component is destroyed.
+  hooks are registered as destructors then. On the server (`import.meta.env.SSR`), as on Vue's,
+  no hook runs, and a watcher runs only its immediate first run. Cleanups run before the next run and when the component is destroyed.
   Effects are an anti-pattern in Ember, as in every framework: a source that derives the value,
   or does the work in the handler that causes the change, compiles to plainer Ember. These
   helpers exist so that a source with `watch` or `watchEffect` still compiles.
@@ -74,7 +74,7 @@ template, so it passes every argument from the start. `scoped-styles` and `sheet
 (`import "./Card.uf.tsx.css"`, ADR-0063), and each element carries its `data-uf-…` attribute.
 `two-way-binding`, `model-array` and `model-modifiers` are emulated: a `v-model` is the control's
 property and a listener, `toggle` adds or removes a checkbox group's value, and an inline
-modifier, `modelText`, follows Vue's `vModelText` for modifiers, number fields and `<textarea>`s.
+modifier, `modelText`, follows Vue's `vModelText` for modifiers and number fields.
 `component` and `component-event` are native: a child is its output's component, imported under
 the source's name, its props are its arguments (`@label="Name"`), and a listener of its `clear`
 event is `@onClear`. Slots are blocks: `{{yield to="header"}}`, a named block `<:header>`, a
@@ -98,5 +98,7 @@ For tests and tooling (the target's main entry never loads it):
 - **`…/toolchain/client`**: mounts with `renderComponent` (RFC 1099), its arguments a tracked
   object that a rerender updates, with the test's listeners as `onChange` arguments. `renderComponent` reads the argument names once, so a rerender
   that adds a name renders the component again.
-- **`…/toolchain/server`**: renders with `renderComponent` into a simple-dom document, without a
-  DOM, and serialises it.
+- **`…/toolchain/server`**: renders as an app renders on the server: vite-ember-ssr boots an
+  application under a happy-dom window, its route template invokes the component, and the
+  render serialises the body. It patches vite-ember-ssr 0.7.0 so that a form control's state is
+  part of the HTML (evoactivity/vite-ember-ssr#46).

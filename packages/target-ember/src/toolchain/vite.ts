@@ -7,8 +7,7 @@ import type { Plugin } from "vite";
 import { compileGts } from "./gts.ts";
 
 /** The modules `ember-source` holds, which no package of their own name publishes. */
-const EMBER_SOURCE_MODULE =
-  /^(?:@ember\/[\w-]+(?:\/[\w-]+)*|@glimmer\/tracking|@simple-dom\/document)$/;
+const EMBER_SOURCE_MODULE = /^(?:@ember\/[\w-]+(?:\/[\w-]+)*|@glimmer\/tracking)$/;
 
 /** A `.gts` module's id, with any query. */
 const GTS = /\.gts(?:\?.*)?$/;

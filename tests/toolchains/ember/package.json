@@ -17,6 +17,7 @@
     "eslint-plugin-ember": "catalog:",
     "oxlint": "catalog:",
     "typescript": "npm:typescript@6.0.3",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:"
   }
 }

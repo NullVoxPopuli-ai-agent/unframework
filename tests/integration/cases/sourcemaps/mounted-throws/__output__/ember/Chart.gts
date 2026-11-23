@@ -25,6 +25,8 @@ export default class Chart extends Component<ChartSignature> {
 
 /** Runs `run` once the render settles, unless its component is gone by then. */
 function afterRender(owner: object, run: () => unknown): void {
+  // A component on the server never mounts, as Vue registers no hook in a server render.
+  if (import.meta.env.SSR) return;
   void renderSettled().then(() => {
     if (!isDestroying(owner)) void run();
   });

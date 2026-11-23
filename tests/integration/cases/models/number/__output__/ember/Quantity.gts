@@ -69,13 +69,6 @@ const modelText = setModifierManager(
     installModifier(state: ModelTextState, element: Element, { positional, named }: ModelTextArgs) {
       const field = element as HTMLInputElement | HTMLTextAreaElement;
       state.field = field;
-      // A `<textarea>`'s text is its first value, for the server: in the browser it is the
-      // value, as Vue writes it, with the caret after it.
-      if (field instanceof HTMLTextAreaElement) {
-        const text = field.value;
-        field.textContent = "";
-        field.value = text;
-      }
       state.setValue = positional[1];
       const read = () => {
         const text = named.trim ? field.value.trim() : field.value;

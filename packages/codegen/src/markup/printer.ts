@@ -488,12 +488,6 @@ export interface MarkupDialect {
    */
   modelAttribute?(model: PrintedModel, context: AttributeContext): PrintedAttribute[];
   /**
-   * Writes a `<textarea>`'s `v-model` as its content too, as Vue's server renders it, for a
-   * language whose server writes the `value` property as an attribute (Ember's): the printer
-   * prints it in place of the element's children, which a bound `<textarea>` has none of.
-   */
-  modelContent?(model: PrintedModel): string;
-  /**
    * Writes a component's `v-model:<name>` (ADR-0054): the child shows the value, and its writes
    * of the model write it.
    */
@@ -1335,19 +1329,11 @@ export function printMarkup(
       top: false,
     };
     const raw = element.attributes.find((attribute) => attribute.kind === "RawHtml");
-    const model =
-      element.tag === "textarea"
-        ? element.attributes.find(
-            (attribute): attribute is ModelAttribute => attribute.kind === "Model",
-          )
-        : undefined;
     // The markup is the element's content, which has no children beside it (ADR-0097).
     const children =
       raw && inner.dialect.rawHtmlContent
         ? [inline(inner.dialect.rawHtmlContent(code(raw.value)))]
-        : model && inner.dialect.modelContent
-          ? [inline(inner.dialect.modelContent({ attribute: model, value: code(model.value) }))]
-          : itemsOf(element.children, element, inner);
+        : itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
     // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
     // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).

@@ -63,9 +63,6 @@
     "@babel/core": "catalog:",
     "@babel/preset-typescript": "catalog:",
     "@glimmer/component": "catalog:",
-    "@simple-dom/document": "catalog:",
-    "@simple-dom/serializer": "catalog:",
-    "@simple-dom/void-map": "catalog:",
     "@types/babel__core": "catalog:",
     "@types/node": "catalog:",
     "@uxfront/typescript-config": "catalog:",
@@ -73,8 +70,10 @@
     "content-tag": "catalog:",
     "decorator-transforms": "catalog:",
     "ember-source": "catalog:",
+    "ember-strict-application-resolver": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
+    "vite-ember-ssr": "catalog:",
     "vitest": "catalog:"
   }
 }

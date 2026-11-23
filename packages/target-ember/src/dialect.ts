@@ -39,8 +39,6 @@ export interface DialectHost {
    * holds it, `selected={{…}}`, or nothing for any other option.
    */
   optionSelected(element: ElementNode, value: string): string;
-  /** A `<textarea>`'s text: its state's first value, which `modelText` makes its value. */
-  modelContent(value: string): string;
   /** A component's fills: its content, or its named blocks. */
   fills(fills: readonly SlotFill[], node: ComponentNode): MarkupPiece[];
   /** A slot outlet: `{{yield}}`, with its fallback. */
@@ -225,9 +223,6 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       const name = `@on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`;
       return [{ name, text: `${name}={{${host.componentListener(attribute, component)}}}` }];
     },
-    // Ember's server writes a `<textarea>`'s `value` as an attribute: its text is the state's
-    // first value, as Vue's server renders it, and `modelText` writes the property in the browser.
-    modelContent: ({ value }) => host.modelContent(value),
     modelAttribute: ({ attribute, value }, { element }) =>
       host.model(attribute, value, element).map((text) => ({ name: "model", text })),
     modelBinding: () => [],
