@@ -22,6 +22,7 @@ import type {
   ModelBindingAttribute,
   SlotFill,
   SlotOutletNode,
+  TeleportNode,
 } from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
@@ -45,6 +46,8 @@ export interface DialectHost {
   ): string;
   /** Whether the printer writes a child's tag, not an element. */
   isChild(element: ElementNode): boolean;
+  /** `<Teleport to>`: its content in `{{#in-element}}`, appended to `to`'s element. */
+  teleport(node: TeleportNode): MarkupPiece[];
   /** Whether an element, or a child's tag, takes a `class`. */
   takesClass(element: ElementNode): boolean;
   rawHtml(code: string): string;
@@ -313,7 +316,7 @@ export function emberDialect(host: DialectHost): MarkupDialect {
         component,
       ),
     slotOutlet: ({ node, props }) => host.slotOutlet(node, props?.code),
-    teleport: () => [],
+    teleport: ({ node }) => host.teleport(node),
     transition: () => [],
     rawHtmlContent: (code) => host.rawHtml(code),
   };

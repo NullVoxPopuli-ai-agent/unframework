@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support generic-components: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support generic-components: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.",
     "file": "generics/props-named-props/Options.uf.tsx",
     "start": {
       "line": 10,

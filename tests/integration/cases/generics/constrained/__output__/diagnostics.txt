@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.
  --> generics/constrained/Table.uf.tsx:8:31
   |
 8 | export default function Table<T extends { id: string; label: string }>({

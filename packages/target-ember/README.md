@@ -100,7 +100,9 @@ from an inline helper, `componentRef`, which the child calls with what `defineEx
 once it has rendered, and with `null` once it is gone. `model` is native: a model is the child's
 argument, `@value`, and a callback, `@onUpdateValue`, which `<Name>Models` declares. The child
 reads the argument where the parent passes one and a tracked field of its own where it does not,
-and a write sets the field and calls the callback, as Vue's `useModel` emits `update:value`. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+and a write sets the field and calls the callback, as Vue's `useModel` emits `update:value`.
+`teleport` is native: `{{#in-element}}` appends the content to the target, which an inline
+helper, `teleportTarget`, finds in the browser only, so the server renders none of it. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

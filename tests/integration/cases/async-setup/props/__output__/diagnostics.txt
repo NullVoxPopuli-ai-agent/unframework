@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support async-setup: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support async-setup: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.
  --> async-setup/props/Greeting.uf.tsx:6:3
   |
 6 |   const user = await loadUser(prefix + id);

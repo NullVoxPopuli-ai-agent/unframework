@@ -54,6 +54,7 @@ import type {
   Prop,
   SlotFill,
   SlotOutletNode,
+  TeleportNode,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -703,6 +704,27 @@ class ComponentPlan {
     return this.value(`[${entries.join(", ")}]`, subexpression, element);
   }
 
+  /**
+   * `<Teleport to>` (ADR-0098): Glimmer's `{{#in-element}}` appends the content to `to`'s
+   * element, which `teleportTarget` finds in the browser only, so the server renders none of it.
+   */
+  teleport(node: TeleportNode): MarkupPiece[] {
+    this.#helpers.add("teleportTarget");
+    const target = this.rowName("target");
+    return [
+      {
+        kind: "block",
+        segments: [
+          {
+            open: `{{#let (teleportTarget ${JSON.stringify(node.to)}) as |${target}|}}{{#if ${target}}}{{#in-element ${target} insertBefore=null}}`,
+            content: { kind: "nodes", nodes: node.children, container: node },
+          },
+        ],
+        close: "{{/in-element}}{{/if}}{{/let}}",
+      },
+    ];
+  }
+
   /** Whether the printer writes a child's tag, not an element. */
   isChild(element: ElementNode): boolean {
     return this.#children.has(element.tag);
@@ -1022,7 +1044,10 @@ class ComponentPlan {
       const child = root.component === undefined ? undefined : this.#children.get(root.component);
       if (child && !child.self) elements.add(`${child.name}Signature["Element"]`);
     }
-    if (elements.size) lines.push(`  Element: ${Array.from(elements).join(" | ")};`);
+    // A root that is no one element, such as a fragment or a teleport, takes no attributes. The
+    // signature still names one, so a styled parent can pass its scope attributes, which
+    // Glimmer drops without `...attributes`, as Vue's fallthrough reaches none.
+    lines.push(`  Element: ${elements.size ? Array.from(elements).join(" | ") : "Element"};`);
     return `${events}export interface ${component.name}Signature {\n${lines.join("\n")}\n}`;
   }
 
@@ -1491,6 +1516,7 @@ type HelperName =
   | "renderSettled"
   | "sources"
   | "styleText"
+  | "teleportTarget"
   | "templateRef"
   | "toggle"
   | "uniqueId"
@@ -1522,6 +1548,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   toggle: {},
   sources: {},
   styleText: {},
+  teleportTarget: {},
   templateRef: {
     "@ember/modifier": ["capabilities", "setModifierManager"],
     "@glint/template": ["type ModifierLike"],
@@ -1800,6 +1827,10 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
   return typeof value === "boolean" ? (String(value) as "true" | "false") : (value as Exclude<T, boolean>);
 }`,
   fallthroughStyle: FALLTHROUGH_STYLE,
+  teleportTarget: `/** The element a \`<Teleport to>\` selects, in the browser only: the server renders no teleport. */
+function teleportTarget(to: string): Element | undefined {
+  return import.meta.env.SSR ? undefined : (document.querySelector(to) ?? undefined);
+}`,
   componentRef: `/** Sets a member of its component to what a child exposes, or to \`null\` once the child is gone. */
 function componentRef(owner: object, name: string): (exposed: unknown) => void {
   return (exposed) => void Reflect.set(owner, name, exposed);

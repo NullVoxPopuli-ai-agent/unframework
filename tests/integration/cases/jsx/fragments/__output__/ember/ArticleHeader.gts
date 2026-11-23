@@ -9,6 +9,7 @@ export interface ArticleHeaderProps {
 
 export interface ArticleHeaderSignature {
   Args: ArticleHeaderProps;
+  Element: Element;
 }
 
 export default class ArticleHeader extends Component<ArticleHeaderSignature> {

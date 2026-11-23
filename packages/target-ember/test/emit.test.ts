@@ -344,9 +344,9 @@ describe("ember target", () => {
 
   it("emits nothing for a module that needs a capability it does not emit yet", async () => {
     const { codes, files } = await emberOf(`
-      import { Teleport } from "@uxfront/unframework";
+      import { Transition } from "@uxfront/unframework";
       export default function Card() {
-        return <p><Teleport to="body"><b>Hi</b></Teleport></p>;
+        return <p><Transition name="fade"><b>Hi</b></Transition></p>;
       }
     `);
     expect(codes).toEqual(["UF4001 error"]);
@@ -368,7 +368,9 @@ describe("ember target", () => {
     expect(codes).toEqual([]);
     const [file] = files;
     expect(file?.contents).toContain("const vMark = directive<string, HTMLElement>({");
-    expect(file?.contents).toContain('<p {{vMark "seen"}} style={{fallthroughStyle @style}} ...attributes>Hi</p>');
+    expect(file?.contents).toContain(
+      '<p {{vMark "seen"}} style={{fallthroughStyle @style}} ...attributes>Hi</p>',
+    );
   });
 
   it("emits nothing for a component that provides without a root element", async () => {

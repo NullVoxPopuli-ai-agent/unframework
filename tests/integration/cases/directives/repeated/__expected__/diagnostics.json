@@ -53,7 +53,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support slot-forwarding: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support slot-forwarding: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.",
     "file": "directives/repeated/Wrapper.uf.tsx",
     "start": {
       "line": 12,

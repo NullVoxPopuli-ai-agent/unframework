@@ -182,15 +182,16 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "expose",
   // A model is the child's argument and an `@onUpdateValue` callback, as Ember passes actions.
   "model",
+  // `{{#in-element}}` appends a teleport's content to its target, in the browser only.
+  "teleport",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Slot forwarding, component models and the built-in components are not emitted yet.",
+    reason: "Slot forwarding, transitions, generic components and async setup are not emitted yet.",
     names: [
       "slot-forwarding",
-      "teleport",
       "transition",
       "generic-components",
       "generic-slot-props",
