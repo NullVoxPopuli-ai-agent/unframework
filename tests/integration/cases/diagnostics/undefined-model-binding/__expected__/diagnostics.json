@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support model: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "diagnostics/undefined-model-binding/Search.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 326
-    },
-    "end": {
-      "line": 7,
-      "column": 46,
-      "offset": 369
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "diagnostics/undefined-model-binding/Search.uf.tsx",

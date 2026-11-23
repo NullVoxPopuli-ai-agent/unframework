@@ -19,6 +19,7 @@ import type {
   EventAttribute,
   ListenerAttribute,
   ModelAttribute,
+  ModelBindingAttribute,
   SlotFill,
   SlotOutletNode,
 } from "@unframework.dev/ir";
@@ -51,6 +52,8 @@ export interface DialectHost {
   rowName(name: string): string;
   /** The module helper that writes an enumerated attribute's boolean as its name. */
   enumerated(): string;
+  /** A child's `v-model:value`: its argument, and the callback that writes it back. */
+  modelBinding(attribute: ModelBindingAttribute, value: string, component: ComponentNode): string[];
   /** A form control's `v-model`: what shows the state, and what writes it back. */
   model(attribute: ModelAttribute, value: string, element: ElementNode): string[];
   /**
@@ -302,7 +305,8 @@ export function emberDialect(host: DialectHost): MarkupDialect {
     },
     modelAttribute: ({ attribute, value }, { element }) =>
       host.model(attribute, value, element).map((text) => ({ name: "model", text })),
-    modelBinding: () => [],
+    modelBinding: ({ attribute, value }, { component }) =>
+      host.modelBinding(attribute, value, component).map((text) => ({ name: "model", text })),
     fills: (fills, { component }) =>
       host.fills(
         fills.map(({ fill }) => fill),

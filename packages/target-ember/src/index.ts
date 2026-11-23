@@ -180,6 +180,8 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "slotted-styles",
   "fallthrough",
   "expose",
+  // A model is the child's argument and an `@onUpdateValue` callback, as Ember passes actions.
+  "model",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -188,7 +190,6 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     reason: "Slot forwarding, component models and the built-in components are not emitted yet.",
     names: [
       "slot-forwarding",
-      "model",
       "teleport",
       "transition",
       "generic-components",

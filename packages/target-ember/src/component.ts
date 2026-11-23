@@ -50,6 +50,7 @@ import type {
   ListenerAttribute,
   Code,
   ModelAttribute,
+  ModelBindingAttribute,
   Prop,
   SlotFill,
   SlotOutletNode,
@@ -264,6 +265,22 @@ class ComponentPlan {
     const { name, parameters } = this.#hoist(code, "listener", at);
     if (!parameters.length) return `this.${name}`;
     return `(this.${name} ${parameters.map((each) => each.name).join(" ")})`;
+  }
+
+  /**
+   * A child's `v-model:value`: the state as its `@value`, and `@onUpdateValue`, which writes the
+   * child's writes back.
+   */
+  modelBinding(
+    attribute: ModelBindingAttribute,
+    value: string,
+    component: ComponentNode,
+  ): string[] {
+    const write = this.#listener(`(next: typeof ${value}) => {\n  ${value} = next;\n}`, component);
+    return [
+      `@${attribute.model}={{${this.value(value, false, component, true)}}}`,
+      `@${modelArgument(attribute.model)}={{${write}}}`,
+    ];
   }
 
   /** The handler a template ref's modifier is given: the member that holds the element. */
@@ -835,7 +852,9 @@ class ComponentPlan {
     const tracking = [];
     if (this.#injects || this.#provides) tracking.push("cached");
     if (
-      component.setup.some((item) => item.kind === "State" || item.kind === "TemplateRef") ||
+      component.setup.some(
+        (item) => item.kind === "State" || item.kind === "TemplateRef" || item.kind === "Model",
+      ) ||
       this.#helpers.has("Effect")
     ) {
       tracking.push("tracked");
@@ -973,6 +992,20 @@ class ComponentPlan {
       events = `export interface ${name} {\n${members.join("\n")}\n}\n\n`;
       args.push(name);
     }
+    // Each model's value and the callback that hears its writes, an interface of their own.
+    const models = component.setup.flatMap((item) => (item.kind === "Model" ? [item] : []));
+    if (models.length) {
+      const name = `${component.name}Models`;
+      const members = models.flatMap((item) => {
+        const type = item.type?.code ?? "unknown";
+        return [
+          `  ${item.name}${item.required ? "" : "?"}: ${type};`,
+          `  ${modelArgument(item.name)}?: (value: ${type}) => void;`,
+        ];
+      });
+      events += `export interface ${name} {\n${members.join("\n")}\n}\n\n`;
+      args.push(name);
+    }
     const lines: string[] = [];
     if (args.length) lines.push(`  Args: ${args.join(" & ")};`);
     // Each slot a block, which yields a scoped slot's props object.
@@ -1027,6 +1060,20 @@ class ComponentPlan {
         (prop) =>
           `get ${prop.name}() {\n  return this.args.${prop.name} === undefined ? ${prop.default!.code} : this.args.${prop.name};\n}`,
       );
+  }
+
+  /** A model's value type: its type argument, `undefined` too without a default. */
+  #modelType(item: Extract<UfComponent["setup"][number], { kind: "Model" }>): string {
+    const type = item.type?.code ?? "unknown";
+    return item.default || item.required ? type : `${type} | undefined`;
+  }
+
+  /** The tracked field that holds a model's value while the parent passes none. */
+  #modelLocal(name: string): string {
+    const taken = new Set(this.#component.bindings.map((each) => each.name));
+    let local = `${name}Local`;
+    while (taken.has(local)) local = `${local}_`;
+    return local;
   }
 
   /** The names of the functions `defineExpose` exposes, as the class's members. */
@@ -1143,6 +1190,23 @@ class ComponentPlan {
             : "undefined";
           const decorator = this.#hasEffects ? "@tracked({ equals: Object.is })" : "@tracked";
           return `${decorator} ${name}${type} = ${initial};`;
+        }
+        // Vue's `useModel`: the parent's argument where it passes one, and a tracked field of
+        // the component's own where it does not. A write sets the field and calls the parent's
+        // `@onUpdateValue`, as Vue's emits `update:value`.
+        case "Model": {
+          const name = bindingName(component, item.binding);
+          const type = this.#modelType(item);
+          const local = this.#modelLocal(name);
+          const initial = item.default
+            ? rewrite(item.default, component, rules, "pure")
+            : "undefined";
+          const argument = modelArgument(item.name);
+          return [
+            `@tracked ${local}: ${type} = ${initial};`,
+            `get ${name}(): ${type} {\n  return this.args.${item.name} === undefined ? this.${local} : this.args.${item.name};\n}`,
+            `set ${name}(value: ${type}) {\n  this.${local} = value;\n  this.args.${argument}?.(value);\n}`,
+          ];
         }
         case "Derived": {
           const name = bindingName(component, item.binding);
@@ -1306,6 +1370,11 @@ function patternKeys(code: string): Map<string, string> {
 }
 
 /** The argument a parent passes to listen to an event: `onChange` for `change`. */
+/** The argument a parent passes to hear a model's writes: `onUpdateValue` for `value`. */
+function modelArgument(model: string): string {
+  return `onUpdate${model.charAt(0).toUpperCase()}${model.slice(1)}`;
+}
+
 function eventArgument(event: string): string {
   return `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
 }

@@ -97,7 +97,10 @@ whose hooks run in Vue's order through the shared `queueHook`, and never on the 
 an inline helper, `fallthroughStyle`, merges into the root's declarations as Vue does
 (`src/fallthrough.ts`). `expose` is emulated: a component ref is the child's `@ref` argument,
 from an inline helper, `componentRef`, which the child calls with what `defineExpose` exposes
-once it has rendered, and with `null` once it is gone. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+once it has rendered, and with `null` once it is gone. `model` is native: a model is the child's
+argument, `@value`, and a callback, `@onUpdateValue`, which `<Name>Models` declares. The child
+reads the argument where the parent passes one and a tracked field of its own where it does not,
+and a write sets the field and calls the callback, as Vue's `useModel` emits `update:value`. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 
