@@ -23,6 +23,7 @@ import type {
   SlotFill,
   SlotOutletNode,
   TeleportNode,
+  TransitionNode,
 } from "@unframework.dev/ir";
 
 /** What the dialect asks of the component's class. */
@@ -46,6 +47,10 @@ export interface DialectHost {
   ): string;
   /** Whether the printer writes a child's tag, not an element. */
   isChild(element: ElementNode): boolean;
+  /** `<Transition>`: its elements from its entries, by the code of the branch it shows. */
+  transition(node: TransitionNode, branch: string): MarkupPiece[];
+  /** The modifier that runs a transition's classes on its element. */
+  transitionClasses(node: TransitionNode): string;
   /** `<Teleport to>`: its content in `{{#in-element}}`, appended to `to`'s element. */
   teleport(node: TeleportNode): MarkupPiece[];
   /** Whether an element, or a child's tag, takes a `class`. */
@@ -317,7 +322,12 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       ),
     slotOutlet: ({ node, props }) => host.slotOutlet(node, props?.code),
     teleport: ({ node }) => host.teleport(node),
-    transition: () => [],
+    // A transition renders its elements from a list, so a leaving one stays until its leave
+    // ends, each running Vue's classes through a modifier (`transition.ts`).
+    transition: ({ node, branch }) => host.transition(node, branch),
+    transitionAttributes: ({ node }) => [
+      { name: "transition", text: host.transitionClasses(node) },
+    ],
     rawHtmlContent: (code) => host.rawHtml(code),
   };
 }

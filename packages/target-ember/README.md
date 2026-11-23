@@ -102,7 +102,10 @@ argument, `@value`, and a callback, `@onUpdateValue`, which `<Name>Models` decla
 reads the argument where the parent passes one and a tracked field of its own where it does not,
 and a write sets the field and calls the callback, as Vue's `useModel` emits `update:value`.
 `teleport` is native: `{{#in-element}}` appends the content to the target, which an inline
-helper, `teleportTarget`, finds in the browser only, so the server renders none of it. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+helper, `teleportTarget`, finds in the browser only, so the server renders none of it.
+`transition` is emulated (`src/transition.ts`): a transition renders its elements from a list,
+`Transition.entries`, which keeps a leaving element until its leave ends, and an inline modifier,
+`transitionClasses`, runs Vue's classes of each phase on the element. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

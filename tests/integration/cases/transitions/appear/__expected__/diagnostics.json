@@ -66,22 +66,5 @@
       "offset": 300
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support transition: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "transitions/appear/Toast.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 5,
-      "offset": 189
-    },
-    "end": {
-      "line": 11,
-      "column": 18,
-      "offset": 300
-    },
-    "target": "ember"
   }
 ]

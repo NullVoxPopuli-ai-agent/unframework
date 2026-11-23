@@ -55,6 +55,7 @@ import type {
   SlotFill,
   SlotOutletNode,
   TeleportNode,
+  TransitionNode,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -73,6 +74,7 @@ import {
 import type { RootNode } from "./fallthrough.ts";
 import { moduleReads } from "./modules.ts";
 import type { ModuleReads } from "./modules.ts";
+import { TRANSITION_HELPERS, TRANSITION_IMPORTS } from "./transition.ts";
 
 /** A row variable a list's body reads: its name, and its type in the class's terms. */
 interface RowVariable {
@@ -127,6 +129,8 @@ class ComponentPlan {
   /** Whether the setup provides, and whether it injects (`provide`, `inject`). */
   readonly #provides: boolean;
   readonly #injects: boolean;
+  /** The row variable of each transition's entries, by its node. */
+  readonly #transitionEntries = new Map<TransitionNode, string>();
   /** The children the template renders, by the name it writes them with. */
   readonly #children: ReadonlyMap<string, ChildImport>;
   /** The events interface of each child an inline handler listens to, by the child's name. */
@@ -725,6 +729,54 @@ class ComponentPlan {
     ];
   }
 
+  /**
+   * `<Transition>` (ADR-0100): a transition for the block, whose entries are the elements it
+   * renders, each branch's element where its entry's branch is that branch (`transition.ts`).
+   */
+  transition(node: TransitionNode, branch: string): MarkupPiece[] {
+    this.#helpers.add("transition");
+    const [child] = node.children;
+    const source = this.#listener(`(): number => ${branch}`, node);
+    // Not `transition`, which would hide the helper from a transition inside this one.
+    const t = this.rowName("transitionList");
+    const entry = this.rowName("entry");
+    this.#transitionEntries.set(node, entry);
+    const shown =
+      child?.kind === "If"
+        ? child.branches.flatMap((each, index) => (each.children.length ? [{ each, index }] : []))
+        : [];
+    const content: MarkupPiece =
+      child?.kind === "If"
+        ? {
+            kind: "block",
+            segments: shown.map(({ each, index }, at) => ({
+              open: `{{${at === 0 ? "#if" : "else if"} (eq ${entry}.branch ${index})}}`,
+              content: { kind: "nodes", nodes: each.children, container: each },
+            })),
+            close: "{{/if}}",
+          }
+        : { kind: "nodes", nodes: node.children, container: node };
+    return [
+      {
+        kind: "block",
+        segments: [
+          {
+            open: `{{#let (transition ${source} ${JSON.stringify(node.name)} ${node.appear ? "true" : "false"}) as |${t}|}}{{#each ${t}.entries key="id" as |${entry}|}}{{#unless ${entry}.gone}}`,
+            content,
+          },
+        ],
+        close: "{{/unless}}{{/each}}{{/let}}",
+      },
+    ];
+  }
+
+  /** The modifier that runs a transition's classes on its element, with its entry. */
+  transitionClasses(node: TransitionNode): string {
+    const entry = this.#transitionEntries.get(node);
+    if (entry === undefined) throw new Error("A transition's element printed before it.");
+    return `{{transitionClasses ${entry}}}`;
+  }
+
   /** Whether the printer writes a child's tag, not an element. */
   isChild(element: ElementNode): boolean {
     return this.#children.has(element.tag);
@@ -877,6 +929,7 @@ class ComponentPlan {
       component.setup.some(
         (item) => item.kind === "State" || item.kind === "TemplateRef" || item.kind === "Model",
       ) ||
+      this.#helpers.has("transition") ||
       this.#helpers.has("Effect")
     ) {
       tracking.push("tracked");
@@ -1518,6 +1571,7 @@ type HelperName =
   | "styleText"
   | "teleportTarget"
   | "templateRef"
+  | "transition"
   | "toggle"
   | "uniqueId"
   | "Watcher";
@@ -1549,6 +1603,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   sources: {},
   styleText: {},
   teleportTarget: {},
+  transition: TRANSITION_IMPORTS,
   templateRef: {
     "@ember/modifier": ["capabilities", "setModifierManager"],
     "@glint/template": ["type ModifierLike"],
@@ -1827,6 +1882,7 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
   return typeof value === "boolean" ? (String(value) as "true" | "false") : (value as Exclude<T, boolean>);
 }`,
   fallthroughStyle: FALLTHROUGH_STYLE,
+  transition: TRANSITION_HELPERS,
   teleportTarget: `/** The element a \`<Teleport to>\` selects, in the browser only: the server renders no teleport. */
 function teleportTarget(to: string): Element | undefined {
   return import.meta.env.SSR ? undefined : (document.querySelector(to) ?? undefined);

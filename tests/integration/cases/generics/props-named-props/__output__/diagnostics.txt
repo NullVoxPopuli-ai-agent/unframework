@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, transitions, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.
   --> generics/props-named-props/Options.uf.tsx:10:33
    |
 10 | export default function Options<T>({ heading, options, selected }: Props<T>) {

@@ -73,6 +73,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "componentRef",
     note: "A Glimmer component has no instance a parent can hold, so a component ref is the child's `@ref` argument, a callback from an inline helper, componentRef: the child calls it with what `defineExpose` exposes once it has rendered, and with `null` once it is gone.",
   },
+  transition: {
+    support: "emulated",
+    helper: "Transition",
+    note: "Glimmer removes an element once its `{{#if}}` turns false, so a transition renders its elements from a list, an inline helper's `Transition.entries`: the element of the branch its condition shows, and each one still leaving, until its leave ends. An inline modifier, transitionClasses, runs Vue's classes of each phase on the element, in the browser only.",
+  },
   fallthrough: {
     support: "emulated",
     helper: "fallthroughStyle",
@@ -184,19 +189,14 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "model",
   // `{{#in-element}}` appends a teleport's content to its target, in the browser only.
   "teleport",
+  "transition",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Slot forwarding, transitions, generic components and async setup are not emitted yet.",
-    names: [
-      "slot-forwarding",
-      "transition",
-      "generic-components",
-      "generic-slot-props",
-      "async-setup",
-    ],
+    reason: "Slot forwarding, generic components and async setup are not emitted yet.",
+    names: ["slot-forwarding", "generic-components", "generic-slot-props", "async-setup"],
   },
   {
     reason: "Composables are not emitted yet.",
