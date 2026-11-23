@@ -919,7 +919,12 @@ class ComponentPlan {
     parts.push(this.#signature());
     // A consumer's marker comes first, outside what the component provides itself (`inject`).
     const marker = this.#injects ? "{{this.injectionMarker}}" : "";
-    const template = `<template>${marker}${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}</template>`;
+    // An async setup renders nothing until it has run, as Vue's `<Suspense>` shows none of it.
+    const content = `${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}`;
+    const body = this.#helpers.has("AsyncSetup")
+      ? `{{#if this.asyncSetup.resolved}}${content}{{/if}}`
+      : content;
+    const template = `<template>${marker}${body}</template>`;
     parts.push(this.#declaration(members, template));
     for (const name of Array.from(this.#helpers).toSorted()) {
       if (HELPERS[name]) parts.push(HELPERS[name]);
@@ -991,6 +996,7 @@ class ComponentPlan {
           (item.kind === "Model" && !item.required),
       ) ||
       this.#helpers.has("transition") ||
+      this.#helpers.has("AsyncSetup") ||
       this.#helpers.has("Effect")
     ) {
       tracking.push("tracked");
@@ -1254,6 +1260,14 @@ class ComponentPlan {
     return item.default || item.required ? type : `${type} | undefined`;
   }
 
+  /** A member name no binding of the component takes. */
+  #unique(name: string): string {
+    const taken = new Set(this.#component.bindings.map((each) => each.name));
+    let unique = name;
+    while (taken.has(unique)) unique = `${unique}_`;
+    return unique;
+  }
+
   /** The tracked field that holds a model's value while the parent passes none. */
   #modelLocal(name: string): string {
     const taken = new Set(this.#component.bindings.map((each) => each.name));
@@ -1284,8 +1298,33 @@ class ComponentPlan {
     const functions: string[] = [];
     let watchers = 0;
     let effects = 0;
+    // An async setup's statements from its first `await` on, which `AsyncSetup` runs: each
+    // awaited value, and each value declared after one, which may read it.
+    const run: string[] = [];
+    /** A field whose value the run sets: its type, and the arrow that gives its first value. */
+    const deferred = (name: string, type: string | undefined, value: string, awaits = false) => {
+      const initial = this.#unique(`initial${name.charAt(0).toUpperCase()}${name.slice(1)}`);
+      const read = `this.${initial}()`;
+      run.push(`this.${name} = ${awaits ? `await ${read}` : read};`);
+      if (awaits) run.push("if (isDestroying(this)) return;");
+      // `typeof this.…` reads the instance's own type, which a concrete value is assignable to,
+      // where `this["…"]` is the polymorphic `this`.
+      const inferred = awaits
+        ? `Awaited<ReturnType<typeof this.${initial}>>`
+        : `ReturnType<typeof this.${initial}>`;
+      return { initial: `${initial} = () => ${value};`, type: type ?? inferred };
+    };
     const members = component.setup.flatMap((item) => {
+      const awaited = run.length > 0;
       switch (item.kind) {
+        // The value an `await` gives, which the run sets before the rest of the setup reads it.
+        case "Await": {
+          this.#helpers.add("AsyncSetup");
+          const name = bindingName(component, item.binding);
+          const value = rewrite(item.value, component, rules, "client");
+          const field = deferred(name, item.type?.code, value, true);
+          return [field.initial, `${name}!: ${field.type};`];
+        }
         // A template ref is tracked, as Vue's is reactive: `templateRef` sets it once its element
         // is rendered, and sets it to `null` once it is gone.
         case "TemplateRef": {
@@ -1375,6 +1414,10 @@ class ComponentPlan {
             ? rewrite(item.initial, component, rules, "pure")
             : "undefined";
           const decorator = this.#hasEffects ? "@tracked({ equals: Object.is })" : "@tracked";
+          if (awaited && item.initial) {
+            const field = deferred(name, item.type?.code, initial);
+            return [field.initial, `${decorator} ${name}!: ${field.type};`];
+          }
           return `${decorator} ${name}${type} = ${initial};`;
         }
         // Vue's `useModel`: the parent's argument where it passes one, and a tracked field of
@@ -1409,11 +1452,21 @@ class ComponentPlan {
         case "Const": {
           const name = bindingName(component, item.binding);
           const type = item.type ? `: ${item.type.code}` : "";
-          return `readonly ${name}${type} = ${rewrite(item.value, component, rules, "pure")};`;
+          const value = rewrite(item.value, component, rules, "pure");
+          if (awaited) {
+            const field = deferred(name, item.type?.code, value);
+            return [field.initial, `${name}!: ${field.type};`];
+          }
+          return `readonly ${name}${type} = ${value};`;
         }
         case "Variable": {
           const name = bindingName(component, item.binding);
           const type = item.type ? `: ${item.type.code}` : "";
+          if (awaited && item.initial) {
+            const value = rewrite(item.initial, component, rules, "client");
+            const field = deferred(name, item.type?.code, value);
+            return [field.initial, `${name}!: ${field.type};`];
+          }
           const initial = item.initial
             ? ` = ${rewrite(item.initial, component, rules, "client")}`
             : "";
@@ -1433,6 +1486,12 @@ class ComponentPlan {
           return [];
       }
     });
+    // Last, so that the fields it calls are set: the run starts as the instance is constructed.
+    if (run.length) {
+      members.push(
+        `readonly asyncSetup = new AsyncSetup(this, async () => {\n${run.map((each) => `  ${each}`).join("\n")}\n});`,
+      );
+    }
     if (this.#injects) members.unshift('readonly injectionMarker = document.createTextNode("");');
     // Read when the template renders the marker, after the component's own `inject` can find
     // what it reads, as Vue's setup injects before it provides.
@@ -1669,6 +1728,7 @@ function indent(text: string): string {
 
 type HelperName =
   | "afterRender"
+  | "AsyncSetup"
   | "directive"
   | "inject"
   | "provider"
@@ -1694,6 +1754,7 @@ type HelperName =
 /** What each module helper imports from Ember, by module: a `type ` name is a type. */
 const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   afterRender: { "@ember/destroyable": ["isDestroying"], "@ember/renderer": ["renderSettled"] },
+  AsyncSetup: { "@ember/destroyable": ["isDestroying"] },
   directive: DIRECTIVE_IMPORTS,
   inject: {},
   provider: {},
@@ -1998,6 +2059,20 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
 }`,
   fallthroughStyle: FALLTHROUGH_STYLE,
   transition: TRANSITION_HELPERS,
+  AsyncSetup: `/**
+ * A component's async setup (Vue's \`async setup\` under \`<Suspense>\`): it runs as the
+ * component is constructed, and \`resolved\` holds once it has, which the template waits for.
+ * A component destroyed while it waits runs no more of it.
+ */
+class AsyncSetup {
+  @tracked resolved = false;
+
+  constructor(owner: object, run: () => Promise<void>) {
+    void run().then(() => {
+      if (!isDestroying(owner)) this.resolved = true;
+    });
+  }
+}`,
   teleportTarget: `/** The element a \`<Teleport to>\` selects, in the browser only: the server renders no teleport. */
 function teleportTarget(to: string): Element | undefined {
   return import.meta.env.SSR ? undefined : (document.querySelector(to) ?? undefined);

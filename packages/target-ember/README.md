@@ -110,7 +110,9 @@ native: a forwarded slot yields to the component's own block, and the child rend
 for each set of the forwarded slots the component got, as Glimmer passes a named block whether or
 not the component got the one it forwards. `generic-components` and `generic-slot-props` are
 native: a generic component is a class whose signature takes its type parameters, which Glint
-infers from a parent's arguments. Async setup, composables and hydration are unsupported for now
+infers from a parent's arguments. `async-setup` is emulated: the setup from its first `await` on
+runs as the component is constructed, in an inline helper, `AsyncSetup`, and the template renders
+once it has run. Composables and hydration are unsupported for now
 (`src/index.ts`).
 
 ## The toolchain

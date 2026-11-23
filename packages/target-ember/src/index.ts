@@ -78,6 +78,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "Transition",
     note: "Glimmer removes an element once its `{{#if}}` turns false, so a transition renders its elements from a list, an inline helper's `Transition.entries`: the element of the branch its condition shows, and each one still leaving, until its leave ends. An inline modifier, transitionClasses, runs Vue's classes of each phase on the element, in the browser only.",
   },
+  "async-setup": {
+    support: "emulated",
+    helper: "AsyncSetup",
+    note: "The setup's statements from its first `await` on run as the component is constructed, in an inline helper, AsyncSetup, and the template renders nothing until they have run, as Vue's `<Suspense>` shows none of it. A component destroyed while it waits runs no more of its setup.",
+  },
   fallthrough: {
     support: "emulated",
     helper: "fallthroughStyle",
@@ -197,14 +202,12 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // infers from a parent's arguments.
   "generic-components",
   "generic-slot-props",
+  // An async setup runs as the component is constructed, and the template waits for it.
+  "async-setup",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
-  {
-    reason: "Async setup is not emitted yet.",
-    names: ["async-setup"],
-  },
   {
     reason: "Composables are not emitted yet.",
     names: ["composables", "composable-effect-order"],
