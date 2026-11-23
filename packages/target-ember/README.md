@@ -86,8 +86,11 @@ emberjs/ember.js#21450 and #21789. Until one lands, the output follows ember-pri
 dom-context technique inline, since an output imports only its framework (P7). A provider's
 first node in its root element is a text node, `provider`, that holds each value under its key,
 and `inject` walks up the DOM from the consumer's own text node to the nearest one. A provided
-state is its ref, a `value` getter (`refOf`). Directives, slot forwarding, slotted styles,
-composables and hydration are unsupported for now (`src/index.ts`).
+state is its ref, a `value` getter (`refOf`).
+
+`directive` is emulated: a directive is a modifier on Ember's own manager (`src/directive.ts`),
+whose hooks run in Vue's order through the shared `queueHook`, and never on the server. Slot
+forwarding, slotted styles, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

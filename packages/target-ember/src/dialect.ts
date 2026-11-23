@@ -45,6 +45,8 @@ export interface DialectHost {
   slotOutlet(node: SlotOutletNode, props: string | undefined): MarkupPiece[];
   /** The handler of a child's event, which its `@onChange` argument takes. */
   componentListener(attribute: ListenerAttribute, node: ComponentNode): string;
+  /** A directive's modifier, with its value. */
+  directive(name: string, value: string, element: ElementNode): string;
   /** The modifier that holds an element in a template ref's member. */
   templateRef(name: string): string;
   /** The handler a listener's `{{on}}` takes: a member, or a call of one with row variables. */
@@ -207,7 +209,10 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       return [{ name: "on", text: `{{on "${attribute.event}" ${handler}${options}}}` }];
     },
     refAttribute: ({ name }) => [{ name: "ref", text: host.templateRef(name) }],
-    directiveAttribute: () => [],
+    // A directive is a modifier: `{{vFocusTrap this.open}}` (ADR-0099).
+    directiveAttribute: ({ attribute, value }, { element }) => [
+      { name: attribute.name, text: host.directive(attribute.name, value, element) },
+    ],
     // A child's props and events are its arguments (ADR-0053): `@label="Name"`,
     // `@count={{this.total}}`, and `@onClear={{this.reset}}` for its `clear` event.
     propAttribute: ({ name, code, literal }, { component }) => [

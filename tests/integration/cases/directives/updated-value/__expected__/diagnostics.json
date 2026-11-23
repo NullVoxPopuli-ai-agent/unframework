@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support directive: Directives are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "directives/updated-value/Meter.uf.tsx",
-    "start": {
-      "line": 11,
-      "column": 29,
-      "offset": 259
-    },
-    "end": {
-      "line": 11,
-      "column": 51,
-      "offset": 281
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "directives/updated-value/Meter.uf.tsx",

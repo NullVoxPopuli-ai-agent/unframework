@@ -10,6 +10,7 @@ import type {
 import type { Span, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { emitComponent } from "./component.ts";
+import { emitDirective } from "./directive.ts";
 
 /** A capability the Ember target does not emit yet, which its cases skip with this reason. */
 function notYet(reason: string): CapabilityCell {
@@ -56,6 +57,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     support: "emulated",
     helper: "classNames",
     note: "A Glimmer `class` is one string, so an inline helper, classNames, joins the static names, toggles and dynamic parts, and reads an array's entries and an object's keys as Vue's normalizeClass does.",
+  },
+  directive: {
+    support: "emulated",
+    helper: "queueHook",
+    note: "A directive is a modifier on Ember's own manager. Glimmer installs a parent's modifier before its children's, so each hook goes through an inline helper, queueHook, that runs them in Vue's order, and no hook runs on the server.",
   },
   "reactive-context": {
     support: "emulated",
@@ -126,6 +132,8 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "event-passive",
   "event-semantics",
   "conditional-event-control",
+  // A directive is a modifier on Ember's own manager (`directive.ts`).
+  "directive",
   // `uniqueId` from `@ember/helper`, once per `useId`.
   "use-id",
   // `renderSettled` from `@ember/renderer`, which resolves once the pending render has run.
@@ -156,10 +164,6 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
-  {
-    reason: "Directives are not emitted yet.",
-    names: ["directive"],
-  },
   {
     reason: "Slot forwarding, component models and the built-in components are not emitted yet.",
     names: [
@@ -257,10 +261,10 @@ export const ember: Target = defineTarget({
     }
     return [{ path: `${component.name}.gts`, contents: emitComponent(component, context) }];
   },
-  // The `composables` and `directive` cells are unsupported, so the compile reports UF4001 for
-  // each use, and the case has no Ember output.
+  // The `composables` cell is unsupported, so the compile reports UF4001 for each use, and the
+  // case has no Ember output.
   emitComposable: () => [],
-  emitDirective: () => [],
+  emitDirective,
 });
 
 export default ember;

@@ -175,6 +175,24 @@ describe("ember target", () => {
     expect(files).toEqual([]);
   });
 
+  it("applies a directive as a modifier that its output declares", async () => {
+    const { codes, files } = await emberOf(`
+      import { defineDirective } from "@uxfront/unframework";
+      const vMark = defineDirective<string>({
+        mounted(el, value) {
+          el.dataset.mark = value;
+        },
+      });
+      export default function Card() {
+        return <p v-mark="seen">Hi</p>;
+      }
+    `);
+    expect(codes).toEqual([]);
+    const [file] = files;
+    expect(file?.contents).toContain("const vMark = directive<string, HTMLElement>({");
+    expect(file?.contents).toContain('<p {{vMark "seen"}} ...attributes>Hi</p>');
+  });
+
   it("emits nothing for a component that provides without a root element", async () => {
     const { codes, files } = await emberOf(`
       import { provide } from "@uxfront/unframework";

@@ -7,15 +7,18 @@ import {
   addTypeImports,
   childImports,
   componentTypes,
+  directiveSpecifier,
   exportsOf,
   expressionNames,
   functionBodyText,
   functionText,
+  importedDirectives,
   ImportSet,
   keyImports,
   keyOwner,
   parametersText,
   passThroughImports,
+  ownDirectives,
   printMarkup,
   printProgram,
   rewriteCode as rewrite,
@@ -55,6 +58,7 @@ import type {
 } from "@unframework.dev/ir";
 
 import { emberDialect } from "./dialect.ts";
+import { DIRECTIVE_IMPORTS, directiveDeclaration, directiveHelpers } from "./directive.ts";
 import { moduleReads } from "./modules.ts";
 import type { ModuleReads } from "./modules.ts";
 
@@ -250,6 +254,11 @@ class ComponentPlan {
   templateRef(name: string): string {
     this.#helpers.add("templateRef");
     return `{{templateRef this "${name}"}}`;
+  }
+
+  /** A directive's modifier on its element, with the value it takes (`directive`). */
+  directive(name: string, value: string, element: ElementNode): string {
+    return `{{${this.#local(name)} ${this.value(value, true, element, true)}}}`;
   }
 
   /**
@@ -659,11 +668,15 @@ class ComponentPlan {
           : undefined,
     });
     const members = this.#propGetters().concat(this.#setupMembers(), this.#hoistedMembers);
+    const own = ownDirectives(component, this.#module);
+    if (own.length) this.#helpers.add("directive");
     const { text: imports, reads } = this.#imports(members);
     const parts = [imports];
     for (const type of this.#types(reads.types)) parts.push(type);
     // The module's values it reads, as the source declares them (ADR-0070).
     if (reads.constants.length) parts.push(reads.constants.join("\n"));
+    // The module's own directives it applies, each a modifier (ADR-0099).
+    for (const directive of own) parts.push(directiveDeclaration(directive));
     parts.push(this.#signature(root?.tag));
     // A consumer's marker comes first, outside what the component provides itself (`inject`).
     const marker = this.#injects ? "{{this.injectionMarker}}" : "";
@@ -767,6 +780,13 @@ class ComponentPlan {
       if (child.export === "default")
         imports.addDefault(child.specifier, child.local, { exact: true });
       else imports.add(child.specifier, child.name, { local: child.local, exact: true });
+    }
+    // Each directive of a `.uf.ts` module, from its own module beside it, `vFocusTrap.ts`.
+    for (const { specifier, imported, local } of importedDirectives(component, module)) {
+      imports.add(directiveSpecifier(specifier, `${imported}.ts`), imported, {
+        local,
+        exact: true,
+      });
     }
     // The keys of other modules, from their main component's output (ADR-0054).
     for (const key of keyImports(component, module, (name) => `${name}.gts`)) {
@@ -1252,6 +1272,7 @@ function indent(text: string): string {
 
 type HelperName =
   | "afterRender"
+  | "directive"
   | "inject"
   | "provider"
   | "refOf"
@@ -1272,6 +1293,7 @@ type HelperName =
 /** What each module helper imports from Ember, by module: a `type ` name is a type. */
 const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   afterRender: { "@ember/destroyable": ["isDestroying"], "@ember/renderer": ["renderSettled"] },
+  directive: DIRECTIVE_IMPORTS,
   inject: {},
   provider: {},
   refOf: {},
@@ -1304,6 +1326,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
 
 /** The module helpers, after the component. */
 const HELPERS: Record<HelperName, string> = {
+  directive: directiveHelpers().join("\n\n"),
   provider: `/**
  * Vue's \`provide\`: a text node, first in the component's root, that holds each provided value
  * under its key. The root's descendants find it, and no sibling of the root does (\`inject\`).
