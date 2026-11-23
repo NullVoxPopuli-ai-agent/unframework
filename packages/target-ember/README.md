@@ -95,7 +95,9 @@ whose hooks run in Vue's order through the shared `queueHook`, and never on the 
 `{{#if}}`. `fallthrough` is emulated: a caller's `class` reaches the root through
 `...attributes`, which joins it with the root's own, and a `style` is the `@style` argument, which
 an inline helper, `fallthroughStyle`, merges into the root's declarations as Vue does
-(`src/fallthrough.ts`). Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+(`src/fallthrough.ts`). `expose` is emulated: a component ref is the child's `@ref` argument,
+from an inline helper, `componentRef`, which the child calls with what `defineExpose` exposes
+once it has rendered, and with `null` once it is gone. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

@@ -68,6 +68,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "{{#if}}",
     note: "Glimmer has no `<component is>` over a tag, so each candidate is a branch of an `{{#if}}`: a tag where the choice is its name, a component where it is the component.",
   },
+  expose: {
+    support: "emulated",
+    helper: "componentRef",
+    note: "A Glimmer component has no instance a parent can hold, so a component ref is the child's `@ref` argument, a callback from an inline helper, componentRef: the child calls it with what `defineExpose` exposes once it has rendered, and with `null` once it is gone.",
+  },
   fallthrough: {
     support: "emulated",
     helper: "fallthroughStyle",
@@ -174,6 +179,7 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // A fill is the parent's own markup, so its elements carry the parent's attribute.
   "slotted-styles",
   "fallthrough",
+  "expose",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -183,7 +189,6 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: [
       "slot-forwarding",
       "model",
-      "expose",
       "teleport",
       "transition",
       "generic-components",

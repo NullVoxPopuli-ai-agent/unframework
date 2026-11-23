@@ -267,7 +267,12 @@ class ComponentPlan {
   }
 
   /** The handler a template ref's modifier is given: the member that holds the element. */
-  templateRef(name: string): string {
+  templateRef(name: string, element: ElementNode): string {
+    // A child's ref is its `@ref` argument, which the child calls with what it exposes.
+    if (this.isChild(element)) {
+      this.#helpers.add("componentRef");
+      return `@ref={{componentRef this "${name}"}}`;
+    }
     this.#helpers.add("templateRef");
     return `{{templateRef this "${name}"}}`;
   }
@@ -947,6 +952,13 @@ class ComponentPlan {
     const { emits } = component;
     const args: string[] = [];
     if (component.propsParameter) args.push(component.propsParameter.type.code);
+    // The parent's ref, which takes what the component exposes (`componentRef`).
+    if (component.exposes) {
+      const names = this.#exposedNames().map((name) => JSON.stringify(name));
+      args.push(
+        `{ ref?: (exposed: Pick<${component.name}, ${names.join(" | ")}> | null) => void }`,
+      );
+    }
     // A caller's `style`, which the root merges into its own (`fallthroughStyle`).
     if (this.#fallthrough) args.push("{ style?: unknown }");
     let events = "";
@@ -1015,6 +1027,16 @@ class ComponentPlan {
         (prop) =>
           `get ${prop.name}() {\n  return this.args.${prop.name} === undefined ? ${prop.default!.code} : this.args.${prop.name};\n}`,
       );
+  }
+
+  /** The names of the functions `defineExpose` exposes, as the class's members. */
+  #exposedNames(): string[] {
+    const { exposes, bindings } = this.#component;
+    return (exposes?.functions ?? []).map((id) => {
+      const binding = bindings.find((each) => each.id === id);
+      if (!binding) throw new Error(`No binding \`${id}\` is exposed.`);
+      return this.#local(binding.name);
+    });
   }
 
   /** The setup's declarations as members, in source order, then the lifecycle hooks. */
@@ -1161,6 +1183,16 @@ class ComponentPlan {
       this.#helpers.add("provider");
       members.push(
         `@cached\nget providerMarker(): Text {\n  return provider([${provided.join(", ")}]);\n}`,
+      );
+    }
+    // What `defineExpose` exposes reaches the parent's ref once the component has rendered, and
+    // `null` once it is gone, as Vue sets a component ref after its mount (`componentRef`).
+    if (component.exposes) {
+      this.#helpers.add("afterRender");
+      this.#helpers.add("registerDestructor");
+      const members = this.#exposedNames().map((name) => `${name}: this.${name}`);
+      hooks.unshift(
+        `afterRender(this, () => {\n  this.args.ref?.({ ${members.join(", ")} });\n  registerDestructor(this, () => this.args.ref?.(null));\n});`,
       );
     }
     if (hooks.length) {
@@ -1381,6 +1413,7 @@ type HelperName =
   | "refOf"
   | "callbacks"
   | "classNames"
+  | "componentRef"
   | "Effect"
   | "modelText"
   | "enumeratedValue"
@@ -1403,6 +1436,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   refOf: {},
   callbacks: {},
   classNames: {},
+  componentRef: {},
   fallthroughStyle: {},
   Effect: {
     "@ember/destroyable": ["isDestroying", "registerDestructor"],
@@ -1697,6 +1731,10 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
   return typeof value === "boolean" ? (String(value) as "true" | "false") : (value as Exclude<T, boolean>);
 }`,
   fallthroughStyle: FALLTHROUGH_STYLE,
+  componentRef: `/** Sets a member of its component to what a child exposes, or to \`null\` once the child is gone. */
+function componentRef(owner: object, name: string): (exposed: unknown) => void {
+  return (exposed) => void Reflect.set(owner, name, exposed);
+}`,
   styleText: `/**
  * A style from its declarations, those whose value is nullish left out, marked safe. A
  * declaration without a property is a whole style: a declaration list, or an object whose keys

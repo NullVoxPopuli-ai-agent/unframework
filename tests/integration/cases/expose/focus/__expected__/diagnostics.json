@@ -18,40 +18,6 @@
   },
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support expose: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "expose/focus/Header.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 20,
-      "offset": 252
-    },
-    "end": {
-      "line": 9,
-      "column": 32,
-      "offset": 264
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support expose: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "expose/focus/SearchField.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 3,
-      "offset": 243
-    },
-    "end": {
-      "line": 8,
-      "column": 26,
-      "offset": 266
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "expose/focus/SearchField.uf.tsx",

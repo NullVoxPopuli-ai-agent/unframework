@@ -67,7 +67,7 @@ export interface DialectHost {
   /** A directive's modifier, with its value. */
   directive(name: string, value: string, element: ElementNode): string;
   /** The modifier that holds an element in a template ref's member. */
-  templateRef(name: string): string;
+  templateRef(name: string, element: ElementNode): string;
   /** The handler a listener's `{{on}}` takes: a member, or a call of one with row variables. */
   listener(attribute: EventAttribute, at: object): string;
   /** What holds a node of the template: a branch's `If`, an element's parent. */
@@ -278,7 +278,9 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       const handler = host.listener(attribute, element);
       return [{ name: "on", text: `{{on "${attribute.event}" ${handler}${options}}}` }];
     },
-    refAttribute: ({ name }) => [{ name: "ref", text: host.templateRef(name) }],
+    refAttribute: ({ name }, { element }) => [
+      { name: "ref", text: host.templateRef(name, element) },
+    ],
     // A directive is a modifier: `{{vFocusTrap this.open}}` (ADR-0099).
     directiveAttribute: ({ attribute, value }, { element }) => [
       { name: attribute.name, text: host.directive(attribute.name, value, element) },
