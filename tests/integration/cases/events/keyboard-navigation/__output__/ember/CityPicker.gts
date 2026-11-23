@@ -1,7 +1,7 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
-import { uniqueId } from "@ember/helper";
+import { getOwner } from "@ember/owner";
 
 export interface CityPickerProps {
   cities: string[];
@@ -60,7 +60,7 @@ export default class CityPicker extends Component<CityPickerSignature> {
     }
   };
 
-  readonly listId = `uf-id-${uniqueId()}`;
+  readonly listId = useId(this);
 
   @tracked query = "";
 
@@ -196,4 +196,19 @@ function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
     )
     .join("; ");
   return text ? htmlSafe(text) : undefined;
+}
+
+/** How many ids each application gave, by its owner. */
+const ids = new WeakMap<object, number>();
+
+/**
+ * Vue's `useId`: an id unique within the component's application. The server and the client
+ * that hydrates its render create the components in the same order, so each gets the same id on
+ * both, which a random id would not.
+ */
+function useId(component: object): string {
+  const owner = getOwner(component) ?? component;
+  const count = ids.get(owner) ?? 0;
+  ids.set(owner, count + 1);
+  return `uf-id-${count}`;
 }

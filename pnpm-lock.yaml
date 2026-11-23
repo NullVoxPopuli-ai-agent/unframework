@@ -328,6 +328,7 @@ overrides:
 packageExtensionsChecksum: sha256-2KvlBMTn0a/5w6ygQyjroi2Nv/XoOpDfGvYYdq2MAT0=
 
 patchedDependencies:
+  ember-source@7.4.1: 1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04
   postcss-selector-parser@7.1.6: f46f4850955618de7810317808970ac11b90be7fdfa5e5823e033e10d2bdb5e3
   vite-ember-ssr@0.7.0: 11a1bf9c601ca6249c59eaa927318ef9af99ccfd159e99aa09ae4b225a341a50
 
@@ -814,7 +815,7 @@ importers:
         version: 2.4.0(@babel/core@7.29.7(supports-color@10.2.2))
       ember-source:
         specifier: 'catalog:'
-        version: 7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2)
+        version: 7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2)
       ember-strict-application-resolver:
         specifier: 'catalog:'
         version: 0.1.1(@babel/core@7.29.7(supports-color@10.2.2))
@@ -1651,7 +1652,7 @@ importers:
         version: 4.13.0
       ember-source:
         specifier: 'catalog:'
-        version: 7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2)
+        version: 7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2)
       playwright:
         specifier: 'catalog:'
         version: 1.63.0
@@ -1813,7 +1814,7 @@ importers:
         version: 2.2.1
       '@glint/ember-tsc':
         specifier: 'catalog:'
-        version: 1.14.4(ember-source@7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+        version: 1.14.4(ember-source@7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       '@glint/template':
         specifier: 'catalog:'
         version: 1.11.1
@@ -1822,7 +1823,7 @@ importers:
         version: 0.16.1(@typescript-eslint/parser@8.71.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(typescript@6.0.3)
       ember-source:
         specifier: 'catalog:'
-        version: 7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2)
+        version: 7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2)
       eslint:
         specifier: 'catalog:'
         version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -15392,7 +15393,7 @@ snapshots:
     dependencies:
       simple-html-tokenizer: 1.0.0
 
-  '@glint/ember-tsc@1.14.4(ember-source@7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
+  '@glint/ember-tsc@1.14.4(ember-source@7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)':
     dependencies:
       '@glimmer/syntax': 0.97.0
       '@glint/template': 1.11.1
@@ -15413,7 +15414,7 @@ snapshots:
       vscode-languageserver-textdocument: 1.0.15
       vscode-uri: 3.2.0
     optionalDependencies:
-      ember-source: 7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2)
+      ember-source: 7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -21586,7 +21587,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ember-source@7.4.1(@glimmer/component@2.2.1)(supports-color@10.2.2):
+  ember-source@7.4.1(patch_hash=1715bb0da68b65456add28edd06b120cbe160e6f271b968a8e50589c7616cd04)(@glimmer/component@2.2.1)(supports-color@10.2.2):
     dependencies:
       '@babel/core': 7.29.7(supports-color@10.2.2)
       '@embroider/addon-shim': 1.11.0

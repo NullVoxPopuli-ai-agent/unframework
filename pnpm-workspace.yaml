@@ -226,6 +226,14 @@ catalogs:
     eslint-plugin-solid: 0.19.0
     solid-js: 2.0.0
 patchedDependencies:
+  # Three of Glimmer's rehydration bugs. It writes a property's value as the server's attribute
+  # text, so a hydrated `disabled` reads `disabled="true"`: the patch sets the property, as a
+  # client render does. A node a template inserts (`{{this.marker}}`) never reaches the page: the
+  # client adopts whatever server node sits there, so the patch has the server bracket the node
+  # with `%glmr%` markers, as it does HTML, and the client put its own node there. And it sets a
+  # textarea's `value` before it removes the server's text, so the caret stays at the start: the
+  # patch removes the text first. Drop it once an ember-source release has the fixes.
+  ember-source@7.4.1: patches/ember-source@7.4.1.patch
   # TypeScript 7.1 reports its self-referencing `Selector` type as infinitely circular
   # (TS5115, microsoft/TypeScript#64605), so codegen's scoper fails check-types. The patch writes
   # out the same nodes as a union. Drop it once TypeScript or the package fixes the type.

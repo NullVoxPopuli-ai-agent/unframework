@@ -1,11 +1,9 @@
 # @unframework.dev/target-ember
 
 The Ember 7.4 target of the Unframework compiler: one `.gts` file per component, in Glimmer's
-strict mode. The target is opt-in (`targets: ["ember"]`), and it emits the static and props subset
-of components, with listeners, emits, template refs, watchers and lifecycle hooks, so far
-([#236](https://github.com/uxfront-com/unframework/issues/236)). A module that
-needs anything else has no Ember output: its capability cells are unsupported, as errors, and the
-compiler reports UF4001 at the first use.
+strict mode, and one `.ts` module per directive and composable. The target is opt-in
+(`targets: ["ember"]`). It emits every capability: the cells it builds with an inline helper are
+emulated, and `late-prop` is unsupported by design, as a warning.
 
 ## The module
 
@@ -67,7 +65,8 @@ attribute and leaves `false` out. `class-binding` goes through `classNames`, and
 through `styleText`, which marks the style safe with `htmlSafe`. `contextual-root` is native: a
 Glimmer component has no host element. `interactivity` and the listeners' options and semantics
 are native: `{{on}}` calls `addEventListener` on its element. `use-id` is native: `useId()` is
-`uf-id-` and `uniqueId()` from `@ember/helper`. `next-tick` is native: `nextTick()` is
+an id counted per application, `uf-id-0`, the same on the server and on the client that hydrates
+its render. `next-tick` is native: `nextTick()` is
 `renderSettled()` from `@ember/renderer`, which resolves once the pending render has run, as
 Vue's resolves once its pending flush has. `keyed-identity` and `listbox` follow from Glimmer.
 `late-prop` is unsupported by design, as a warning: an Ember parent names each argument in its
@@ -116,8 +115,8 @@ once it has run. `composables` and `composable-effect-order` are native: a compo
 module of its own whose function, which takes the calling component first, makes a class on an
 inline base, `Composable`. A composable that runs code in the browser gives the caller `flush`,
 `flushAfter` and `mount`, which the caller calls where the call sits among its own, in source
-order. Hydration is unsupported for now
-(`src/index.ts`).
+order. `hydration` is native: the client boots the app the server rendered with in Glimmer's
+rehydrate mode (`src/toolchain/hydrate.ts`).
 
 ## The toolchain
 
@@ -139,4 +138,8 @@ For tests and tooling (the target's main entry never loads it):
 - **`…/toolchain/server`**: renders as an app renders on the server: vite-ember-ssr boots an
   application under a happy-dom window, its route template invokes the component, and the
   render serialises the body. It patches vite-ember-ssr 0.7.0 so that a form control's state is
-  part of the HTML (evoactivity/vite-ember-ssr#46).
+  part of the HTML (evoactivity/vite-ember-ssr#46). `renderForHydration` renders the same way,
+  with Glimmer's rehydration markers.
+- **`…/toolchain/hydrate`**: boots the app the server rendered with (`app.ts`) in the browser
+  with `_renderMode: "rehydrate"`, so Glimmer adopts the server's nodes, then behaves as the
+  mount adapter does. Glimmer reports no mismatch: where a node differs, it renders its own.

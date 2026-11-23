@@ -1,4 +1,4 @@
-import { CAPABILITY_NAMES, defineTarget, requiredCapabilities } from "@unframework.dev/codegen";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework.dev/codegen";
 import type {
   Capabilities,
   CapabilityCell,
@@ -7,20 +7,10 @@ import type {
   OutputFile,
   Target,
 } from "@unframework.dev/codegen";
-import type { Span, UfComponent, UfModule } from "@unframework.dev/ir";
+import type { Span, UfComponent } from "@unframework.dev/ir";
 
 import { emitComponent, emitComposable } from "./component.ts";
 import { emitDirective } from "./directive.ts";
-
-/** A capability the Ember target does not emit yet, which its cases skip with this reason. */
-function notYet(reason: string): CapabilityCell {
-  return {
-    support: "unsupported",
-    code: "UF4001",
-    severity: "error",
-    reason: `${reason} See uxfront-com/unframework#236.`,
-  };
-}
 
 const NATIVE: CapabilityCell = { support: "native" };
 
@@ -121,11 +111,7 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
   },
 };
 
-/**
- * What the Ember target emits so far: the static and props subset of M1, with listeners, template
- * refs, watchers and hooks (`interactivity`). Each other cell is
- * unsupported with an error, so its cases have no Ember output and skip (`ufNoOutput`).
- */
+/** The cells the output builds with Ember's own features: each that no other record holds. */
 const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "element",
   "text",
@@ -160,7 +146,7 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // A directive is a modifier on Ember's own manager (`directive.ts`).
   "directive",
   "dynamic-component",
-  // `uniqueId` from `@ember/helper`, once per `useId`.
+  // An id counted per application, the same on the server and on the client that hydrates it.
   "use-id",
   // `renderSettled` from `@ember/renderer`, which resolves once the pending render has run.
   "next-tick",
@@ -208,48 +194,21 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // its own run with, in the order the setup registers them.
   "composables",
   "composable-effect-order",
+  // The hydrate adapter boots the app the server rendered with in Glimmer's rehydrate mode.
+  "hydration",
 ]);
 
-/** The capabilities each part of the target that is not built yet holds. */
-const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
-  {
-    reason: "The toolchain does not rehydrate a server render yet.",
-    names: ["hydration"],
-  },
-];
-
-/** Why a capability is not emitted yet. */
-function reasonFor(name: CapabilityName): string {
-  const part = NOT_YET.find((each) => each.names.includes(name));
-  if (!part) throw new Error(`The Ember target declares no cell for \`${name}\`.`);
-  return part.reason;
+/** A capability the target declares no cell for: a new one in `CAPABILITY_NAMES`. */
+function undeclared(name: CapabilityName): never {
+  throw new Error(`The Ember target declares no cell for \`${name}\`.`);
 }
 
 const CAPABILITIES = Object.fromEntries(
   CAPABILITY_NAMES.map((name) => [
     name,
-    BY_DESIGN[name] ?? EMULATED[name] ?? (SUPPORTED.has(name) ? NATIVE : notYet(reasonFor(name))),
+    BY_DESIGN[name] ?? EMULATED[name] ?? (SUPPORTED.has(name) ? NATIVE : undeclared(name)),
   ]),
 ) as Capabilities;
-
-/** The modules the target emits: none that needs a capability it does not emit yet. */
-const supported = new WeakMap<UfModule, boolean>();
-
-/**
- * Whether the target emits a module. One that needs a capability it does not emit yet has no
- * Ember output: the compile reports the capability's UF4001 error, and the case skips.
- */
-function emits(module: UfModule): boolean {
-  let known = supported.get(module);
-  if (known === undefined) {
-    known = true;
-    for (const name of requiredCapabilities(module).keys()) {
-      if (!SUPPORTED.has(name) && !(name in BY_DESIGN)) known = false;
-    }
-    supported.set(module, known);
-  }
-  return known;
-}
 
 /**
  * What keeps the target from emitting a component's context, with where: a provider's marker
@@ -277,7 +236,6 @@ export const ember: Target = defineTarget({
   framework: { package: "ember-source", range: ">=7.4 <8" },
   capabilities: CAPABILITIES,
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    if (!emits(context.module)) return [];
     const unsupported = contextProblem(component);
     if (unsupported) {
       context.report({ code: "UF4001", severity: "error", ...unsupported });

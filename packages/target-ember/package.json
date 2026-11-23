@@ -26,6 +26,7 @@
     "./toolchain": "./src/toolchain/index.ts",
     "./toolchain/client": "./src/toolchain/client.ts",
     "./toolchain/server": "./src/toolchain/server.ts",
+    "./toolchain/hydrate": "./src/toolchain/hydrate.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -45,6 +46,10 @@
       "./toolchain/server": {
         "types": "./dist/toolchain/server.d.ts",
         "default": "./dist/toolchain/server.js"
+      },
+      "./toolchain/hydrate": {
+        "types": "./dist/toolchain/hydrate.d.ts",
+        "default": "./dist/toolchain/hydrate.js"
       },
       "./package.json": "./package.json"
     },

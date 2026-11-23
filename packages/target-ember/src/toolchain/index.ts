@@ -24,10 +24,16 @@ export const toolchain: Toolchain = {
       ...(mode === "ssr"
         ? { ssr: { noExternal: ["ember-source", "@glimmer/component"] } }
         : { optimizeDeps: { exclude: ["ember-source", "@glimmer/component"] } }),
+      // A hydrate project renders in its browser server's SSR environment, which inlines every
+      // dependency: the server render's own, vite-ember-ssr and happy-dom, load as Node's.
+      ...(mode === "hydrate"
+        ? { environments: { ssr: { resolve: { external: ["vite-ember-ssr", "happy-dom"] } } } }
+        : {}),
     };
   },
   client: "@unframework.dev/target-ember/toolchain/client",
   server: "@unframework.dev/target-ember/toolchain/server",
+  hydrate: "@unframework.dev/target-ember/toolchain/hydrate",
   frameworkCompile,
   frameworkEmit,
   typecheck,

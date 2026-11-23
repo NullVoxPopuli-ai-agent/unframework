@@ -1489,10 +1489,11 @@ class ComponentPlan {
           const name = bindingName(component, item.binding);
           return `@tracked ${name}: ${item.type?.code ?? "Element"} | null = null;`;
         }
-        // `uniqueId` gives each call an id unique to the application, so each instance's differ.
+        // An id counted per application (`useId`), the same on the server and on the client that
+        // hydrates its render.
         case "Id": {
-          this.#helpers.add("uniqueId");
-          return `readonly ${bindingName(component, item.binding)} = \`uf-id-\${uniqueId()}\`;`;
+          this.#helpers.add("useId");
+          return `readonly ${bindingName(component, item.binding)} = useId(this);`;
         }
         case "Watch": {
           this.#helpers.add("Watcher");
@@ -1912,7 +1913,7 @@ type HelperName =
   | "templateRef"
   | "transition"
   | "toggle"
-  | "uniqueId"
+  | "useId"
   | "Watcher";
 
 /** What each module helper imports from Ember, by module: a `type ` name is a type. */
@@ -1935,7 +1936,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   enumeratedValue: {},
   registerDestructor: { "@ember/destroyable": ["registerDestructor"] },
   renderSettled: { "@ember/renderer": ["renderSettled"] },
-  uniqueId: { "@ember/helper": ["uniqueId"] },
+  useId: { "@ember/owner": ["getOwner"] },
   modelText: {
     "@ember/modifier": ["capabilities", "setModifierManager"],
     "@glint/template": ["type ModifierLike"],
@@ -1998,7 +1999,20 @@ function afterRender(owner: object, run: () => unknown): void {
 }`,
   registerDestructor: "",
   renderSettled: "",
-  uniqueId: "",
+  useId: `/** How many ids each application gave, by its owner. */
+const ids = new WeakMap<object, number>();
+
+/**
+ * Vue's \`useId\`: an id unique within the component's application. The server and the client
+ * that hydrates its render create the components in the same order, so each gets the same id on
+ * both, which a random id would not.
+ */
+function useId(component: object): string {
+  const owner = getOwner(component) ?? component;
+  const count = ids.get(owner) ?? 0;
+  ids.set(owner, count + 1);
+  return \`uf-id-\${count}\`;
+}`,
   toggle: `/** The values with \`value\` added when \`checked\`, and removed otherwise. */
 function toggle<T>(values: readonly T[], value: T, checked: boolean): T[] {
   return checked ? values.concat([value]) : values.filter((each) => each !== value);
