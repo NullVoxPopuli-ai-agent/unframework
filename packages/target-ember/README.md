@@ -108,7 +108,9 @@ helper, `teleportTarget`, finds in the browser only, so the server renders none 
 `transitionClasses`, runs Vue's classes of each phase on the element. `slot-forwarding` is
 native: a forwarded slot yields to the component's own block, and the child renders in a branch
 for each set of the forwarded slots the component got, as Glimmer passes a named block whether or
-not the component got the one it forwards. Generic components, async setup, composables and hydration are unsupported for now
+not the component got the one it forwards. `generic-components` and `generic-slot-props` are
+native: a generic component is a class whose signature takes its type parameters, which Glint
+infers from a parent's arguments. Async setup, composables and hydration are unsupported for now
 (`src/index.ts`).
 
 ## The toolchain

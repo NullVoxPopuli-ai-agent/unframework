@@ -342,19 +342,6 @@ describe("ember target", () => {
     `);
   });
 
-  it("emits nothing for a module that needs a capability it does not emit yet", async () => {
-    const { codes, files } = await emberOf(`
-      export interface CardProps<T> {
-        items: T[];
-      }
-      export default function Card<T>({ items }: CardProps<T>) {
-        return <p>{items.length}</p>;
-      }
-    `);
-    expect(codes).toEqual(["UF4001 error"]);
-    expect(files).toEqual([]);
-  });
-
   it("applies a directive as a modifier that its output declares", async () => {
     const { codes, files } = await emberOf(`
       import { defineDirective } from "@uxfront/unframework";

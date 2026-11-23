@@ -193,13 +193,17 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // A forwarded slot yields to the component's own block, in a branch for each set of the
   // forwarded slots the component got, as Glimmer passes a named block unconditionally.
   "slot-forwarding",
+  // A generic component is a class whose signature takes its type parameters, which Glint
+  // infers from a parent's arguments.
+  "generic-components",
+  "generic-slot-props",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Generic components and async setup are not emitted yet.",
-    names: ["slot-forwarding", "generic-components", "generic-slot-props", "async-setup"],
+    reason: "Async setup is not emitted yet.",
+    names: ["async-setup"],
   },
   {
     reason: "Composables are not emitted yet.",

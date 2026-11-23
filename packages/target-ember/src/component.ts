@@ -235,8 +235,13 @@ class ComponentPlan {
       }
       // Each option is `selected` where it holds the state (`optionSelected`), which the server
       // renders too.
-      case "select":
-        return [`{{on "change" ${write(target("HTMLSelectElement", "value"), "event: Event")}}}`];
+      // A generic component's state may be a type parameter, `T extends string`, which an
+      // option's string is not: the value is one of the options the parent passed.
+      case "select": {
+        const read = target("HTMLSelectElement", "value");
+        const typed = this.#component.typeParameters ? `${read} as typeof ${value}` : read;
+        return [`{{on "change" ${write(typed, "event: Event")}}}`];
+      }
       case "select-multiple":
         return [
           `{{on "change" ${write(`Array.from(${target("HTMLSelectElement", "selectedOptions")}, (option) => option.value)`, "event: Event")}}}`,
@@ -597,7 +602,7 @@ class ComponentPlan {
     if (!child) throw new Error(`No output imports \`${node.component}\`.`);
     this.#signatures.set(child.local, child);
     const param = this.#local(parameter.name ?? `${fill.slot}Props`);
-    this.#rows.set(param, `${child.name}Signature["Blocks"]["${fill.slot}"][0]`);
+    this.#rows.set(param, `${this.#childType(child, "Signature")}["Blocks"]["${fill.slot}"][0]`);
     this.#rowLists.set(param, fill);
     const { start, end } = parameter.span;
     const keys = parameter.pattern
@@ -650,10 +655,10 @@ class ComponentPlan {
     if (handler.kind === "Function") return `this.${bindingName(this.#component, handler.binding)}`;
     const child = this.#children.get(node.component);
     if (!child) throw new Error(`No output imports \`${node.component}\`.`);
-    const events = `${child.name}Events`;
+    const events = this.#childType(child, "Events");
     this.#eventTypes.set(child.local, {
       specifier: child.specifier,
-      name: events,
+      name: `${child.name}Events`,
       self: child.self,
     });
     return this.#inline(
@@ -968,7 +973,7 @@ class ComponentPlan {
 
   /** The imports: Glimmer's and Ember's, then the types and the pass-through modules. */
   #imports(members: readonly string[]): { text: string; reads: ModuleReads } {
-    const isClass = members.length > 0;
+    const isClass = members.length > 0 || this.#component.typeParameters !== undefined;
     const component = this.#component;
     const module = this.#module;
     const lines = [
@@ -980,7 +985,10 @@ class ComponentPlan {
     if (this.#injects || this.#provides) tracking.push("cached");
     if (
       component.setup.some(
-        (item) => item.kind === "State" || item.kind === "TemplateRef" || item.kind === "Model",
+        (item) =>
+          item.kind === "State" ||
+          item.kind === "TemplateRef" ||
+          (item.kind === "Model" && !item.required),
       ) ||
       this.#helpers.has("transition") ||
       this.#helpers.has("Effect")
@@ -1047,7 +1055,7 @@ class ComponentPlan {
     // signature's `Element` by a root child's.
     const read = members.join("\n");
     for (const child of this.#signatures.values()) {
-      if (!child.self && read.includes(`${child.name}Signature[`)) {
+      if (!child.self && new RegExp(`\\b${child.name}Signature[[<]`).test(read)) {
         imports.add(child.specifier, `${child.name}Signature`, { type: true, exact: true });
       }
     }
@@ -1110,20 +1118,20 @@ class ComponentPlan {
     if (this.#fallthrough) args.push("{ style?: unknown }");
     let events = "";
     if (emits) {
-      const name = `${component.name}Events`;
+      const name = `${component.name}Events${this.#typeArguments()}`;
       const members = emits.events.map((event) => {
         const parameters = event.parameters
           .map((each) => `${each.name}${each.optional ? "?" : ""}: ${each.type.code}`)
           .join(", ");
         return `  ${eventArgument(event.name)}?: (${parameters}) => void;`;
       });
-      events = `export interface ${name} {\n${members.join("\n")}\n}\n\n`;
+      events = `export interface ${component.name}Events${this.#typeParameters()} {\n${members.join("\n")}\n}\n\n`;
       args.push(name);
     }
     // Each model's value and the callback that hears its writes, an interface of their own.
     const models = component.setup.flatMap((item) => (item.kind === "Model" ? [item] : []));
     if (models.length) {
-      const name = `${component.name}Models`;
+      const name = `${component.name}Models${this.#typeArguments()}`;
       const members = models.flatMap((item) => {
         const type = item.type?.code ?? "unknown";
         return [
@@ -1131,7 +1139,7 @@ class ComponentPlan {
           `  ${modelArgument(item.name)}?: (value: ${type}) => void;`,
         ];
       });
-      events += `export interface ${name} {\n${members.join("\n")}\n}\n\n`;
+      events += `export interface ${component.name}Models${this.#typeParameters()} {\n${members.join("\n")}\n}\n\n`;
       args.push(name);
     }
     const lines: string[] = [];
@@ -1148,13 +1156,13 @@ class ComponentPlan {
     for (const root of this.#roots) {
       for (const tag of root.tags) elements.add(elementType(tag));
       const child = root.component === undefined ? undefined : this.#children.get(root.component);
-      if (child && !child.self) elements.add(`${child.name}Signature["Element"]`);
+      if (child && !child.self) elements.add(`${this.#childType(child, "Signature")}["Element"]`);
     }
     // A root that is no one element, such as a fragment or a teleport, takes no attributes. The
     // signature still names one, so a styled parent can pass its scope attributes, which
     // Glimmer drops without `...attributes`, as Vue's fallthrough reaches none.
     lines.push(`  Element: ${elements.size ? Array.from(elements).join(" | ") : "Element"};`);
-    return `${events}export interface ${component.name}Signature {\n${lines.join("\n")}\n}`;
+    return `${events}export interface ${component.name}Signature${this.#typeParameters()} {\n${lines.join("\n")}\n}`;
   }
 
   /**
@@ -1173,14 +1181,61 @@ class ComponentPlan {
       : `\n\nexport { ${exports
           .map((entry) => `${name} as ${entry.kind === "default" ? "default" : entry.name}`)
           .join(", ")} };`;
-    if (members.length) {
+    // A generic component is a class even without members: Glint types a template-only one
+    // with no type parameters.
+    if (members.length || this.#component.typeParameters) {
       const keyword = isDefault ? "export default " : inPlace ? "export " : "";
       const body = members.map(indent).join("\n\n");
-      return `${keyword}class ${name} extends Component<${signature}> {\n${body}\n\n  ${template}\n}${list}`;
+      const head = `${keyword}class ${name}${this.#typeParameters()} extends Component<${signature}${this.#typeArguments()}>`;
+      return `${head} {\n${body ? `${body}\n\n` : ""}  ${template}\n}${list}`;
     }
     const constant = `const ${name}: TOC<${signature}> = ${template.replace(/\n {2}/g, "\n")};`;
     if (isDefault) return `${constant}\n\nexport default ${name};`;
     return `${inPlace ? "export " : ""}${constant}${list}`;
+  }
+
+  /** A generic component's type parameters as declared, `<T extends string>`, or nothing. */
+  #typeParameters(): string {
+    const parameters = this.#component.typeParameters;
+    if (!parameters) return "";
+    const each = parameters.map(
+      (parameter) =>
+        `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint.code}` : ""}${parameter.default ? ` = ${parameter.default.code}` : ""}`,
+    );
+    return `<${each.join(", ")}>`;
+  }
+
+  /** A generic component's type parameters as arguments, `<T>`, or nothing. */
+  #typeArguments(): string {
+    const parameters = this.#component.typeParameters;
+    return parameters ? `<${parameters.map((parameter) => parameter.name).join(", ")}>` : "";
+  }
+
+  /**
+   * A child's signature or events interface by name, with `never` for each type parameter of a
+   * generic child, which satisfies any constraint: the parent's members read only its shape.
+   */
+  #childType(child: ChildImport, suffix: "Signature" | "Events"): string {
+    const count = this.#childTypeParameters(child.local);
+    return `${child.name}${suffix}${count ? `<${Array.from({ length: count }, () => "never").join(", ")}>` : ""}`;
+  }
+
+  /** How many type parameters a child takes, by the name the template writes. */
+  #childTypeParameters(local: string): number {
+    for (const entry of this.#module.imports ?? []) {
+      const imported = entry.names.find(
+        (name) => name.kind === "Component" && name.local === local,
+      );
+      if (!imported) continue;
+      const api = entry.api.components.find((each) =>
+        imported.imported === "default"
+          ? each.export === "default"
+          : each.export === "named" && each.name === imported.imported,
+      );
+      return api?.typeParameters?.length ?? 0;
+    }
+    const own = this.#module.components.find((each) => each.name === local);
+    return own?.typeParameters?.length ?? 0;
   }
 
   /** A getter for each prop with a default: an absent or `undefined` argument takes it. */
@@ -1328,11 +1383,18 @@ class ComponentPlan {
         case "Model": {
           const name = bindingName(component, item.binding);
           const type = this.#modelType(item);
+          const argument = modelArgument(item.name);
+          // A required model always has the parent's argument, so it holds no value of its own.
+          if (item.required) {
+            return [
+              `get ${name}(): ${type} {\n  return this.args.${item.name};\n}`,
+              `set ${name}(value: ${type}) {\n  this.args.${argument}?.(value);\n}`,
+            ];
+          }
           const local = this.#modelLocal(name);
           const initial = item.default
             ? rewrite(item.default, component, rules, "pure")
             : "undefined";
-          const argument = modelArgument(item.name);
           return [
             `@tracked ${local}: ${type} = ${initial};`,
             `get ${name}(): ${type} {\n  return this.args.${item.name} === undefined ? this.${local} : this.args.${item.name};\n}`,
