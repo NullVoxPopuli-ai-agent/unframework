@@ -68,6 +68,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "{{#if}}",
     note: "Glimmer has no `<component is>` over a tag, so each candidate is a branch of an `{{#if}}`: a tag where the choice is its name, a component where it is the component.",
   },
+  fallthrough: {
+    support: "emulated",
+    helper: "fallthroughStyle",
+    note: "A caller's `class` reaches the root through `...attributes`, where Glimmer joins it with the root's own. Glimmer lets a caller's `style` attribute replace the root's own, so a `style` is the `@style` argument, which an inline helper, fallthroughStyle, merges into the root's declarations as Vue does.",
+  },
   "reactive-context": {
     support: "emulated",
     helper: "refOf",
@@ -168,6 +173,7 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "child-root-scope",
   // A fill is the parent's own markup, so its elements carry the parent's attribute.
   "slotted-styles",
+  "fallthrough",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -177,7 +183,6 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: [
       "slot-forwarding",
       "model",
-      "fallthrough",
       "expose",
       "teleport",
       "transition",

@@ -83,22 +83,5 @@
       "offset": 579
     },
     "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support fallthrough: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "async-setup/nested/Team.uf.tsx",
-    "start": {
-      "line": 25,
-      "column": 13,
-      "offset": 737
-    },
-    "end": {
-      "line": 25,
-      "column": 25,
-      "offset": 749
-    },
-    "target": "ember"
   }
 ]

@@ -16,8 +16,9 @@ it reads; the signature; the component; the inline helpers it calls.
 
 - **The signature.** `export interface CardSignature { Args: CardProps & CardEvents; Element: … }`.
   `Args` is the props annotation as written, and the events' interface, `CardEvents`, whose
-  members are optional arguments, `onChange` for `change`, that take the event's payload. `Element` is the root element's interface, for a component with
-  one root element, which takes the caller's attributes with `...attributes`.
+  members are optional arguments, `onChange` for `change`, that take the event's payload. `Element` is the root element's interface, or a root child's `Element`,
+  which takes the caller's attributes with `...attributes`. A component whose root takes
+  fallthrough also takes `style?: unknown`, the caller's `style`.
 - **Template-only.** A component with no member of its own is a `TOC<CardSignature>` constant whose
   template reads its props as `{{@title}}`.
 - **A class.** Any other component is a `@glimmer/component` class. A prop with a default is a
@@ -91,7 +92,10 @@ state is its ref, a `value` getter (`refOf`).
 `directive` is emulated: a directive is a modifier on Ember's own manager (`src/directive.ts`),
 whose hooks run in Vue's order through the shared `queueHook`, and never on the server.
 `dynamic-component` is emulated: each candidate of a `<component is>` is a branch of an
-`{{#if}}`. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+`{{#if}}`. `fallthrough` is emulated: a caller's `class` reaches the root through
+`...attributes`, which joins it with the root's own, and a `style` is the `@style` argument, which
+an inline helper, `fallthroughStyle`, merges into the root's declarations as Vue does
+(`src/fallthrough.ts`). Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

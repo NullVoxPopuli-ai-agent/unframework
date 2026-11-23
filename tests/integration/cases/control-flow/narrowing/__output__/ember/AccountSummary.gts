@@ -1,4 +1,5 @@
 import Component from "@glimmer/component";
+import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
 interface Team {
   name: string;
@@ -27,7 +28,7 @@ export interface AccountSummaryProps {
 }
 
 export interface AccountSummarySignature {
-  Args: AccountSummaryProps;
+  Args: AccountSummaryProps & { style?: unknown };
   Element: HTMLElementTagNameMap["section"];
 }
 
@@ -87,8 +88,50 @@ export default class AccountSummary extends Component<AccountSummarySignature> {
   <template><section
       class="account-summary"
       aria-label="Account"
+      style={{fallthroughStyle @style}}
       ...attributes
     >{{#if @loading}}<p>Loading the account</p>{{else if this.value1}}<p>Signed out</p>{{else}}<h2>{{this.value2}}</h2>{{/if}}{{#if @member}}<p>Signed in as {{@member.email}}</p>{{/if}}{{#if @member}}<p>Role: {{this.value3}}</p>{{else}}<p>Role: guest</p>{{/if}}{{#if this.value1}}<p>No profile</p>{{else}}<p>Profile of {{this.value2}}</p>{{/if}}{{#if this.value4}}<p>Team: {{this.value5}}</p>{{/if}}{{#if this.value6}}<p>Uptime {{this.value7}}%</p>{{/if}}{{#if this.value8}}<p>Storage {{this.value9}} GB</p>{{else}}<p>Storage {{this.value10}}</p>{{/if}}{{#if this.value11}}<p>Renews on {{this.value12}}</p>{{else}}<p>Trial ends in {{this.value13}} days</p>{{/if}}<ul
       aria-label="Seats"
     >{{#each @seats key="@index" as |seat|}}<li>{{#if seat}}<b>{{seat.holder}}</b>{{else}}Vacant{{/if}}</li>{{/each}}</ul></section></template>
+}
+
+/**
+ * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+ * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+ * A style is text, or a list of `[property, value]` declarations, where one without a property
+ * is a whole style.
+ */
+function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+  const merged = new Map<string, unknown>();
+  const add = (style: unknown): void => {
+    if (style === undefined || style === null) return;
+    if (Array.isArray(style)) {
+      for (const [property, value] of style as [string, unknown][]) {
+        if (property) merged.set(property, value);
+        else add(value);
+      }
+    } else if (typeof style === "object" && !isHTMLSafe(style)) {
+      for (const [key, value] of Object.entries(style)) {
+        merged.set(
+          key.startsWith("--")
+            ? key
+            : key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
+          value,
+        );
+      }
+    } else {
+      const text = String(style).replace(/\/\*[^]*?\*\//g, "");
+      for (const declaration of text.split(/;(?![^(]*\))/)) {
+        const [property, value] = declaration.split(/:([^]+)/);
+        if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
+      }
+    }
+  };
+  for (const style of styles) add(style);
+  const text = Array.from(merged)
+    .flatMap(([property, value]) =>
+      value === undefined || value === null ? [] : [`${property}: ${String(value)}`],
+    )
+    .join("; ");
+  return text ? htmlSafe(text) : undefined;
 }

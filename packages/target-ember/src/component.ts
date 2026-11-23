@@ -23,6 +23,7 @@ import {
   printProgram,
   rewriteCode as rewrite,
   rewriteExpression,
+  staticStyleValue,
   typeDeclarationCode,
   typeExportsCode,
 } from "@unframework.dev/codegen";
@@ -50,10 +51,8 @@ import type {
   Code,
   ModelAttribute,
   Prop,
-  RenderNode,
   SlotFill,
   SlotOutletNode,
-  Span,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -61,6 +60,15 @@ import type {
 
 import { emberDialect } from "./dialect.ts";
 import { DIRECTIVE_IMPORTS, directiveDeclaration, directiveHelpers } from "./directive.ts";
+import {
+  FALLTHROUGH_STYLE,
+  fallthroughRoot,
+  hasOwnStyle,
+  rootNodes,
+  styleLiteral,
+  takesFallthrough,
+} from "./fallthrough.ts";
+import type { RootNode } from "./fallthrough.ts";
 import { moduleReads } from "./modules.ts";
 import type { ModuleReads } from "./modules.ts";
 
@@ -125,6 +133,10 @@ class ComponentPlan {
   readonly #tags: ReadonlySet<string>;
   /** Each node of the template, branch included, by what holds it. */
   readonly #parents: ReadonlyMap<object, object>;
+  /** The nodes the root may be, which take the caller's attributes (`rootNodes`). */
+  readonly #roots: readonly RootNode[];
+  /** The one node a caller's `class` and `style` reach, if any (`fallthroughRoot`). */
+  readonly #fallthrough: RootNode | undefined;
 
   constructor(component: UfComponent, module: UfModule) {
     this.#component = component;
@@ -134,6 +146,8 @@ class ComponentPlan {
     this.#children = new Map(
       childImports(component, module, (name) => `${name}.gts`).map((each) => [each.local, each]),
     );
+    this.#roots = rootNodes(component, module);
+    this.#fallthrough = fallthroughRoot(component, module);
     this.#provides = component.setup.some((item) => item.kind === "Provide");
     this.#injects = component.setup.some((item) => item.kind === "Inject");
   }
@@ -633,6 +647,65 @@ class ComponentPlan {
     return `styleText([${entries.join(", ")}])`;
   }
 
+  /**
+   * A root's `style` with the caller's `@style` merged in, where the element or child is the
+   * fallthrough root. `null` for a child that takes no fallthrough, and `undefined` for any other.
+   */
+  fallthroughStyle(parts: readonly StylePart[], element: ElementNode): string | null | undefined {
+    const child = this.isChild(element);
+    if (child && !takesFallthrough(this.#module, element.tag)) return null;
+    if (!this.#fallthroughAt(element)) return undefined;
+    this.#helpers.add("fallthroughStyle");
+    this.#usesHtmlSafe = true;
+    const text = parts.every((part) => part.kind === "Static")
+      ? staticStyleValue(parts)
+      : undefined;
+    const literal = text === undefined ? undefined : styleLiteral(text);
+    const own =
+      literal ??
+      (text === undefined
+        ? this.styleArgument(parts, element, true)
+        : this.value(JSON.stringify(text), true, element));
+    return `${child ? "@style" : "style"}={{fallthroughStyle ${own} @style}}`;
+  }
+
+  /**
+   * A child's `@style` as its declarations, `[property, value]`, so that a nullish value removes
+   * the root's own, as Vue's merge does (`fallthroughStyle`).
+   */
+  styleArgument(parts: readonly StylePart[], element: ElementNode, subexpression = false): string {
+    const entries = parts.map((part) => {
+      const value = part.kind === "Static" ? JSON.stringify(part.value) : part.value;
+      return `[${JSON.stringify(part.property)}, ${value}] as const`;
+    });
+    return this.value(`[${entries.join(", ")}]`, subexpression, element);
+  }
+
+  /** Whether the printer writes a child's tag, not an element. */
+  isChild(element: ElementNode): boolean {
+    return this.#children.has(element.tag);
+  }
+
+  /** Whether a child's tag takes a `class`: only one that takes fallthrough does. */
+  takesClass(element: ElementNode): boolean {
+    return !this.isChild(element) || takesFallthrough(this.#module, element.tag);
+  }
+
+  /** The root node at an element, or a child's tag, the printer writes. */
+  #rootAt(element: ElementNode): RootNode | undefined {
+    const { start, end } = element.span;
+    return this.#roots.find(({ span }) => span.start === start && span.end === end);
+  }
+
+  /** The fallthrough root at an element, or a child's tag, the printer writes. */
+  #fallthroughAt(element: ElementNode): RootNode | undefined {
+    const root = this.#fallthrough;
+    if (!root || root.span.start !== element.span.start || root.span.end !== element.span.end) {
+      return undefined;
+    }
+    return root;
+  }
+
   rowName(name: string): string {
     return this.#local(name);
   }
@@ -656,17 +729,22 @@ class ComponentPlan {
   print(): string {
     const component = this.#component;
     const root = component.render.kind === "Element" ? component.render : undefined;
-    const roots = rootElements(component).spans;
-    const isRoot = (element: ElementNode) =>
-      roots.some(({ start, end }) => element.span.start === start && element.span.end === end);
     const markup = printMarkup(component.render, emberDialect(this), {
       level: 2,
       component,
       module: this.#module,
       rewrite: this.rules,
-      // Attributes the caller passes land on the root element (`...attributes`), or on each one a
-      // root conditional or `<component is>` may render.
-      scopeRootAttributes: (element) => (isRoot(element) ? ["...attributes"] : []),
+      // Attributes the caller passes land on the root (`...attributes`), or on each node a root
+      // conditional or `<component is>` may render, and its `@style` with them.
+      scopeRootAttributes: (element) => {
+        if (component.inheritAttrs === false || !this.#rootAt(element)) return [];
+        const style = this.#fallthroughAt(element);
+        if (!style || hasOwnStyle(style)) return ["...attributes"];
+        if (style.component) return ["@style={{@style}}", "...attributes"];
+        this.#helpers.add("fallthroughStyle");
+        this.#usesHtmlSafe = true;
+        return ["style={{fallthroughStyle @style}}", "...attributes"];
+      },
       // The provider's marker comes first in the root, so the root's descendants find it, and
       // no sibling of the root does (`provider`).
       childrenWrapper: (element) =>
@@ -684,7 +762,7 @@ class ComponentPlan {
     if (reads.constants.length) parts.push(reads.constants.join("\n"));
     // The module's own directives it applies, each a modifier (ADR-0099).
     for (const directive of own) parts.push(directiveDeclaration(directive));
-    parts.push(this.#signature(rootElements(component).tags));
+    parts.push(this.#signature());
     // A consumer's marker comes first, outside what the component provides itself (`inject`).
     const marker = this.#injects ? "{{this.injectionMarker}}" : "";
     const template = `<template>${marker}${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}</template>`;
@@ -760,7 +838,9 @@ class ComponentPlan {
     if (tracking.length) {
       lines.push(`import { ${tracking.join(", ")} } from "@glimmer/tracking";`);
     }
-    if (this.#usesHtmlSafe) lines.push('import { htmlSafe } from "@ember/template";');
+    if (this.#helpers.has("fallthroughStyle")) {
+      lines.push('import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";');
+    } else if (this.#usesHtmlSafe) lines.push('import { htmlSafe } from "@ember/template";');
     const ember = new Map<string, Set<string>>();
     for (const helper of this.#helpers) {
       for (const [specifier, names] of Object.entries(HELPER_IMPORTS[helper])) {
@@ -811,10 +891,17 @@ class ComponentPlan {
     for (const { specifier, name, self } of this.#eventTypes.values()) {
       if (!self) imports.add(specifier, name, { type: true, exact: true });
     }
-    // A child's signature, where a member's row variable is typed by its `Blocks`.
+    // A child's signature, where a member's row variable is typed by its `Blocks`, or the
+    // signature's `Element` by a root child's.
     const read = members.join("\n");
     for (const child of this.#signatures.values()) {
       if (!child.self && read.includes(`${child.name}Signature[`)) {
+        imports.add(child.specifier, `${child.name}Signature`, { type: true, exact: true });
+      }
+    }
+    for (const root of this.#roots) {
+      const child = root.component === undefined ? undefined : this.#children.get(root.component);
+      if (child && !child.self) {
         imports.add(child.specifier, `${child.name}Signature`, { type: true, exact: true });
       }
     }
@@ -855,11 +942,13 @@ class ComponentPlan {
    * `Element`. The events are an interface of their own, `CardEvents`, each an optional argument
    * named by {@link eventArgument} that takes the event's payload.
    */
-  #signature(roots: readonly string[]): string {
+  #signature(): string {
     const component = this.#component;
     const { emits } = component;
     const args: string[] = [];
     if (component.propsParameter) args.push(component.propsParameter.type.code);
+    // A caller's `style`, which the root merges into its own (`fallthroughStyle`).
+    if (this.#fallthrough) args.push("{ style?: unknown }");
     let events = "";
     if (emits) {
       const name = `${component.name}Events`;
@@ -881,7 +970,14 @@ class ComponentPlan {
       );
       lines.push(`  Blocks: {\n${blocks.join("\n")}\n  };`);
     }
-    if (roots.length) lines.push(`  Element: ${roots.map(elementType).join(" | ")};`);
+    // A root child's own `Element`, which its `...attributes` reach.
+    const elements = new Set<string>();
+    for (const root of this.#roots) {
+      for (const tag of root.tags) elements.add(elementType(tag));
+      const child = root.component === undefined ? undefined : this.#children.get(root.component);
+      if (child && !child.self) elements.add(`${child.name}Signature["Element"]`);
+    }
+    if (elements.size) lines.push(`  Element: ${Array.from(elements).join(" | ")};`);
     return `${events}export interface ${component.name}Signature {\n${lines.join("\n")}\n}`;
   }
 
@@ -1260,37 +1356,6 @@ function elementType(tag: string): string {
   return tag === "svg" ? "SVGSVGElement" : `HTMLElementTagNameMap["${tag}"]`;
 }
 
-/**
- * The elements a component's root may be, which take the caller's attributes and which its
- * signature's `Element` names by tag: the root element, each branch's of a root conditional, or
- * each tag a root `<component is>` may render. None where a root may be anything else, such as a
- * component or text.
- */
-function rootElements(component: UfComponent): { tags: string[]; spans: Span[] } {
-  const { render } = component;
-  if (render.kind === "Element") return { tags: [render.tag], spans: [render.span] };
-  const none = { tags: [], spans: [] };
-  if (render.children.length !== 1) return none;
-  const tagsOf = (node: RenderNode | undefined): string[] | undefined => {
-    if (node?.kind === "Element") return [node.tag];
-    if (node?.kind !== "Dynamic") return undefined;
-    const tags = node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
-    return tags.length === node.candidates.length ? tags : undefined;
-  };
-  const [only] = render.children;
-  const branches = only?.kind === "If" ? only.branches.map((branch) => branch.children) : [[only]];
-  const tags = new Set<string>();
-  const spans: Span[] = [];
-  for (const children of branches) {
-    const [node] = children;
-    const found = children.length === 1 ? tagsOf(node) : undefined;
-    if (!found || !node) return none;
-    for (const tag of found) tags.add(tag);
-    spans.push(node.span);
-  }
-  return { tags: Array.from(tags), spans };
-}
-
 /** Glimmer's own spelling of a literal, or `undefined` when code is no literal Glimmer has. */
 function glimmerLiteral(code: string): string | undefined {
   if (/^(?:true|false|null|undefined)$/.test(code)) return code;
@@ -1319,6 +1384,7 @@ type HelperName =
   | "Effect"
   | "modelText"
   | "enumeratedValue"
+  | "fallthroughStyle"
   | "registerDestructor"
   | "renderSettled"
   | "sources"
@@ -1337,6 +1403,7 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   refOf: {},
   callbacks: {},
   classNames: {},
+  fallthroughStyle: {},
   Effect: {
     "@ember/destroyable": ["isDestroying", "registerDestructor"],
     "@ember/renderer": ["renderSettled"],
@@ -1629,6 +1696,7 @@ function classNames(...values: unknown[]): string | undefined {
 function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
   return typeof value === "boolean" ? (String(value) as "true" | "false") : (value as Exclude<T, boolean>);
 }`,
+  fallthroughStyle: FALLTHROUGH_STYLE,
   styleText: `/**
  * A style from its declarations, those whose value is nullish left out, marked safe. A
  * declaration without a property is a whole style: a declaration list, or an object whose keys

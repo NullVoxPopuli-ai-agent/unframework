@@ -1087,7 +1087,8 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
       // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's,
-      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054), and
+      // Ember's merges its `@style` argument.
       const spread =
         target === "react" || target === "qwik"
           ? ", \\.\\.\\.style"
@@ -1098,7 +1099,7 @@ describe("canaries", () => {
         target === "angular"
           ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(0\.8\)'/
           : new RegExp(
-              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\}|\\{\\{fallthroughStyle "filter: invert\\(0\\.8\\)" @style\\}\\})`,
             ),
       );
     }

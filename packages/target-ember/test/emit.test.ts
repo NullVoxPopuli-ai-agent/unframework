@@ -40,15 +40,57 @@ describe("ember target", () => {
     `);
     expect(files.map((file) => file.contents).join("")).toMatchInlineSnapshot(`
       "import type { TOC } from "@ember/component/template-only";
+      import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
       export interface CardSignature {
-        Args: { title: string };
+        Args: { title: string } & { style?: unknown };
         Element: HTMLElementTagNameMap["h2"];
       }
 
-      const Card: TOC<CardSignature> = <template><h2 class="card" ...attributes>{{@title}}</h2></template>;
+      const Card: TOC<CardSignature> = <template><h2 class="card" style={{fallthroughStyle @style}} ...attributes>{{@title}}</h2></template>;
 
       export default Card;
+
+      /**
+       * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+       * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+       * A style is text, or a list of \`[property, value]\` declarations, where one without a property
+       * is a whole style.
+       */
+      function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+        const merged = new Map<string, unknown>();
+        const add = (style: unknown): void => {
+          if (style === undefined || style === null) return;
+          if (Array.isArray(style)) {
+            for (const [property, value] of style as [string, unknown][]) {
+              if (property) merged.set(property, value);
+              else add(value);
+            }
+          } else if (typeof style === "object" && !isHTMLSafe(style)) {
+            for (const [key, value] of Object.entries(style)) {
+              merged.set(
+                key.startsWith("--")
+                  ? key
+                  : key.replace(/[A-Z]/g, (letter) => \`-\${letter.toLowerCase()}\`),
+                value,
+              );
+            }
+          } else {
+            const text = String(style).replace(/\\/\\*[^]*?\\*\\//g, "");
+            for (const declaration of text.split(/;(?![^(]*\\))/)) {
+              const [property, value] = declaration.split(/:([^]+)/);
+              if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
+            }
+          }
+        };
+        for (const style of styles) add(style);
+        const text = Array.from(merged)
+          .flatMap(([property, value]) =>
+            value === undefined || value === null ? [] : [\`\${property}: \${String(value)}\`],
+          )
+          .join("; ");
+        return text ? htmlSafe(text) : undefined;
+      }
       "
     `);
   });
@@ -70,6 +112,7 @@ describe("ember target", () => {
     `);
     expect(files.map((file) => file.contents).join("")).toMatchInlineSnapshot(`
       "import Component from "@glimmer/component";
+      import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
       export interface Item {
         id: string;
@@ -78,7 +121,7 @@ describe("ember target", () => {
       }
 
       export interface CardSignature {
-        Args: { items: Item[]; heading?: string };
+        Args: { items: Item[]; heading?: string } & { style?: unknown };
         Element: HTMLElementTagNameMap["section"];
       }
 
@@ -91,6 +134,7 @@ describe("ember target", () => {
 
         <template><section
             aria-label={{this.heading}}
+            style={{fallthroughStyle @style}}
             ...attributes
           ><ul>{{#each @items key="id" as |item|}}<li
             aria-checked={{enumeratedValue item.done}}
@@ -102,6 +146,47 @@ describe("ember target", () => {
         return typeof value === "boolean"
           ? (String(value) as "true" | "false")
           : (value as Exclude<T, boolean>);
+      }
+
+      /**
+       * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+       * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+       * A style is text, or a list of \`[property, value]\` declarations, where one without a property
+       * is a whole style.
+       */
+      function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+        const merged = new Map<string, unknown>();
+        const add = (style: unknown): void => {
+          if (style === undefined || style === null) return;
+          if (Array.isArray(style)) {
+            for (const [property, value] of style as [string, unknown][]) {
+              if (property) merged.set(property, value);
+              else add(value);
+            }
+          } else if (typeof style === "object" && !isHTMLSafe(style)) {
+            for (const [key, value] of Object.entries(style)) {
+              merged.set(
+                key.startsWith("--")
+                  ? key
+                  : key.replace(/[A-Z]/g, (letter) => \`-\${letter.toLowerCase()}\`),
+                value,
+              );
+            }
+          } else {
+            const text = String(style).replace(/\\/\\*[^]*?\\*\\//g, "");
+            for (const declaration of text.split(/;(?![^(]*\\))/)) {
+              const [property, value] = declaration.split(/:([^]+)/);
+              if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
+            }
+          }
+        };
+        for (const style of styles) add(style);
+        const text = Array.from(merged)
+          .flatMap(([property, value]) =>
+            value === undefined || value === null ? [] : [\`\${property}: \${String(value)}\`],
+          )
+          .join("; ");
+        return text ? htmlSafe(text) : undefined;
       }
       "
     `);
@@ -115,9 +200,10 @@ describe("ember target", () => {
     `);
     expect(files.map((file) => file.contents).join("")).toMatchInlineSnapshot(`
       "import Component from "@glimmer/component";
+      import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
       export interface CardSignature {
-        Args: { count?: number };
+        Args: { count?: number } & { style?: unknown };
         Element: HTMLElementTagNameMap["p"];
       }
 
@@ -130,7 +216,51 @@ describe("ember target", () => {
           return this.args.count !== undefined ? this.args.count.toFixed(1) : undefined;
         }
 
-        <template><p ...attributes>{{#if this.value1}}<b>{{this.value2}}</b>{{else}}None{{/if}}</p></template>
+        <template><p
+            style={{fallthroughStyle @style}}
+            ...attributes
+          >{{#if this.value1}}<b>{{this.value2}}</b>{{else}}None{{/if}}</p></template>
+      }
+
+      /**
+       * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+       * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+       * A style is text, or a list of \`[property, value]\` declarations, where one without a property
+       * is a whole style.
+       */
+      function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+        const merged = new Map<string, unknown>();
+        const add = (style: unknown): void => {
+          if (style === undefined || style === null) return;
+          if (Array.isArray(style)) {
+            for (const [property, value] of style as [string, unknown][]) {
+              if (property) merged.set(property, value);
+              else add(value);
+            }
+          } else if (typeof style === "object" && !isHTMLSafe(style)) {
+            for (const [key, value] of Object.entries(style)) {
+              merged.set(
+                key.startsWith("--")
+                  ? key
+                  : key.replace(/[A-Z]/g, (letter) => \`-\${letter.toLowerCase()}\`),
+                value,
+              );
+            }
+          } else {
+            const text = String(style).replace(/\\/\\*[^]*?\\*\\//g, "");
+            for (const declaration of text.split(/;(?![^(]*\\))/)) {
+              const [property, value] = declaration.split(/:([^]+)/);
+              if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
+            }
+          }
+        };
+        for (const style of styles) add(style);
+        const text = Array.from(merged)
+          .flatMap(([property, value]) =>
+            value === undefined || value === null ? [] : [\`\${property}: \${String(value)}\`],
+          )
+          .join("; ");
+        return text ? htmlSafe(text) : undefined;
       }
       "
     `);
@@ -148,8 +278,10 @@ describe("ember target", () => {
     expect(files[0]?.contents).toMatchInlineSnapshot(`
       "import Component from "@glimmer/component";
       import { tracked } from "@glimmer/tracking";
+      import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
       export interface CounterSignature {
+        Args: { style?: unknown };
         Element: HTMLElementTagNameMap["button"];
       }
 
@@ -158,7 +290,53 @@ describe("ember target", () => {
 
         listener1 = () => this.count++;
 
-        <template><button type="button" {{on "click" this.listener1}} ...attributes>{{this.count}}</button></template>
+        <template><button
+            type="button"
+            {{on "click" this.listener1}}
+            style={{fallthroughStyle @style}}
+            ...attributes
+          >{{this.count}}</button></template>
+      }
+
+      /**
+       * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+       * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+       * A style is text, or a list of \`[property, value]\` declarations, where one without a property
+       * is a whole style.
+       */
+      function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+        const merged = new Map<string, unknown>();
+        const add = (style: unknown): void => {
+          if (style === undefined || style === null) return;
+          if (Array.isArray(style)) {
+            for (const [property, value] of style as [string, unknown][]) {
+              if (property) merged.set(property, value);
+              else add(value);
+            }
+          } else if (typeof style === "object" && !isHTMLSafe(style)) {
+            for (const [key, value] of Object.entries(style)) {
+              merged.set(
+                key.startsWith("--")
+                  ? key
+                  : key.replace(/[A-Z]/g, (letter) => \`-\${letter.toLowerCase()}\`),
+                value,
+              );
+            }
+          } else {
+            const text = String(style).replace(/\\/\\*[^]*?\\*\\//g, "");
+            for (const declaration of text.split(/;(?![^(]*\\))/)) {
+              const [property, value] = declaration.split(/:([^]+)/);
+              if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
+            }
+          }
+        };
+        for (const style of styles) add(style);
+        const text = Array.from(merged)
+          .flatMap(([property, value]) =>
+            value === undefined || value === null ? [] : [\`\${property}: \${String(value)}\`],
+          )
+          .join("; ");
+        return text ? htmlSafe(text) : undefined;
       }
       "
     `);
@@ -190,7 +368,7 @@ describe("ember target", () => {
     expect(codes).toEqual([]);
     const [file] = files;
     expect(file?.contents).toContain("const vMark = directive<string, HTMLElement>({");
-    expect(file?.contents).toContain('<p {{vMark "seen"}} ...attributes>Hi</p>');
+    expect(file?.contents).toContain('<p {{vMark "seen"}} style={{fallthroughStyle @style}} ...attributes>Hi</p>');
   });
 
   it("emits nothing for a component that provides without a root element", async () => {

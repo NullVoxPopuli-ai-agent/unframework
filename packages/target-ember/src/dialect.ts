@@ -29,6 +29,23 @@ export interface DialectHost {
   row(source: string, item: string, index: string | undefined, at: object): string;
   classCode(parts: Parameters<MarkupDialect["classAttribute"]>[0]): string;
   styleCode(parts: Parameters<MarkupDialect["styleAttribute"]>[0]): string;
+  /**
+   * A root's `style` with the caller's merged in: `null` where a child takes no fallthrough, and
+   * `undefined` where the element is no fallthrough root.
+   */
+  fallthroughStyle(
+    parts: Parameters<MarkupDialect["styleAttribute"]>[0],
+    element: ElementNode,
+  ): string | null | undefined;
+  /** A child's `@style` argument, as its declarations. */
+  styleArgument(
+    parts: Parameters<MarkupDialect["styleAttribute"]>[0],
+    element: ElementNode,
+  ): string;
+  /** Whether the printer writes a child's tag, not an element. */
+  isChild(element: ElementNode): boolean;
+  /** Whether an element, or a child's tag, takes a `class`. */
+  takesClass(element: ElementNode): boolean;
   rawHtml(code: string): string;
   /** A row variable's name in the template, which no tag the template writes takes. */
   rowName(name: string): string;
@@ -141,22 +158,32 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       if (name !== "value" || element.tag !== "option") return text;
       return `${text}${host.optionSelected(element, code)}`;
     },
-    classAttribute: (parts, { element }) => [
-      {
-        name: "class",
-        text: parts.every((part) => part.kind === "Static")
-          ? `class="${attributeValue(staticClassValue(parts))}"`
-          : `class={{${host.value(host.classCode(parts), false, element)}}}`,
-      },
-    ],
-    styleAttribute: (parts, { element }) => [
-      {
-        name: "style",
-        text: parts.every((part) => part.kind === "Static")
-          ? `style="${attributeValue(staticStyleValue(parts))}"`
-          : `style={{${host.value(host.styleCode(parts), false, element)}}}`,
-      },
-    ],
+    classAttribute: (parts, { element }) =>
+      host.takesClass(element)
+        ? [
+            {
+              name: "class",
+              text: parts.every((part) => part.kind === "Static")
+                ? `class="${attributeValue(staticClassValue(parts))}"`
+                : `class={{${host.value(host.classCode(parts), false, element)}}}`,
+            },
+          ]
+        : [],
+    // A child's `style` is its `@style` argument, which Glimmer does not let replace the root's
+    // own, as a `style` attribute would (`fallthrough.ts`).
+    styleAttribute: (parts, { element }) => {
+      const merged = host.fallthroughStyle(parts, element);
+      if (merged === null) return [];
+      const name = host.isChild(element) ? "@style" : "style";
+      const text =
+        merged ??
+        (parts.every((part) => part.kind === "Static")
+          ? `${name}="${attributeValue(staticStyleValue(parts))}"`
+          : host.isChild(element)
+            ? `@style={{${host.styleArgument(parts, element)}}}`
+            : `style={{${host.value(host.styleCode(parts), false, element)}}}`);
+      return [{ name, text }];
+    },
     conditional: (branches) => {
       const at = host.parentOf(branches[0]!.branch);
       return [

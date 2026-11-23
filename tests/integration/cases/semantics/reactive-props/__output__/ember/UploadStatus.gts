@@ -1,5 +1,5 @@
 import Component from "@glimmer/component";
-import { htmlSafe } from "@ember/template";
+import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 
 export interface UploadStep {
   id: string;
@@ -15,7 +15,7 @@ export interface UploadStatusProps {
 }
 
 export interface UploadStatusSignature {
-  Args: UploadStatusProps;
+  Args: UploadStatusProps & { style?: unknown };
   Element: HTMLElementTagNameMap["section"];
 }
 
@@ -41,10 +41,10 @@ export default class UploadStatus extends Component<UploadStatusSignature> {
   }
 
   get value5() {
-    return styleText([
-      ["color", this.args.state === "failed" ? "#8a1c1c" : "#1f3d5c"],
-      ["--upload-percent", this.args.percent],
-    ]);
+    return [
+      ["color", this.args.state === "failed" ? "#8a1c1c" : "#1f3d5c"] as const,
+      ["--upload-percent", this.args.percent] as const,
+    ];
   }
 
   get value6() {
@@ -54,7 +54,7 @@ export default class UploadStatus extends Component<UploadStatusSignature> {
   <template><section
       class={{this.value6}}
       aria-label={{this.value4}}
-      style={{this.value5}}
+      style={{fallthroughStyle this.value5 @style}}
       ...attributes
     ><h2>{{@fileName}}</h2><div
       role="progressbar"
@@ -88,30 +88,42 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
 }
 
 /**
- * A style from its declarations, those whose value is nullish left out, marked safe. A
- * declaration without a property is a whole style: a declaration list, or an object whose keys
- * may be in camel case, as Vue's `normalizeStyle` reads them.
+ * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+ * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+ * A style is text, or a list of `[property, value]` declarations, where one without a property
+ * is a whole style.
  */
-function styleText(
-  declarations: readonly (readonly [string, unknown])[],
-): ReturnType<typeof htmlSafe> | undefined {
-  const parts: string[] = [];
-  const add = (property: string, value: unknown): void => {
-    if (value === undefined || value === null) return;
-    if (property) parts.push(`${property}: ${String(value)}`);
-    else if (typeof value === "string") parts.push(value.trim().replace(/;$/, ""));
-    else if (typeof value === "object") {
-      for (const [key, each] of Object.entries(value)) {
-        add(
+function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+  const merged = new Map<string, unknown>();
+  const add = (style: unknown): void => {
+    if (style === undefined || style === null) return;
+    if (Array.isArray(style)) {
+      for (const [property, value] of style as [string, unknown][]) {
+        if (property) merged.set(property, value);
+        else add(value);
+      }
+    } else if (typeof style === "object" && !isHTMLSafe(style)) {
+      for (const [key, value] of Object.entries(style)) {
+        merged.set(
           key.startsWith("--")
             ? key
             : key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
-          each,
+          value,
         );
+      }
+    } else {
+      const text = String(style).replace(/\/\*[^]*?\*\//g, "");
+      for (const declaration of text.split(/;(?![^(]*\))/)) {
+        const [property, value] = declaration.split(/:([^]+)/);
+        if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
       }
     }
   };
-  for (const [property, value] of declarations) add(property, value);
-  const text = parts.filter(Boolean).join("; ");
+  for (const style of styles) add(style);
+  const text = Array.from(merged)
+    .flatMap(([property, value]) =>
+      value === undefined || value === null ? [] : [`${property}: ${String(value)}`],
+    )
+    .join("; ");
   return text ? htmlSafe(text) : undefined;
 }

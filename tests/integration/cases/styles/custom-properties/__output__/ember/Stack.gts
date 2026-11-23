@@ -1,23 +1,20 @@
 import Component from "@glimmer/component";
-import { htmlSafe } from "@ember/template";
+import { htmlSafe, isHTMLSafe, type SafeString } from "@ember/template";
 import "./Stack.uf.tsx.css";
 
 export interface StackSignature {
-  Args: { gap: string; accent: string };
+  Args: { gap: string; accent: string } & { style?: unknown };
   Element: HTMLElementTagNameMap["ul"];
 }
 
 export default class Stack extends Component<StackSignature> {
   get value1() {
-    return styleText([
-      ["--gap", this.args.gap],
-      ["--accent", this.args.accent],
-    ]);
+    return [["--gap", this.args.gap] as const, ["--accent", this.args.accent] as const];
   }
 
   <template><ul
       class="stack"
-      style={{this.value1}}
+      style={{fallthroughStyle this.value1 @style}}
       data-uf-e3a22111=""
       ...attributes
     ><li class="item" data-uf-e3a22111="">One</li><li class="item" data-uf-e3a22111="">Two</li><li
@@ -27,30 +24,42 @@ export default class Stack extends Component<StackSignature> {
 }
 
 /**
- * A style from its declarations, those whose value is nullish left out, marked safe. A
- * declaration without a property is a whole style: a declaration list, or an object whose keys
- * may be in camel case, as Vue's `normalizeStyle` reads them.
+ * Vue's merge of a caller's style into the root's, marked safe: each style's declarations in
+ * order, where a later value of a property replaces an earlier one, and a nullish one removes it.
+ * A style is text, or a list of `[property, value]` declarations, where one without a property
+ * is a whole style.
  */
-function styleText(
-  declarations: readonly (readonly [string, unknown])[],
-): ReturnType<typeof htmlSafe> | undefined {
-  const parts: string[] = [];
-  const add = (property: string, value: unknown): void => {
-    if (value === undefined || value === null) return;
-    if (property) parts.push(`${property}: ${String(value)}`);
-    else if (typeof value === "string") parts.push(value.trim().replace(/;$/, ""));
-    else if (typeof value === "object") {
-      for (const [key, each] of Object.entries(value)) {
-        add(
+function fallthroughStyle(...styles: unknown[]): SafeString | undefined {
+  const merged = new Map<string, unknown>();
+  const add = (style: unknown): void => {
+    if (style === undefined || style === null) return;
+    if (Array.isArray(style)) {
+      for (const [property, value] of style as [string, unknown][]) {
+        if (property) merged.set(property, value);
+        else add(value);
+      }
+    } else if (typeof style === "object" && !isHTMLSafe(style)) {
+      for (const [key, value] of Object.entries(style)) {
+        merged.set(
           key.startsWith("--")
             ? key
             : key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`),
-          each,
+          value,
         );
+      }
+    } else {
+      const text = String(style).replace(/\/\*[^]*?\*\//g, "");
+      for (const declaration of text.split(/;(?![^(]*\))/)) {
+        const [property, value] = declaration.split(/:([^]+)/);
+        if (property?.trim() && value?.trim()) merged.set(property.trim(), value.trim());
       }
     }
   };
-  for (const [property, value] of declarations) add(property, value);
-  const text = parts.filter(Boolean).join("; ");
+  for (const style of styles) add(style);
+  const text = Array.from(merged)
+    .flatMap(([property, value]) =>
+      value === undefined || value === null ? [] : [`${property}: ${String(value)}`],
+    )
+    .join("; ");
   return text ? htmlSafe(text) : undefined;
 }

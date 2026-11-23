@@ -22,10 +22,11 @@ export default [
         { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
       ],
       // Judge the author's markup, which every target renders as written: a `style` attribute
-      // (ADR-0038), a positive `tabindex`, a control's labels.
+      // (ADR-0038), a positive `tabindex`, a control's labels, a `<button>` without a `type`.
       "ember/template-no-inline-styles": "off",
       "ember/template-no-positive-tabindex": "off",
       "ember/template-require-input-label": "off",
+      "ember/template-require-button-type": "off",
       // Judge the author's listeners, which every target adds as written: one on a `<div>`, one
       // for `pointerdown`, a click listener on a submit button.
       "ember/template-no-action-on-submit-button": "off",

@@ -7,7 +7,8 @@ export interface Person {
 }
 
 export interface DirectorySignature {
-  Args: { people: Person[] };
+  Args: { people: Person[] } & { style?: unknown };
+  Element: TableSignature["Element"];
 }
 
 export default class Directory extends Component<DirectorySignature> {
@@ -17,5 +18,7 @@ export default class Directory extends Component<DirectorySignature> {
 
   <template><Table
       @people={{@people}}
+      @style={{@style}}
+      ...attributes
     ><:row as |rowProps|><span>{{this.value1 rowProps}}: {{rowProps.name}} ({{this.value2 rowProps}})</span></:row></Table></template>
 }
