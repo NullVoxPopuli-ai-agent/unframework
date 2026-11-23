@@ -63,6 +63,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     helper: "queueHook",
     note: "A directive is a modifier on Ember's own manager. Glimmer installs a parent's modifier before its children's, so each hook goes through an inline helper, queueHook, that runs them in Vue's order, and no hook runs on the server.",
   },
+  "dynamic-component": {
+    support: "emulated",
+    helper: "{{#if}}",
+    note: "Glimmer has no `<component is>` over a tag, so each candidate is a branch of an `{{#if}}`: a tag where the choice is its name, a component where it is the component.",
+  },
   "reactive-context": {
     support: "emulated",
     helper: "refOf",
@@ -134,6 +139,7 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "conditional-event-control",
   // A directive is a modifier on Ember's own manager (`directive.ts`).
   "directive",
+  "dynamic-component",
   // `uniqueId` from `@ember/helper`, once per `useId`.
   "use-id",
   // `renderSettled` from `@ember/renderer`, which resolves once the pending render has run.
@@ -160,6 +166,8 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // A parent's `data-uf-…` attribute on a child's tag reaches the child's root through
   // `...attributes`.
   "child-root-scope",
+  // A fill is the parent's own markup, so its elements carry the parent's attribute.
+  "slotted-styles",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
@@ -171,18 +179,12 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
       "model",
       "fallthrough",
       "expose",
-      "dynamic-component",
       "teleport",
       "transition",
       "generic-components",
       "generic-slot-props",
       "async-setup",
     ],
-  },
-  {
-    reason:
-      "Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`.",
-    names: ["slotted-styles"],
   },
   {
     reason: "Composables are not emitted yet.",

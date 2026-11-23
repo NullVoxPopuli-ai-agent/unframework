@@ -66,39 +66,5 @@
       "offset": 20
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support slotted-styles: Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`. See uxfront-com/unframework#236.",
-    "file": "styles/slotted-order/Shelf.uf.tsx",
-    "start": {
-      "line": 15,
-      "column": 9,
-      "offset": 497
-    },
-    "end": {
-      "line": 15,
-      "column": 39,
-      "offset": 527
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "styles/slotted-order/Shelf.uf.tsx",
-    "start": {
-      "line": 22,
-      "column": 11,
-      "offset": 681
-    },
-    "end": {
-      "line": 24,
-      "column": 23,
-      "offset": 793
-    },
-    "target": "ember"
   }
 ]

@@ -1,23 +1,6 @@
 [
   {
     "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "fallthrough/dynamic-root/Base.uf.tsx",
-    "start": {
-      "line": 21,
-      "column": 5,
-      "offset": 579
-    },
-    "end": {
-      "line": 30,
-      "column": 17,
-      "offset": 774
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
     "file": "fallthrough/dynamic-root/Base.uf.tsx",
@@ -117,23 +100,6 @@
       "offset": 669
     },
     "target": "astro"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "fallthrough/dynamic-root/Page.uf.tsx",
-    "start": {
-      "line": 35,
-      "column": 13,
-      "offset": 1030
-    },
-    "end": {
-      "line": 42,
-      "column": 25,
-      "offset": 1249
-    },
-    "target": "ember"
   },
   {
     "code": "UF4001",

@@ -89,8 +89,9 @@ and `inject` walks up the DOM from the consumer's own text node to the nearest o
 state is its ref, a `value` getter (`refOf`).
 
 `directive` is emulated: a directive is a modifier on Ember's own manager (`src/directive.ts`),
-whose hooks run in Vue's order through the shared `queueHook`, and never on the server. Slot
-forwarding, slotted styles, composables and hydration are unsupported for now (`src/index.ts`).
+whose hooks run in Vue's order through the shared `queueHook`, and never on the server.
+`dynamic-component` is emulated: each candidate of a `<component is>` is a branch of an
+`{{#if}}`. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

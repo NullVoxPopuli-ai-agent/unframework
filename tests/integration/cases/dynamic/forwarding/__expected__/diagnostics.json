@@ -2,23 +2,6 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "dynamic/forwarding/Frame.uf.tsx",
-    "start": {
-      "line": 11,
-      "column": 7,
-      "offset": 378
-    },
-    "end": {
-      "line": 11,
-      "column": 79,
-      "offset": 450
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
     "message": "The ember target does not support slot-forwarding: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
     "file": "dynamic/forwarding/Frame.uf.tsx",
     "start": {

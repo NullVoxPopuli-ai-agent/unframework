@@ -1,14 +1,3 @@
-error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Base.uf.tsx:21:5
-   |
-21 |     <component
-   |     ^^^^^^^^^^
-   | ...
-30 |     </component>
-   | ^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
   --> fallthrough/dynamic-root/Base.uf.tsx:27:7
    |
@@ -57,17 +46,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
 23 |         onPress={() => (pressed.value = "docs")}
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
-  --> fallthrough/dynamic-root/Page.uf.tsx:35:13
-   |
-35 |             <component
-   |             ^^^^^^^^^^
-   | ...
-42 |             </component>
-   | ^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF4001
 

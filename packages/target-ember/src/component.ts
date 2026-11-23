@@ -50,8 +50,10 @@ import type {
   Code,
   ModelAttribute,
   Prop,
+  RenderNode,
   SlotFill,
   SlotOutletNode,
+  Span,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -296,6 +298,7 @@ class ComponentPlan {
         return `this.${binding.name}`;
       case "moduleConst":
       case "import":
+      case "component":
         return binding.name;
       // A cached getter that reads the nearest provider's value (`#setupMembers`). The
       // reference to a key of a ref is the whole `count.value`.
@@ -653,13 +656,17 @@ class ComponentPlan {
   print(): string {
     const component = this.#component;
     const root = component.render.kind === "Element" ? component.render : undefined;
+    const roots = rootElements(component).spans;
+    const isRoot = (element: ElementNode) =>
+      roots.some(({ start, end }) => element.span.start === start && element.span.end === end);
     const markup = printMarkup(component.render, emberDialect(this), {
       level: 2,
       component,
       module: this.#module,
       rewrite: this.rules,
-      // Attributes the caller passes land on the root element (`...attributes`).
-      scopeRootAttributes: (element) => (element === root ? ["...attributes"] : []),
+      // Attributes the caller passes land on the root element (`...attributes`), or on each one a
+      // root conditional or `<component is>` may render.
+      scopeRootAttributes: (element) => (isRoot(element) ? ["...attributes"] : []),
       // The provider's marker comes first in the root, so the root's descendants find it, and
       // no sibling of the root does (`provider`).
       childrenWrapper: (element) =>
@@ -677,7 +684,7 @@ class ComponentPlan {
     if (reads.constants.length) parts.push(reads.constants.join("\n"));
     // The module's own directives it applies, each a modifier (ADR-0099).
     for (const directive of own) parts.push(directiveDeclaration(directive));
-    parts.push(this.#signature(root?.tag));
+    parts.push(this.#signature(rootElements(component).tags));
     // A consumer's marker comes first, outside what the component provides itself (`inject`).
     const marker = this.#injects ? "{{this.injectionMarker}}" : "";
     const template = `<template>${marker}${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}</template>`;
@@ -848,7 +855,7 @@ class ComponentPlan {
    * `Element`. The events are an interface of their own, `CardEvents`, each an optional argument
    * named by {@link eventArgument} that takes the event's payload.
    */
-  #signature(root: string | undefined): string {
+  #signature(roots: readonly string[]): string {
     const component = this.#component;
     const { emits } = component;
     const args: string[] = [];
@@ -874,7 +881,7 @@ class ComponentPlan {
       );
       lines.push(`  Blocks: {\n${blocks.join("\n")}\n  };`);
     }
-    if (root !== undefined) lines.push(`  Element: ${elementType(root)};`);
+    if (roots.length) lines.push(`  Element: ${roots.map(elementType).join(" | ")};`);
     return `${events}export interface ${component.name}Signature {\n${lines.join("\n")}\n}`;
   }
 
@@ -1251,6 +1258,37 @@ function classItems(parts: readonly ClassPart[]): string[] {
 /** The DOM interface of a root element, for the signature's `Element`. */
 function elementType(tag: string): string {
   return tag === "svg" ? "SVGSVGElement" : `HTMLElementTagNameMap["${tag}"]`;
+}
+
+/**
+ * The elements a component's root may be, which take the caller's attributes and which its
+ * signature's `Element` names by tag: the root element, each branch's of a root conditional, or
+ * each tag a root `<component is>` may render. None where a root may be anything else, such as a
+ * component or text.
+ */
+function rootElements(component: UfComponent): { tags: string[]; spans: Span[] } {
+  const { render } = component;
+  if (render.kind === "Element") return { tags: [render.tag], spans: [render.span] };
+  const none = { tags: [], spans: [] };
+  if (render.children.length !== 1) return none;
+  const tagsOf = (node: RenderNode | undefined): string[] | undefined => {
+    if (node?.kind === "Element") return [node.tag];
+    if (node?.kind !== "Dynamic") return undefined;
+    const tags = node.candidates.flatMap((each) => (each.kind === "Tag" ? [each.tag] : []));
+    return tags.length === node.candidates.length ? tags : undefined;
+  };
+  const [only] = render.children;
+  const branches = only?.kind === "If" ? only.branches.map((branch) => branch.children) : [[only]];
+  const tags = new Set<string>();
+  const spans: Span[] = [];
+  for (const children of branches) {
+    const [node] = children;
+    const found = children.length === 1 ? tagsOf(node) : undefined;
+    if (!found || !node) return none;
+    for (const tag of found) tags.add(tag);
+    spans.push(node.span);
+  }
+  return { tags: Array.from(tags), spans };
 }
 
 /** Glimmer's own spelling of a literal, or `undefined` when code is no literal Glimmer has. */

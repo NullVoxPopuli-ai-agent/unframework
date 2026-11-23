@@ -4,6 +4,7 @@
 // whitespace as written, at the edges of an element's content and between elements, so the
 // printer adds none.
 import {
+  candidateAttributes,
   escapeHtmlAttribute,
   escapeHtmlText,
   referencedBindings,
@@ -12,6 +13,7 @@ import {
 } from "@unframework.dev/codegen";
 import type { MarkupDialect, MarkupPiece, TextPosition } from "@unframework.dev/codegen";
 import type {
+  ComponentAttribute,
   ComponentNode,
   ElementNode,
   EventAttribute,
@@ -173,6 +175,47 @@ export function emberDialect(host: DialectHost): MarkupDialect {
         },
       ];
     },
+    // Glimmer has no `<component is>` over a tag, so each candidate is a branch, the last one
+    // `{{else}}`: a tag where the choice is its name, a component where it is the component.
+    dynamic: ({ node, is }) => {
+      const choice = host.value(is, true, host.parentOf(node));
+      const last = node.candidates.length - 1;
+      const segments = node.candidates.map((candidate, index) => {
+        const test =
+          candidate.kind === "Tag"
+            ? `(eq ${choice} ${JSON.stringify(candidate.tag)})`
+            : `(eq ${choice} ${candidate.component})`;
+        const open =
+          index === 0 ? `{{#if ${test}}}` : index === last ? "{{else}}" : `{{else if ${test}}}`;
+        const content: MarkupPiece =
+          candidate.kind === "Tag"
+            ? {
+                kind: "element",
+                element: {
+                  kind: "Element",
+                  tag: candidate.tag,
+                  // Each branch writes only the attributes its tag takes (ADR-0119).
+                  attributes: candidateAttributes(node, candidate.tag),
+                  children: node.children,
+                  span: node.span,
+                },
+                directives: [],
+              }
+            : {
+                kind: "component",
+                component: {
+                  kind: "Component",
+                  component: candidate.component,
+                  attributes: node.attributes as ComponentAttribute[],
+                  fills: node.fills ?? [],
+                  span: node.span,
+                },
+                directives: [],
+              };
+        return { open, content };
+      });
+      return [{ kind: "block", segments, close: "{{/if}}" }];
+    },
     list: ({ node, source, item: itemName, index: indexName, key }) => {
       const item = host.rowName(itemName);
       const index = indexName === undefined ? undefined : host.rowName(indexName);
@@ -237,7 +280,6 @@ export function emberDialect(host: DialectHost): MarkupDialect {
         component,
       ),
     slotOutlet: ({ node, props }) => host.slotOutlet(node, props?.code),
-    dynamic: () => [],
     teleport: () => [],
     transition: () => [],
     rawHtmlContent: (code) => host.rawHtml(code),

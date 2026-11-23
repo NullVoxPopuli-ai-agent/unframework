@@ -34,40 +34,6 @@
     "target": "qwik"
   },
   {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support slotted-styles: Slot content that takes a parent's scope is not checked on Ember yet: its cases render `<component is>`. See uxfront-com/unframework#236.",
-    "file": "styles/slotted/Gallery.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 9,
-      "offset": 364
-    },
-    "end": {
-      "line": 10,
-      "column": 47,
-      "offset": 402
-    },
-    "target": "ember"
-  },
-  {
-    "code": "UF4001",
-    "severity": "error",
-    "message": "The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.",
-    "file": "styles/slotted/Gallery.uf.tsx",
-    "start": {
-      "line": 13,
-      "column": 7,
-      "offset": 502
-    },
-    "end": {
-      "line": 15,
-      "column": 19,
-      "offset": 604
-    },
-    "target": "ember"
-  },
-  {
     "code": "UF4002",
     "severity": "info",
     "message": "The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
