@@ -112,7 +112,11 @@ not the component got the one it forwards. `generic-components` and `generic-slo
 native: a generic component is a class whose signature takes its type parameters, which Glint
 infers from a parent's arguments. `async-setup` is emulated: the setup from its first `await` on
 runs as the component is constructed, in an inline helper, `AsyncSetup`, and the template renders
-once it has run. Composables and hydration are unsupported for now
+once it has run. `composables` and `composable-effect-order` are native: a composable is a
+module of its own whose function, which takes the calling component first, makes a class on an
+inline base, `Composable`. A composable that runs code in the browser gives the caller `flush`,
+`flushAfter` and `mount`, which the caller calls where the call sits among its own, in source
+order. Hydration is unsupported for now
 (`src/index.ts`).
 
 ## The toolchain
@@ -127,6 +131,8 @@ For tests and tooling (the target's main entry never loads it):
   - L4 runs Glint (`ember-tsc`, TypeScript 6) from `tests/toolchains/ember`.
   - L5 runs ESLint with eslint-plugin-ember over the `.gts` files, which oxlint does not parse,
     and oxlint's baseline over a `.ts` module beside them.
+    The plugin compiles the app's `.ts` modules that hold a decorator the same way, as an app's
+    build runs its own `.ts` modules through Babel: a composable's `@tracked`.
 - **`…/toolchain/client`**: mounts with `renderComponent` (RFC 1099), its arguments a tracked
   object that a rerender updates, with the test's listeners as `onChange` arguments. `renderComponent` reads the argument names once, so a rerender
   that adds a name renders the component again.

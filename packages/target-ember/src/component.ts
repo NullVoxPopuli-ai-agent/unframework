@@ -30,6 +30,7 @@ import {
 import type {
   ChildImport,
   ClassPart,
+  OutputFile,
   MarkupPiece,
   EmitContext,
   RewriteRules,
@@ -58,7 +59,9 @@ import type {
   TransitionNode,
   TypeDeclaration,
   UfComponent,
+  UfComposable,
   UfModule,
+  UseItem,
 } from "@unframework.dev/ir";
 
 import { emberDialect } from "./dialect.ts";
@@ -92,6 +95,22 @@ interface Hoisted {
 type HoistedKind = "value" | "listener" | "initial";
 
 /** Prints one component's `.gts` module. */
+/** A composable of a `.uf.ts` module as its own module, `useToggle.ts` (ADR-0069). */
+export function emitComposable(composable: UfComposable, context: EmitContext): OutputFile[] {
+  const owner: UfComponent = {
+    name: composable.name,
+    span: composable.span,
+    ...(composable.typeParameters ? { typeParameters: composable.typeParameters } : {}),
+    props: [],
+    types: composable.types,
+    bindings: composable.bindings,
+    setup: composable.setup,
+    render: { kind: "Fragment", children: [], span: composable.span },
+  };
+  const plan = new ComponentPlan(owner, context.module, composable);
+  return [{ path: `${composable.name}.ts`, contents: plan.printComposable() }];
+}
+
 export function emitComponent(component: UfComponent, context: EmitContext): string {
   const plan = new ComponentPlan(component, context.module);
   return plan.print();
@@ -144,7 +163,16 @@ class ComponentPlan {
   /** The one node a caller's `class` and `style` reach, if any (`fallthroughRoot`). */
   readonly #fallthrough: RootNode | undefined;
 
-  constructor(component: UfComponent, module: UfModule) {
+  /** Set where the plan writes a composable's class, not a component's (`emitComposable`). */
+  readonly #composable: UfComposable | undefined;
+  /** The hooks a composable's constructor registers with its caller (`#setupMembers`). */
+  #composableHooks: string[] = [];
+  /** What each composable's call keeps in a field, and the member each used binding reads. */
+  readonly #used = new Map<string, { field: string; member: string }>();
+  readonly #uses = new Map<UseItem, string>();
+
+  constructor(component: UfComponent, module: UfModule, composable?: UfComposable) {
+    this.#composable = composable;
     this.#component = component;
     this.#parents = parentsOf(component.render);
     this.#tags = tagsOf(component.render);
@@ -156,6 +184,24 @@ class ComponentPlan {
     this.#fallthrough = fallthroughRoot(component, module);
     this.#provides = component.setup.some((item) => item.kind === "Provide");
     this.#injects = component.setup.some((item) => item.kind === "Inject");
+    // Each call's result is a field named by its composable, `counter` for `useCounter`.
+    const taken = new Set(component.bindings.map((each) => each.name));
+    for (const item of component.setup) {
+      if (item.kind !== "Use") continue;
+      const imported =
+        module.imports
+          ?.flatMap((entry) => entry.names)
+          .find((name) => name.kind === "Composable" && name.local === item.composable)?.imported ??
+        item.composable;
+      const stem = imported.replace(/^use/, "");
+      let field = `${stem.charAt(0).toLowerCase()}${stem.slice(1)}`;
+      while (taken.has(field)) field = `${field}_`;
+      taken.add(field);
+      this.#uses.set(item, field);
+      for (const member of item.members) {
+        this.#used.set(member.binding, { field, member: member.member });
+      }
+    }
   }
 
   /** How the class spells a reference to a binding: the same for every site. */
@@ -346,6 +392,18 @@ class ComponentPlan {
       case "import":
       case "component":
         return binding.name;
+      // A composable's parameter, which its class holds in `args`, as a component holds its own.
+      case "argument":
+        return `this.args.${binding.name}`;
+      // A member of a composable's result, which the call's field holds.
+      case "usedState":
+      case "usedDerived":
+      case "usedFn":
+      case "usedConst": {
+        const used = this.#used.get(binding.id);
+        if (!used) throw new Error(`No composable's call gives \`${binding.name}\`.`);
+        return `this.${used.field}.${used.member}`;
+      }
       // A cached getter that reads the nearest provider's value (`#setupMembers`). The
       // reference to a key of a ref is the whole `count.value`.
       case "context": {
@@ -879,6 +937,59 @@ class ComponentPlan {
     return `{{htmlSafe ${this.value(code, true)}}}`;
   }
 
+  /**
+   * A composable's module (ADR-0069): its setup as a class on the inline `Composable`, whose
+   * fields read the arguments its constructor took first, and the exported function, which
+   * takes the calling component first, as its hooks run with the component's.
+   */
+  printComposable(): string {
+    const composable = this.#composable!;
+    this.#helpers.add("Composable");
+    const members = this.#setupMembers();
+    const { text: imports, reads } = this.#imports(members);
+    const parts = imports ? [imports] : [];
+    for (const type of this.#types(reads.types)) parts.push(type);
+    if (reads.constants.length) parts.push(reads.constants.join("\n"));
+    const typeParameters = this.#typeParameters();
+    const typeArguments = this.#typeArguments();
+    const className = `${composable.name.charAt(0).toUpperCase()}${composable.name.slice(1)}`;
+    const argsType = `${className}Args`;
+    const fields = composable.parameters.map((each) => `  ${each.name}: ${each.type.code};`);
+    parts.push(`interface ${argsType}${typeParameters} {\n${fields.join("\n")}\n}`);
+    // Before the class, which extends it as the module runs.
+    parts.push(HELPERS.Composable);
+    const body = members.map(indent);
+    // A composable that runs code in the browser gives its caller what to call where the call
+    // sits among the caller's own: what the template calls before and after its content, and
+    // the hooks once it has rendered.
+    if (this.#composableEffects()) {
+      const calls = (list: readonly string[]) =>
+        list.map((each) => `  ${each.replace(/^\{\{\((.*)\)\}\}$/, "$1")}();`).join("\n");
+      const hooks = this.#composableHooks.map((each) => indent(each)).join("\n");
+      body.push(
+        indent(
+          `readonly flush = (): undefined => {\n${calls(this.#before)}${this.#before.length ? "\n" : ""}  return undefined;\n};`,
+        ),
+        indent(
+          `readonly flushAfter = (): undefined => {\n${calls(this.#after)}${this.#after.length ? "\n" : ""}  return undefined;\n};`,
+        ),
+        indent(`readonly mount = (): void => {${hooks ? `\n${hooks}\n` : ""}};`),
+      );
+    }
+    parts.push(
+      `class ${className}${typeParameters} extends Composable<${argsType}${typeArguments}> {\n${body.join("\n\n")}\n}`,
+    );
+    const parameters = composable.parameters.map((each) => `${each.name}: ${each.type.code}`);
+    const names = composable.parameters.map((each) => each.name);
+    parts.push(
+      `export function ${composable.name}${typeParameters}(${["owner: object"].concat(parameters).join(", ")}): ${className}${typeArguments} {\n  return new ${className}${typeArguments}(owner, { ${names.join(", ")} });\n}`,
+    );
+    for (const name of Array.from(this.#helpers).toSorted()) {
+      if (HELPERS[name] && name !== "Composable") parts.push(HELPERS[name]);
+    }
+    return `${parts.join("\n\n")}\n`;
+  }
+
   /** The module's text. */
   print(): string {
     const component = this.#component;
@@ -981,11 +1092,13 @@ class ComponentPlan {
     const isClass = members.length > 0 || this.#component.typeParameters !== undefined;
     const component = this.#component;
     const module = this.#module;
-    const lines = [
-      isClass
-        ? 'import Component from "@glimmer/component";'
-        : 'import type { TOC } from "@ember/component/template-only";',
-    ];
+    const lines = this.#composable
+      ? []
+      : [
+          isClass
+            ? 'import Component from "@glimmer/component";'
+            : 'import type { TOC } from "@ember/component/template-only";',
+        ];
     const tracking = [];
     if (this.#injects || this.#provides) tracking.push("cached");
     if (
@@ -1033,6 +1146,18 @@ class ComponentPlan {
       if (child.export === "default")
         imports.addDefault(child.specifier, child.local, { exact: true });
       else imports.add(child.specifier, child.name, { local: child.local, exact: true });
+    }
+    // Each composable of a `.uf.ts` module, from its own module beside it, `useToggle.ts`.
+    for (const entry of module.imports ?? []) {
+      for (const name of entry.names) {
+        if (name.kind !== "Composable") continue;
+        if (!component.setup.some((item) => item.kind === "Use" && item.composable === name.local))
+          continue;
+        imports.add(directiveSpecifier(entry.specifier, `${name.imported}.ts`), name.imported, {
+          local: name.local,
+          exact: true,
+        });
+      }
     }
     // Each directive of a `.uf.ts` module, from its own module beside it, `vFocusTrap.ts`.
     for (const { specifier, imported, local } of importedDirectives(component, module)) {
@@ -1260,6 +1385,20 @@ class ComponentPlan {
     return item.default || item.required ? type : `${type} | undefined`;
   }
 
+  /**
+   * Whether a composable runs code in the browser, as the analyser's `hasEffects` sets it: a
+   * watcher, an effect, a hook, or a call of a composable that does.
+   */
+  #composableEffects(): boolean {
+    return this.#component.setup.some(
+      (item) =>
+        item.kind === "Watch" ||
+        item.kind === "WatchEffect" ||
+        item.kind === "Lifecycle" ||
+        (item.kind === "Use" && item.hasEffects === true),
+    );
+  }
+
   /** A member name no binding of the component takes. */
   #unique(name: string): string {
     const taken = new Set(this.#component.bindings.map((each) => each.name));
@@ -1317,6 +1456,25 @@ class ComponentPlan {
     const members = component.setup.flatMap((item) => {
       const awaited = run.length > 0;
       switch (item.kind) {
+        // A composable's call, whose result a field holds: the used bindings read its members.
+        // Its first argument is the component, which its hooks run with.
+        case "Use": {
+          const field = this.#uses.get(item)!;
+          const args = item.arguments.map((argument) => {
+            if (argument.kind === "Value") return rewrite(argument.value, component, rules, "pure");
+            const fn = argument.kind === "Getter" ? argument.getter : argument.callback;
+            const site = argument.kind === "Getter" ? "pure" : "client";
+            return functionText(fn, component, rules, site, { arrow: true });
+          });
+          const owner = this.#composable ? "this.owner" : "this";
+          // Its watchers, effects and hooks run where the call sits among the caller's own.
+          if (item.hasEffects) {
+            this.#before.push(`{{(this.${field}.flush)}}`);
+            this.#after.push(`{{(this.${field}.flushAfter)}}`);
+            hooks.push(`this.${field}.mount();`);
+          }
+          return `readonly ${field} = ${this.#local(item.composable)}(${[owner].concat(args).join(", ")});`;
+        }
         // The value an `await` gives, which the run sets before the rest of the setup reads it.
         case "Await": {
           this.#helpers.add("AsyncSetup");
@@ -1363,7 +1521,8 @@ class ComponentPlan {
             item.post ? "post: true" : "",
           ].filter(Boolean);
           const rest = options.length ? `, { ${options.join(", ")} }` : "";
-          return `readonly ${name} = new Watcher(this, ${source}, ${callback}${rest});`;
+          const owner = this.#composable ? "this.owner" : "this";
+          return `readonly ${name} = new Watcher(${owner}, ${source}, ${callback}${rest});`;
         }
         case "WatchEffect": {
           this.#helpers.add("Effect");
@@ -1371,7 +1530,7 @@ class ComponentPlan {
           const name = `effect${++effects}`;
           this.#after.push(`{{(this.${name}.flush)}}`);
           const effect = functionText(item.effect, component, rules, "client");
-          return `readonly ${name} = new Effect(this, ${effect});`;
+          return `readonly ${name} = new Effect(${this.#composable ? "this.owner" : "this"}, ${effect});`;
         }
         // Each hook runs once the first render settles, unless the component is gone by then,
         // as a server render is; an `onUnmounted` hook is registered then, so it never runs on
@@ -1379,10 +1538,12 @@ class ComponentPlan {
         case "Lifecycle": {
           this.#helpers.add("afterRender");
           const hook = functionText(item.callback, component, rules, "client");
+          // A composable's hooks run with its caller's, as Vue registers them on the instance.
+          const owner = this.#composable ? "this.owner" : "this";
           hooks.push(
             item.hook === "mounted"
-              ? `afterRender(this, ${hook});`
-              : `afterRender(this, () => registerDestructor(this, ${hook}));`,
+              ? `afterRender(${owner}, ${hook});`
+              : `afterRender(${owner}, () => registerDestructor(${owner}, ${hook}));`,
           );
           if (item.hook === "unmounted") this.#helpers.add("registerDestructor");
           return [];
@@ -1511,7 +1672,9 @@ class ComponentPlan {
         `afterRender(this, () => {\n  this.args.ref?.({ ${members.join(", ")} });\n  registerDestructor(this, () => this.args.ref?.(null));\n});`,
       );
     }
-    if (hooks.length) {
+    if (hooks.length && this.#composable) {
+      this.#composableHooks = hooks;
+    } else if (hooks.length) {
       this.#after.push("{{(this.onMounted)}}");
       members.push(
         "#mounted = false;",
@@ -1728,6 +1891,7 @@ function indent(text: string): string {
 
 type HelperName =
   | "afterRender"
+  | "Composable"
   | "AsyncSetup"
   | "directive"
   | "inject"
@@ -1755,6 +1919,7 @@ type HelperName =
 const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   afterRender: { "@ember/destroyable": ["isDestroying"], "@ember/renderer": ["renderSettled"] },
   AsyncSetup: { "@ember/destroyable": ["isDestroying"] },
+  Composable: {},
   directive: DIRECTIVE_IMPORTS,
   inject: {},
   provider: {},
@@ -2059,6 +2224,16 @@ function enumeratedValue<T>(value: T): Exclude<T, boolean> | "true" | "false" {
 }`,
   fallthroughStyle: FALLTHROUGH_STYLE,
   transition: TRANSITION_HELPERS,
+  Composable: `/** A composable's state: the component that called it, which its hooks run with, and its arguments. */
+class Composable<Args> {
+  readonly owner: object;
+  readonly args: Args;
+
+  constructor(owner: object, args: Args) {
+    this.owner = owner;
+    this.args = args;
+  }
+}`,
   AsyncSetup: `/**
  * A component's async setup (Vue's \`async setup\` under \`<Suspense>\`): it runs as the
  * component is constructed, and \`resolved\` holds once it has, which the template waits for.

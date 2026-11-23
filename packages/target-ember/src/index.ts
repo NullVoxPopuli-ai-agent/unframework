@@ -9,7 +9,7 @@ import type {
 } from "@unframework.dev/codegen";
 import type { Span, UfComponent, UfModule } from "@unframework.dev/ir";
 
-import { emitComponent } from "./component.ts";
+import { emitComponent, emitComposable } from "./component.ts";
 import { emitDirective } from "./directive.ts";
 
 /** A capability the Ember target does not emit yet, which its cases skip with this reason. */
@@ -204,14 +204,14 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "generic-slot-props",
   // An async setup runs as the component is constructed, and the template waits for it.
   "async-setup",
+  // A composable is a class its function makes, which takes the calling component, whose hooks
+  // its own run with, in the order the setup registers them.
+  "composables",
+  "composable-effect-order",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
-  {
-    reason: "Composables are not emitted yet.",
-    names: ["composables", "composable-effect-order"],
-  },
   {
     reason: "The toolchain does not rehydrate a server render yet.",
     names: ["hydration"],
@@ -285,9 +285,7 @@ export const ember: Target = defineTarget({
     }
     return [{ path: `${component.name}.gts`, contents: emitComponent(component, context) }];
   },
-  // The `composables` cell is unsupported, so the compile reports UF4001 for each use, and the
-  // case has no Ember output.
-  emitComposable: () => [],
+  emitComposable,
   emitDirective,
 });
 

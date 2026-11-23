@@ -12,7 +12,17 @@ const EMBER_SOURCE_MODULE = /^(?:@ember\/[\w-]+(?:\/[\w-]+)*|@glimmer\/tracking)
 /** A `.gts` module's id, with any query. */
 const GTS = /\.gts(?:\?.*)?$/;
 
-/** Compiles `.gts` modules and resolves `ember-source`'s modules, from the Vite root. */
+/**
+ * A `.ts` module's id outside `node_modules`, with any query. An app's build runs its own `.ts`
+ * modules through Babel too, which lowers a decorator such as a composable's `@tracked`: the
+ * plugin compiles the ones that hold one.
+ */
+const TS = /^(?!.*\/node_modules\/).*(?<!\.d)\.ts(?:\?.*)?$/;
+
+/** A line that starts with a decorator. */
+const DECORATOR = /^\s*@[A-Za-z_$]/m;
+
+/** Compiles the app's modules and resolves `ember-source`'s modules, from the Vite root. */
 export function ember(): Plugin {
   let root = process.cwd();
   return {
@@ -28,7 +38,7 @@ export function ember(): Plugin {
       return (await resolve(`${source}/index.js`)) ?? resolve(`${source}.js`);
     },
     async transform(code, id) {
-      if (!GTS.test(id)) return null;
+      if (!GTS.test(id) && !(TS.test(id) && DECORATOR.test(code))) return null;
       const { code: compiled, map } = await compileGts(code, id.replace(/\?.*$/, ""), root);
       return { code: compiled, map: map as never };
     },
