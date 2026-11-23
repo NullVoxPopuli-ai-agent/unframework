@@ -16,7 +16,7 @@ export default class Inbox extends Component<InboxSignature> {
   }
 
   get value2() {
-    return this.count > 0 ? `${this.count} unread` : (undefined as never);
+    return `${this.count} unread`;
   }
 
   listener1 = () => (this.count = 0);

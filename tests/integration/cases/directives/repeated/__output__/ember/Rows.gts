@@ -19,7 +19,7 @@ export default class Rows extends Component<RowsSignature> {
       class="rows"
       style={{fallthroughStyle @style}}
       ...attributes
-    ><ul>{{#each this.items key="@identity" as |item|}}<li>{{yield to="row"}}</li>{{/each}}</ul><button
+    ><ul>{{#each this.items key="@identity"}}<li>{{yield to="row"}}</li>{{/each}}</ul><button
       type="button"
       {{on "click" this.listener1}}
     >Add row</button><button type="button" {{on "click" this.listener2}}>Remove row</button></div></template>

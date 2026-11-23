@@ -71,6 +71,8 @@ export interface DialectHost {
   optionSelected(element: ElementNode, value: string): string;
   /** A component's fills: its content, or its named blocks. */
   fills(fills: readonly SlotFill[], node: ComponentNode): MarkupPiece[];
+  /** A child, in a branch for each set of the slots it forwards that the component got. */
+  forwarding(node: ComponentNode): MarkupPiece[];
   /** A slot outlet: `{{yield}}`, with its fallback. */
   slotOutlet(node: SlotOutletNode, props: string | undefined): MarkupPiece[];
   /** The handler of a child's event, which its `@onChange` argument takes. */
@@ -239,17 +241,13 @@ export function emberDialect(host: DialectHost): MarkupDialect {
                 },
                 directives: [],
               }
-            : {
-                kind: "component",
-                component: {
-                  kind: "Component",
-                  component: candidate.component,
-                  attributes: node.attributes as ComponentAttribute[],
-                  fills: node.fills ?? [],
-                  span: node.span,
-                },
-                directives: [],
-              };
+            : host.forwarding({
+                kind: "Component",
+                component: candidate.component,
+                attributes: node.attributes as ComponentAttribute[],
+                fills: node.fills ?? [],
+                span: node.span,
+              })[0]!;
         return { open, content };
       });
       return [{ kind: "block", segments, close: "{{/if}}" }];
@@ -263,13 +261,15 @@ export function emberDialect(host: DialectHost): MarkupDialect {
         node.index !== undefined &&
         referencedBindings(node.body).has(node.index);
       const value = host.row(source, item, readsIndex ? index : undefined, node);
-      const params = readsIndex ? `${item} ${index}` : item;
+      // The key is a path, so a body that reads neither the item nor the index takes no params.
+      const readsItem = readsIndex || referencedBindings(node.body).has(node.item);
+      const params = readsIndex ? ` as |${item} ${index}|` : readsItem ? ` as |${item}|` : "";
       return [
         {
           kind: "block",
           segments: [
             {
-              open: `{{#each ${value} key="${eachKey(key, item, index)}" as |${params}|}}`,
+              open: `{{#each ${value} key="${eachKey(key, item, index)}"${params}}}`,
               content: { kind: "nodes", nodes: [node.body], container: node },
             },
           ],
@@ -322,6 +322,7 @@ export function emberDialect(host: DialectHost): MarkupDialect {
       ),
     slotOutlet: ({ node, props }) => host.slotOutlet(node, props?.code),
     teleport: ({ node }) => host.teleport(node),
+    component: (node) => host.forwarding(node),
     // A transition renders its elements from a list, so a leaving one stays until its leave
     // ends, each running Vue's classes through a modifier (`transition.ts`).
     transition: ({ node, branch }) => host.transition(node, branch),

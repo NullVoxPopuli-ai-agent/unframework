@@ -2,7 +2,7 @@
   {
     "code": "UF4001",
     "severity": "error",
-    "message": "The ember target does not support async-setup: Slot forwarding, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.",
+    "message": "The ember target does not support async-setup: Generic components and async setup are not emitted yet. See uxfront-com/unframework#236.",
     "file": "async-setup/chained/Membership.uf.tsx",
     "start": {
       "line": 7,

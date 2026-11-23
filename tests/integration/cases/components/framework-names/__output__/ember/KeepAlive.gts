@@ -12,7 +12,7 @@ export default class KeepAlive extends Component<KeepAliveSignature> {
   }
 
   get value2() {
-    return this.args.level > 0 ? this.args.level - 1 : (undefined as never);
+    return this.args.level - 1;
   }
 
   <template><div

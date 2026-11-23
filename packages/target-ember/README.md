@@ -105,7 +105,11 @@ and a write sets the field and calls the callback, as Vue's `useModel` emits `up
 helper, `teleportTarget`, finds in the browser only, so the server renders none of it.
 `transition` is emulated (`src/transition.ts`): a transition renders its elements from a list,
 `Transition.entries`, which keeps a leaving element until its leave ends, and an inline modifier,
-`transitionClasses`, runs Vue's classes of each phase on the element. Slot forwarding, composables and hydration are unsupported for now (`src/index.ts`).
+`transitionClasses`, runs Vue's classes of each phase on the element. `slot-forwarding` is
+native: a forwarded slot yields to the component's own block, and the child renders in a branch
+for each set of the forwarded slots the component got, as Glimmer passes a named block whether or
+not the component got the one it forwards. Generic components, async setup, composables and hydration are unsupported for now
+(`src/index.ts`).
 
 ## The toolchain
 

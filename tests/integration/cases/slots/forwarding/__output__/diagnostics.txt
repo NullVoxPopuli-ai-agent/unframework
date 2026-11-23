@@ -6,14 +6,6 @@ error[UF4001] (angular): The angular target does not support default-slot-presen
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-forwarding: Slot forwarding, generic components and async setup are not emitted yet. See uxfront-com/unframework#236.
-  --> slots/forwarding/Frame.uf.tsx:10:35
-   |
-10 |       <Box>{{ title: slots.title, default: slots.default }}</Box>
-   |                                   ^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF4001
-
 error[UF4001] (qwik): The qwik target does not support default-slot-presence: Qwik's `<Slot />` has no presence API, and forwarding the default slot needs its presence (ADR-0054).
   --> slots/forwarding/Frame.uf.tsx:10:35
    |

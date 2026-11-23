@@ -190,12 +190,15 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   // `{{#in-element}}` appends a teleport's content to its target, in the browser only.
   "teleport",
   "transition",
+  // A forwarded slot yields to the component's own block, in a branch for each set of the
+  // forwarded slots the component got, as Glimmer passes a named block unconditionally.
+  "slot-forwarding",
 ]);
 
 /** The capabilities each part of the target that is not built yet holds. */
 const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] = [
   {
-    reason: "Slot forwarding, generic components and async setup are not emitted yet.",
+    reason: "Generic components and async setup are not emitted yet.",
     names: ["slot-forwarding", "generic-components", "generic-slot-props", "async-setup"],
   },
   {

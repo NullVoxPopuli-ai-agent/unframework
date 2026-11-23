@@ -30,10 +30,7 @@ export default class Files extends Component<FilesSignature> {
     return `Delete ${this.args.file}?`;
   }
 
-  listener2 = (() => {
-    if (!this.open) return;
-    return (this.open = false);
-  }) satisfies NonNullable<ConfirmDialogEvents["onClose"]>;
+  listener2 = (() => (this.open = false)) satisfies NonNullable<ConfirmDialogEvents["onClose"]>;
 
   <template><section
       class="files"

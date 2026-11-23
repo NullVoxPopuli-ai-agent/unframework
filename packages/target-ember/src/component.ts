@@ -518,10 +518,30 @@ class ComponentPlan {
    * the props object as a block param, `as |slotProps|`, whose keys its names read.
    */
   fills(fills: readonly SlotFill[], node: ComponentNode): MarkupPiece[] {
-    const named = fills.some((fill) => fill.slot !== "default" || fill.parameter !== undefined);
+    const named = fills.some(
+      (fill) =>
+        fill.slot !== "default" || fill.parameter !== undefined || this.#forwardsProps(fill),
+    );
     return fills.map((fill): MarkupPiece => {
+      // A forwarded slot yields to the component's own block, with its props.
       if (fill.forward !== undefined) {
-        throw new Error("The ember target does not forward a slot yet.");
+        const to = fill.forward === "default" ? "" : ` to="${fill.forward}"`;
+        const props = this.#forwardsProps(fill) ? this.rowName(`${fill.slot}Props`) : undefined;
+        const outlet: MarkupPiece = {
+          kind: "code",
+          code: `{{yield${props === undefined ? "" : ` ${props}`}${to}}}`,
+        };
+        if (!named) return outlet;
+        return {
+          kind: "block",
+          segments: [
+            {
+              open: `<:${fill.slot}${props === undefined ? "" : ` as |${props}|`}>`,
+              content: outlet,
+            },
+          ],
+          close: `</:${fill.slot}>`,
+        };
       }
       const content: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
       if (!named) return content;
@@ -532,6 +552,39 @@ class ComponentPlan {
         close: `</:${fill.slot}>`,
       };
     });
+  }
+
+  /** Whether a fill forwards a slot of the component's own that takes props. */
+  #forwardsProps(fill: SlotFill): boolean {
+    if (fill.forward === undefined) return false;
+    const slot = this.#component.slots?.slots.find((each) => each.name === fill.forward);
+    return slot?.props !== undefined;
+  }
+
+  /**
+   * A child with the fills it takes. Glimmer passes a named block whether or not the component
+   * got the one it forwards, and the child's `(has-block)` would hold. So a child that forwards
+   * slots renders in a branch for each set of them the component got, with only those.
+   */
+  forwarding(node: ComponentNode): MarkupPiece[] {
+    const forwarded = node.fills.filter((fill) => fill.forward !== undefined);
+    const branch = (index: number, absent: ReadonlySet<SlotFill>): MarkupPiece => {
+      const fill = forwarded[index];
+      if (!fill) {
+        const fills = node.fills.filter((each) => !absent.has(each));
+        return { kind: "component", component: { ...node, fills }, directives: [] };
+      }
+      const test = fill.forward === "default" ? "(has-block)" : `(has-block "${fill.forward}")`;
+      return {
+        kind: "block",
+        segments: [
+          { open: `{{#if ${test}}}`, content: branch(index + 1, absent) },
+          { open: "{{else}}", content: branch(index + 1, new Set(absent).add(fill)) },
+        ],
+        close: "{{/if}}",
+      };
+    };
+    return [branch(0, new Set())];
   }
 
   /**

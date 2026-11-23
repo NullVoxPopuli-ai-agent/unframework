@@ -12,7 +12,7 @@ export default class Countdown extends Component<CountdownSignature> {
   }
 
   get value2() {
-    return this.args.from > 0 ? this.args.from - 1 : (undefined as never);
+    return this.args.from - 1;
   }
 
   <template><div
