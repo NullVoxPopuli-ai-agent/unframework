@@ -49,7 +49,7 @@ info[UF4001] (astro): The astro target does not support teleport: A `<Teleport>`
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support teleport: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support teleport: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> teleport/root/Toast.uf.tsx:11:5
    |
 11 |     <Teleport to="body">

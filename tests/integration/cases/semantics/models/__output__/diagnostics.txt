@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> semantics/models/Disclosure.uf.tsx:4:3
   |
 4 |   const open = defineModel<boolean>("open", { default: false });
@@ -22,7 +22,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> semantics/models/Panels.uf.tsx:9:36
   |
 9 |       <Disclosure title="Shipping" v-model:open={shipping.value} />

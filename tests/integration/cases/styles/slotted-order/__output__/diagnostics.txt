@@ -38,7 +38,7 @@ error[UF4001] (ember): The ember target does not support slotted-styles: Slot co
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> styles/slotted-order/Shelf.uf.tsx:22:11
    |
 22 |           <component is={item.warm ? Amber : Blue}>

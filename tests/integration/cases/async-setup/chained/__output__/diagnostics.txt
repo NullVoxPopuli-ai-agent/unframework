@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support async-setup: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support async-setup: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> async-setup/chained/Membership.uf.tsx:7:3
   |
 7 |   const user = await loadUser(id);

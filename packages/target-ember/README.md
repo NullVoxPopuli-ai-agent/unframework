@@ -80,8 +80,14 @@ the source's name, its props are its arguments (`@label="Name"`), and a listener
 event is `@onClear`. Slots are blocks: `{{yield to="header"}}`, a named block `<:header>`, a
 scoped slot's props object as a block param, and `(has-block "header")`. A styled parent's
 `data-uf-…` attribute reaches a child's root through `...attributes` (`child-root-scope`).
-Directives, slot forwarding, slotted styles, context, composables and hydration are
-unsupported for now (`src/index.ts`).
+`context` is native and `reactive-context` emulated. Ember has no context API yet: RFC 1200
+(emberjs/rfcs#1200) proposes `createContext`, with draft implementations in
+emberjs/ember.js#21450 and #21789. Until one lands, the output follows ember-primitives'
+dom-context technique inline, since an output imports only its framework (P7). A provider's
+first node in its root element is a text node, `provider`, that holds each value under its key,
+and `inject` walks up the DOM from the consumer's own text node to the nearest one. A provided
+state is its ref, a `value` getter (`refOf`). Directives, slot forwarding, slotted styles,
+composables and hydration are unsupported for now (`src/index.ts`).
 
 ## The toolchain
 

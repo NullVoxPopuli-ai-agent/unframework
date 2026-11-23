@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support generic-components: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
  --> generics/select/Select.uf.tsx:9:32
   |
 9 | export default function Select<T extends string>({ label, options }: SelectProps<T>) {
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support generic-components: Slo
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> generics/select/Select.uf.tsx:10:3
    |
 10 |   const value = defineModel<T>("value", { required: true });
@@ -30,7 +30,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support model: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> generics/select/SizeForm.uf.tsx:13:44
    |
 13 |       <Select label="Size" options={sizes} v-model:value={size.value} />

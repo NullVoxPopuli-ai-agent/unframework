@@ -12,6 +12,8 @@ import {
   functionBodyText,
   functionText,
   ImportSet,
+  keyImports,
+  keyOwner,
   parametersText,
   passThroughImports,
   printMarkup,
@@ -40,7 +42,9 @@ import type {
   FunctionCode,
   IfBranch,
   IfNode,
+  InjectionKeyDeclaration,
   ListenerAttribute,
+  Code,
   ModelAttribute,
   Prop,
   SlotFill,
@@ -104,6 +108,9 @@ class ComponentPlan {
   readonly #slotScope = new Map<string, string>();
   /** The children whose signature a scoped fill's block param is typed by, by name. */
   readonly #signatures = new Map<string, ChildImport>();
+  /** Whether the setup provides, and whether it injects (`provide`, `inject`). */
+  readonly #provides: boolean;
+  readonly #injects: boolean;
   /** The children the template renders, by the name it writes them with. */
   readonly #children: ReadonlyMap<string, ChildImport>;
   /** The events interface of each child an inline handler listens to, by the child's name. */
@@ -121,6 +128,8 @@ class ComponentPlan {
     this.#children = new Map(
       childImports(component, module, (name) => `${name}.gts`).map((each) => [each.local, each]),
     );
+    this.#provides = component.setup.some((item) => item.kind === "Provide");
+    this.#injects = component.setup.some((item) => item.kind === "Inject");
   }
 
   /** How the class spells a reference to a binding: the same for every site. */
@@ -279,6 +288,15 @@ class ComponentPlan {
       case "moduleConst":
       case "import":
         return binding.name;
+      // A cached getter that reads the nearest provider's value (`#setupMembers`). The
+      // reference to a key of a ref is the whole `count.value`.
+      case "context": {
+        const item = this.#component.setup.find(
+          (each) => each.kind === "Inject" && each.binding === binding.id,
+        );
+        const ref = item?.kind === "Inject" && this.#key(item.key).ref;
+        return ref ? `this.${binding.name}.value` : `this.${binding.name}`;
+      }
       // Composition and context: a capability the cells leave unsupported, so the case has no
       // Ember output.
       default:
@@ -633,6 +651,12 @@ class ComponentPlan {
       rewrite: this.rules,
       // Attributes the caller passes land on the root element (`...attributes`).
       scopeRootAttributes: (element) => (element === root ? ["...attributes"] : []),
+      // The provider's marker comes first in the root, so the root's descendants find it, and
+      // no sibling of the root does (`provider`).
+      childrenWrapper: (element) =>
+        element === root && this.#provides
+          ? { open: "{{this.providerMarker}}", close: "" }
+          : undefined,
     });
     const members = this.#propGetters().concat(this.#setupMembers(), this.#hoistedMembers);
     const { text: imports, reads } = this.#imports(members);
@@ -641,12 +665,58 @@ class ComponentPlan {
     // The module's values it reads, as the source declares them (ADR-0070).
     if (reads.constants.length) parts.push(reads.constants.join("\n"));
     parts.push(this.#signature(root?.tag));
-    const template = `<template>${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}</template>`;
+    // A consumer's marker comes first, outside what the component provides itself (`inject`).
+    const marker = this.#injects ? "{{this.injectionMarker}}" : "";
+    const template = `<template>${marker}${this.#before.join("")}${markup.trimStart()}${this.#after.join("")}</template>`;
     parts.push(this.#declaration(members, template));
     for (const name of Array.from(this.#helpers).toSorted()) {
       if (HELPERS[name]) parts.push(HELPERS[name]);
     }
     return `${parts.join("\n\n")}\n`;
+  }
+
+  /**
+   * What `provide` gives or `inject` falls back to under a key: for a key that holds a ref, a
+   * state as its ref, `{ value }` read from the tracked field as the state changes (`refOf`).
+   */
+  #contextValue(key: string, code: Code): string {
+    const value = rewrite(code, this.#component, this.rules, "pure");
+    const [ref] = code.refs;
+    const whole =
+      code.refs.length === 1 &&
+      ref?.kind === "Binding" &&
+      ref.span.start === code.span.start &&
+      ref.span.end === code.span.end;
+    if (!this.#key(key).ref || !whole) return value;
+    this.#helpers.add("refOf");
+    return `refOf(() => ${value})`;
+  }
+
+  /**
+   * A key the setup names: its value's type in the class's terms, a ref's as `{ value }`, with
+   * the module its type's names are imported from, for a key of another module.
+   */
+  #key(local: string): { type: string; ref: boolean; specifier?: string; names: string[] } {
+    const module = this.#module;
+    const own = module.keys?.find((key) => key.name === local);
+    if (own)
+      return { type: keyValueType(own.type.code, own.ref), ref: own.ref !== undefined, names: [] };
+    const imported = keyImports(this.#component, module, (name) => `${name}.gts`).find(
+      (key) => key.local === local,
+    );
+    for (const entry of module.imports ?? []) {
+      const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
+      const api = name && entry.api.keys?.find((key) => key.name === name.imported);
+      if (!api) continue;
+      return {
+        type: keyValueType(api.type, api.ref),
+        ref: api.ref !== undefined,
+        ...(imported?.specifier ? { specifier: imported.specifier } : {}),
+        // A ref's type is the source's (`Ref<number>`), which the output writes as `{ value }`.
+        names: (api.references ?? []).filter((each) => !api.ref || each !== api.ref),
+      };
+    }
+    throw new Error(`No module declares the key \`${local}\`.`);
   }
 
   /** The imports: Glimmer's and Ember's, then the types and the pass-through modules. */
@@ -659,11 +729,16 @@ class ComponentPlan {
         ? 'import Component from "@glimmer/component";'
         : 'import type { TOC } from "@ember/component/template-only";',
     ];
+    const tracking = [];
+    if (this.#injects || this.#provides) tracking.push("cached");
     if (
       component.setup.some((item) => item.kind === "State" || item.kind === "TemplateRef") ||
       this.#helpers.has("Effect")
     ) {
-      lines.push('import { tracked } from "@glimmer/tracking";');
+      tracking.push("tracked");
+    }
+    if (tracking.length) {
+      lines.push(`import { ${tracking.join(", ")} } from "@glimmer/tracking";`);
     }
     if (this.#usesHtmlSafe) lines.push('import { htmlSafe } from "@ember/template";');
     const ember = new Map<string, Set<string>>();
@@ -692,6 +767,19 @@ class ComponentPlan {
       if (child.export === "default")
         imports.addDefault(child.specifier, child.local, { exact: true });
       else imports.add(child.specifier, child.name, { local: child.local, exact: true });
+    }
+    // The keys of other modules, from their main component's output (ADR-0054).
+    for (const key of keyImports(component, module, (name) => `${name}.gts`)) {
+      if (!key.specifier) continue;
+      imports.add(key.specifier, key.name, { local: key.local, exact: true });
+      // The names an injected value's type reads, which its getter is typed by.
+      const injected = component.setup.some(
+        (item) => item.kind === "Inject" && item.key === key.local,
+      );
+      if (!injected) continue;
+      for (const name of this.#key(key.local).names) {
+        imports.add(key.specifier, name, { type: true, exact: true });
+      }
     }
     for (const { specifier, name, self } of this.#eventTypes.values()) {
       if (!self) imports.add(specifier, name, { type: true, exact: true });
@@ -727,6 +815,10 @@ class ComponentPlan {
     const types = typeExportsCode(component, module, (name) => `${name}.gts`);
     for (const declaration of componentTypes(component, module).concat(reached)) {
       types.push({ code: typeDeclarationCode(declaration), span: declaration.span });
+    }
+    if (keyOwner(module.components, module.exports) === component.name) {
+      for (const key of module.keys ?? [])
+        types.push({ code: keyDeclaration(key), span: key.span });
     }
     return types.toSorted((a, b) => a.span.start - b.span.start).map(({ code }) => code);
   }
@@ -807,6 +899,8 @@ class ComponentPlan {
     const component = this.#component;
     const rules = this.rules;
     const hooks: string[] = [];
+    /** What the setup provides, as `[key, value]` entries. */
+    const provided: string[] = [];
     // The functions come first: a field's value may call one the source declares after it, as
     // the source's function declarations are hoisted.
     const functions: string[] = [];
@@ -876,6 +970,24 @@ class ComponentPlan {
           if (item.hook === "unmounted") this.#helpers.add("registerDestructor");
           return [];
         }
+        // Each provided value is read once, as Vue's `provide` reads it, and a provided state is
+        // its ref, `{ value }` over the tracked field (`provider`).
+        case "Provide": {
+          provided.push(`[${this.#local(item.key)}, ${this.#contextValue(item.key, item.value)}]`);
+          return [];
+        }
+        // Read once, as Vue's `inject` reads it at setup: the template reads it after the
+        // marker, which is in the DOM by then (`inject`).
+        case "Inject": {
+          this.#helpers.add("inject");
+          const name = bindingName(component, item.binding);
+          const key = this.#key(item.key);
+          const fallback = item.fallback
+            ? this.#contextValue(item.key, item.fallback)
+            : "undefined";
+          const type = item.fallback ? key.type : `${key.type} | undefined`;
+          return `@cached\nget ${name}(): ${type} {\n  return inject(this.injectionMarker, ${this.#local(item.key)}, ${fallback});\n}`;
+        }
         case "State": {
           const name = bindingName(component, item.binding);
           // A state without a value holds `undefined`, as `ref<T>()` does, typed `T | undefined`.
@@ -919,6 +1031,15 @@ class ComponentPlan {
           return [];
       }
     });
+    if (this.#injects) members.unshift('readonly injectionMarker = document.createTextNode("");');
+    // Read when the template renders the marker, after the component's own `inject` can find
+    // what it reads, as Vue's setup injects before it provides.
+    if (provided.length) {
+      this.#helpers.add("provider");
+      members.push(
+        `@cached\nget providerMarker(): Text {\n  return provider([${provided.join(", ")}]);\n}`,
+      );
+    }
     if (hooks.length) {
       this.#after.push("{{(this.onMounted)}}");
       members.push(
@@ -928,6 +1049,18 @@ class ComponentPlan {
     }
     return functions.concat(members);
   }
+}
+
+/** An injection key (ADR-0054): the source's symbol, which `provider` and `inject` match. */
+function keyDeclaration(key: InjectionKeyDeclaration): string {
+  return `export const ${key.name} = Symbol(${JSON.stringify(key.description)});`;
+}
+
+/** A key's value type: a ref's (`Ref<number>`) as `{ readonly value: number }`. */
+function keyValueType(type: string, ref: string | undefined): string {
+  if (!ref) return type;
+  const inner = /^\w+<([\s\S]*)>$/.exec(type.trim())?.[1];
+  return `{ readonly value: ${inner ?? "unknown"} }`;
 }
 
 /**
@@ -1119,6 +1252,9 @@ function indent(text: string): string {
 
 type HelperName =
   | "afterRender"
+  | "inject"
+  | "provider"
+  | "refOf"
   | "callbacks"
   | "classNames"
   | "Effect"
@@ -1136,6 +1272,9 @@ type HelperName =
 /** What each module helper imports from Ember, by module: a `type ` name is a type. */
 const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
   afterRender: { "@ember/destroyable": ["isDestroying"], "@ember/renderer": ["renderSettled"] },
+  inject: {},
+  provider: {},
+  refOf: {},
   callbacks: {},
   classNames: {},
   Effect: {
@@ -1165,6 +1304,36 @@ const HELPER_IMPORTS: Record<HelperName, Record<string, readonly string[]>> = {
 
 /** The module helpers, after the component. */
 const HELPERS: Record<HelperName, string> = {
+  provider: `/**
+ * Vue's \`provide\`: a text node, first in the component's root, that holds each provided value
+ * under its key. The root's descendants find it, and no sibling of the root does (\`inject\`).
+ */
+function provider(entries: readonly (readonly [symbol, unknown])[]): Text {
+  const marker = document.createTextNode("");
+  for (const [key, value] of entries) Reflect.set(marker, key, value);
+  return marker;
+}`,
+  inject: `/**
+ * Vue's \`inject\`: the value of the nearest provider above \`marker\`, or the fallback. Ember
+ * has no context API yet (RFC 1200), so this walks the DOM, as ember-primitives' dom-context
+ * does: each ancestor and the nodes before it, where a provider's marker sits.
+ */
+function inject<T>(marker: Node, key: symbol, fallback: T): T {
+  for (let parent: Node | null = marker; parent; parent = parent.parentNode) {
+    for (let node = parent.previousSibling; node; node = node.previousSibling) {
+      if (Reflect.has(node, key)) return Reflect.get(node, key) as T;
+    }
+  }
+  return fallback;
+}`,
+  refOf: `/** A provided state as its consumers read a ref: a \`value\` getter over the tracked field. */
+function refOf<T>(read: () => T): { readonly value: T } {
+  return {
+    get value() {
+      return read();
+    },
+  };
+}`,
   afterRender: `/** Runs \`run\` once the render settles, unless its component is gone by then. */
 function afterRender(owner: object, run: () => unknown): void {
   // A component on the server never mounts, as Vue registers no hook in a server render.

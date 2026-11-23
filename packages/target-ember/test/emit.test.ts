@@ -175,6 +175,25 @@ describe("ember target", () => {
     expect(files).toEqual([]);
   });
 
+  it("emits nothing for a component that provides without a root element", async () => {
+    const { codes, files } = await emberOf(`
+      import { provide } from "@uxfront/unframework";
+      import type { InjectionKey } from "@uxfront/unframework";
+      export const ToneKey: InjectionKey<string> = Symbol("tone");
+      export default function Card() {
+        provide(ToneKey, "calm");
+        return (
+          <>
+            <p>One</p>
+            <p>Two</p>
+          </>
+        );
+      }
+    `);
+    expect(codes).toEqual(["UF4001 error"]);
+    expect(files).toEqual([]);
+  });
+
   it("renders on the server what the source renders", async () => {
     const html = await render(
       `

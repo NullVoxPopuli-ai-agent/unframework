@@ -7,7 +7,7 @@ import type {
   OutputFile,
   Target,
 } from "@unframework.dev/codegen";
-import type { UfComponent, UfModule } from "@unframework.dev/ir";
+import type { Span, UfComponent, UfModule } from "@unframework.dev/ir";
 
 import { emitComponent } from "./component.ts";
 
@@ -56,6 +56,11 @@ const EMULATED: Partial<Record<CapabilityName, CapabilityCell>> = {
     support: "emulated",
     helper: "classNames",
     note: "A Glimmer `class` is one string, so an inline helper, classNames, joins the static names, toggles and dynamic parts, and reads an array's entries and an object's keys as Vue's normalizeClass does.",
+  },
+  "reactive-context": {
+    support: "emulated",
+    helper: "refOf",
+    note: "A provided state is its ref as descendants read it: an inline helper, refOf, makes an object whose `value` getter reads the tracked field, so a descendant renders each change.",
   },
   // A Glimmer `style` is one string, which Ember asks to be marked safe.
   interactivity: {
@@ -107,6 +112,12 @@ const SUPPORTED: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "attribute-spread",
   "raw-html",
   "svg",
+  // Ember has no context API yet: RFC 1200 (emberjs/rfcs#1200) proposes `createContext`, with
+  // draft implementations in emberjs/ember.js#21450 and, on the dynamic scope, #21789. Until one
+  // lands, the output follows ember-primitives' dom-context inline: a provider's text node in its
+  // root, which `inject` finds by walking up the DOM. A provided state is its ref, `{ value }`.
+  "context",
+  "reactive-context",
   // `{{on}}` adds the listener to its element, with `addEventListener`'s options, and the
   // handler runs as the event is dispatched.
   "interactivity",
@@ -150,15 +161,12 @@ const NOT_YET: readonly { reason: string; names: readonly CapabilityName[] }[] =
     names: ["directive"],
   },
   {
-    reason:
-      "Slot forwarding, component models, context and the built-in components are not emitted yet.",
+    reason: "Slot forwarding, component models and the built-in components are not emitted yet.",
     names: [
       "slot-forwarding",
       "model",
       "fallthrough",
       "expose",
-      "context",
-      "reactive-context",
       "dynamic-component",
       "teleport",
       "transition",
@@ -216,6 +224,21 @@ function emits(module: UfModule): boolean {
 }
 
 /**
+ * What keeps the target from emitting a component's context, with where: a provider's marker
+ * sits in its root element, where the root's descendants find it and no sibling of the root does,
+ * so a component that provides needs one.
+ */
+function contextProblem(component: UfComponent): { message: string; span: Span } | undefined {
+  const provide = component.setup.find((item) => item.kind === "Provide");
+  if (!provide || component.render.kind === "Element") return undefined;
+  return {
+    message:
+      "`provide` needs a root element on Ember: the provided values' marker sits in it, and a later sibling of a marker outside it would find it. See uxfront-com/unframework#236.",
+    span: provide.span,
+  };
+}
+
+/**
  * The Ember 7.4 target: one `.gts` file per component. A component with no state of its own is
  * a template-only component (`TOC`); any other is a `@glimmer/component` class, whose template
  * reads each expression the template language cannot hold through a member of the class
@@ -227,6 +250,11 @@ export const ember: Target = defineTarget({
   capabilities: CAPABILITIES,
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     if (!emits(context.module)) return [];
+    const unsupported = contextProblem(component);
+    if (unsupported) {
+      context.report({ code: "UF4001", severity: "error", ...unsupported });
+      return [];
+    }
     return [{ path: `${component.name}.gts`, contents: emitComponent(component, context) }];
   },
   // The `composables` and `directive` cells are unsupported, so the compile reports UF4001 for

@@ -1,4 +1,4 @@
-error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support dynamic-component: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> dynamic/forwarding/Frame.uf.tsx:11:7
    |
 11 |       <component is={wide ? Panel : Card}>{{ title: slots.title }}</component>
@@ -6,7 +6,7 @@ error[UF4001] (ember): The ember target does not support dynamic-component: Slot
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF4001] (ember): The ember target does not support slot-forwarding: Slot forwarding, component models, context and the built-in components are not emitted yet. See uxfront-com/unframework#236.
+error[UF4001] (ember): The ember target does not support slot-forwarding: Slot forwarding, component models and the built-in components are not emitted yet. See uxfront-com/unframework#236.
   --> dynamic/forwarding/Frame.uf.tsx:11:46
    |
 11 |       <component is={wide ? Panel : Card}>{{ title: slots.title }}</component>
